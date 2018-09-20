@@ -1,4 +1,4 @@
-update=Di 04 Sep 2018 18:04:11 CEST
+update=Do 20 Sep 2018 05:44:54 CEST
 version=1
 last_client=kicad
 [pcbnew]
@@ -62,4 +62,3 @@ LibName30=opto
 LibName31=atmel
 LibName32=contrib
 LibName33=valves
-LibName34=/work/sx/gep/rpi-atmega324-modbus-x3-gateway/import2
