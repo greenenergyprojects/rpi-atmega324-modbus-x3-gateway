@@ -1,0 +1,10 @@
+# See http://help.github.com/ignore-files/ for more about ignoring files.
+
+**/*.log
+**/dist
+**/dist_remote
+**/node_modules*
+**/*.elf
+**/*.bin
+**/*.hex
+**/_test*

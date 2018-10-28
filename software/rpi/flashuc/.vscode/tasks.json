@@ -1,0 +1,90 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "command": "node_modules/gulp/bin/gulp.js",
+            "type": "shell",
+            "args": [
+                "--gulpfile",
+                "gulpfile.js",
+                "build"
+            ],
+            "group": "build",
+            "presentation" : { "reveal": "always" },
+            "problemMatcher": [
+                {
+                    "owner": "gulp-typescript",
+                    "fileLocation": [
+                        "relative",
+                        "${workspaceRoot}"
+                    ],
+                    "pattern": {
+                        "regexp": "(.*)\\((\\d*),(\\d*)\\): (error|warning) (.*)",
+                        "file": 1,
+                        "line": 2,
+                        "column": 3,
+                        "severity": 4,
+                        "message": 5
+                    }
+                }
+            ]
+        },
+        {
+            "label": "clean",
+            "command": "node_modules/gulp/bin/gulp.js",
+            "type": "shell",
+            "args": [
+                "--gulpfile",
+                "gulpfile.js",
+                "clean"
+            ],
+            "group": "build",
+            "presentation" : { "reveal": "silent" }
+        },
+        {
+            "label": "cleanAndBuild",
+            "command": "node_modules/gulp/bin/gulp.js",
+            "type": "shell",
+            "args": [
+                "--gulpfile",
+                "gulpfile.js",
+                "cleanAndBuild"
+            ],
+            "group": "build",
+            "presentation" : { "reveal": "silent" },
+            "problemMatcher": [
+                "$tsc-watch"
+            ]
+        },
+        {
+            "label": "buildAndLaunchOnRemote",
+            "command": "node_modules/gulp/bin/gulp.js",
+            "type": "shell",
+            "args": [
+                "--gulpfile",
+                "gulpfile.js",
+                "buildAndLaunchOnRemote"
+            ],
+            "group": "build",
+            "presentation" : { "reveal": "always" },
+            "problemMatcher": [
+                {
+                    "owner": "gulp-typescript",
+                    "fileLocation": [
+                        "relative",
+                        "${workspaceRoot}"
+                    ],
+                    "pattern": {
+                        "regexp": "(.*)\\((\\d*),(\\d*)\\): (error|warning) (.*)",
+                        "file": 1,
+                        "line": 2,
+                        "column": 3,
+                        "severity": 4,
+                        "message": 5
+                    }
+                }
+            ]
+        },
+    ]
+}

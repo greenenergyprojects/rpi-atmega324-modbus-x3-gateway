@@ -1,0 +1,12 @@
+{
+    "folders": [
+        // {
+        //    "uri": "sftp://pi@mbgwx3/home/pi/flashuc/dist?debug=0&mode=664&key=id_rsa_rpi&passphrase=&noPhraseFile=1",
+        //     "name": "flashuc-dist"
+        //},
+        {
+            "path": "./",
+            "name": "local"
+        }
+    ],
+}

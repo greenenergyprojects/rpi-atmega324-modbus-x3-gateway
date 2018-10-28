@@ -1,0 +1,43 @@
+{
+  "name": "flashuc",
+  "version": "0.0.1",
+  "description": "Flash Atmel 8-bit uC via serial interface",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Manfred Steiner",
+  "repository": {},
+  "license": "MIT",
+  "devDependencies": {
+    "@types/nconf": "0.0.37",
+    "@types/node": "^8.10.36",
+    "@types/serialport": "^6.0.4",
+    "@types/sprintf-js": "^1.1.0",
+    "@types/through2": "^2.0.34",
+    "del": "^3.0.0",
+    "gulp": "github:gulpjs/gulp#4.0",
+    "gulp-changed": "^3.2.0",
+    "gulp-replace": "^1.0.0",
+    "gulp-rsync": "0.0.8",
+    "gulp-sourcemaps": "^2.6.4",
+    "gulp-ssh": "^0.7.0",
+    "gulp-typescript": "^5.0.0-alpha.3",
+    "gulp-using": "^0.1.1",
+    "merge-stream": "^1.0.1",
+    "tslint": "^5.11.0",
+    "typescript": "^3.1.2",
+    "vinyl-fs": "^3.0.3"
+  },
+  "dependencies": {
+    "@types/debug": "0.0.31",
+    "debug-sx": "^0.2.3",
+    "elf2ihex": "^1.0.0",
+    "endian-reader": "^0.3.0",
+    "nconf": "^0.10.0",
+    "rpi-gpio": "^1.0.0",
+    "serialport": "^7.0.2",
+    "sprintf-js": "^1.1.1",
+    "through2": "^2.0.3"
+  }
+}

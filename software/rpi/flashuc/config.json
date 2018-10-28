@@ -1,0 +1,32 @@
+{
+    "serial": {
+        "device": "/dev/ttyS0",
+        "options": { "baudRate": 115200 },
+        "devices": [{
+            "index": 0,
+            "reset": {
+                "typ": "rpi-gpio",
+                "pin": "22",
+                "level": "low",
+                "timeMillis": 10
+            }}, {
+            "index": 1,
+            "reset": {
+                "typ": "rpi-gpio",
+                "pin": "18",
+                "level": "low",
+                "timeMillis": 10
+            }
+        }]
+    },
+    "debug": {
+        "depth": 3,
+        "colors" : true,
+        "wtimediff": 6,
+        "time": "ddd, yyyy-mm-dd HH:MM:ss.l",
+        "wmodule": 15,
+        "wlevel": 6,
+        "location": "-*",
+        "enabled": "*::WARN, *::INFO"
+    }
+}
