@@ -17,7 +17,7 @@
             "sourceMaps": true,
             "preLaunchTask": "build",
             "smartStep": true,
-            "outputCapture": "std"
+            "outputCapture": "console"
         },
         {
             "type": "node",
@@ -36,7 +36,8 @@
             "localRoot": "${workspaceRoot}/",
             "remoteRoot": "/home/pi/flashuc/",
             "internalConsoleOptions": "openOnSessionStart",
-            "trace": false
+            "trace": false,
+            "outputCapture": "console"
         }
     ]
 }

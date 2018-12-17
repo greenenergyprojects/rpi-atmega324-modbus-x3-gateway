@@ -42,7 +42,6 @@ import { stringify } from 'querystring';
 import { SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION } from 'constants';
 const debug: debugsx.IDefaultLogger = debugsx.createDefaultLogger('main');
 
-// debugsx.addHandler(debugsx.createConsoleHandler('stdout'));
 debugsx.formatters.h = (v: any) => {
     if (v instanceof Buffer) {
         let s = '';
@@ -59,6 +58,7 @@ debugsx.formatters.h = (v: any) => {
     }
 };
 
+// debugsx.addHandler(debugsx.createConsoleHandler('stdout'));
 debugsx.addHandler(debugsx.createRawConsoleHandler());
 const logfileConfig = nconf.get('logfile');
 if (logfileConfig) {

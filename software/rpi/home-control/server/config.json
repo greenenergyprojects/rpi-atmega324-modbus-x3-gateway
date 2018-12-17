@@ -1,0 +1,34 @@
+{
+    "server": {
+        "start": true,
+        "port": 8080,
+        "morgan": {
+            "disabled": true,
+            "config": "tiny"
+         }
+    },
+    "auth": {
+        "privatekey": "../keys/server-key.pem",
+        "publickey": "../keys/server-pubkey.pem",
+        "authorizationUri": "/auth",
+        "accessTokenTimeout": "5m",
+        "remoteTokenTimeout": "23:59:59",
+        "remoteTokenMinimumSeconds": 60
+    },
+    "database-users": {
+        "users": [{
+            "userid": "test",
+            "password": "geheim"
+        }]
+    },
+    "debug": {
+        "depth": 3,
+        "colors" : true,
+        "wtimediff": 6,
+        "time": "ddd, yyyy-mm-dd HH:MM:ss.l",
+        "wmodule": 15,
+        "wlevel": 6,
+        "location": "-*",
+        "enabled": "*::WARN, *::INFO"
+    }
+}

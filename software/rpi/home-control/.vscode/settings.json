@@ -1,0 +1,22 @@
+{
+	"files.exclude": {
+		"**/node_modules": true,
+		"**/dist": true,
+		"**/dist_remote": true,
+		"**/.vscode": true,
+		"**/package-lock.json": true,
+		"**/tslint.json": true,
+		"**/tsconfig.json": true,
+		"**/gulpfile.js": true,
+		"**/*.code-workspace": true,
+		"**/.gitignore":true,
+		"**/e2e":true,
+                "**/*.spec.ts": true,
+                "**/.editorconfig": true,
+                "**/tsconfig.*": true,
+                "**/karma.conf.js": true,
+                "**/polyfills.ts": true,
+                "**/browserslist": true
+
+	}
+}
