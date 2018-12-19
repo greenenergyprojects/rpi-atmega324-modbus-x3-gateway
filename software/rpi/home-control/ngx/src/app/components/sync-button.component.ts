@@ -31,8 +31,8 @@ export class SyncButtonComponent implements OnInit {
     @Input() config: ISyncButtonConfig;
     @ViewChild('tooltip') public tooltip: NgbTooltip;
 
-    isBusy = false;
-    classes: string;
+    public isBusy = false;
+    public classes: string;
 
     private _pending: Promise<void>;
     private _lastError: any;

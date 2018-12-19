@@ -1,4 +1,4 @@
-import { Directive, Input, HostListener, ViewChild, ElementRef } from '@angular/core';
+import { Directive, Input, HostListener } from '@angular/core';
 import { NG_VALIDATORS, Validator, FormControl } from '@angular/forms';
 
 @Directive({
@@ -14,11 +14,11 @@ export class ValidatorDirective implements Validator {
     constructor() { }
 
     validate(c: FormControl) {
-        this.element.onChange(this.name);
-        if (this.element.isValid(this.name)) {
-        return null;
+        this.element.onChange(this.name, c.value);
+        if (this.element.isValid(this.name, c.value)) {
+            return null;
         } else {
-        return { name: { valid: false } };
+            return { name: { valid: false } };
         }
     }
 
@@ -41,30 +41,30 @@ export class ValidatorDirective implements Validator {
 
 export class ValidatorElement<T> {
     public value: T;
-    public callbackIsValid: ((e: ValidatorElement<any>, name: string) => boolean);
-    public callbackOnChange: ((e: ValidatorElement<any>, name: string) => void);
+    public callbackIsValid: ((e: ValidatorElement<any>, name: string, value: T) => boolean);
+    public callbackOnChange: ((e: ValidatorElement<any>, name: string, value: T) => void);
     public callbackOnEvent: ((e: ValidatorElement<any>, name: string, typ: string, event: any) => void);
 
-    constructor (value: T, callbackOnChange?: ((e: ValidatorElement<any>, name: string) => void),
-                            callbackIsValid?: ((e: ValidatorElement<any>, name: string) => boolean),
-                            callbackOnEvent?: ((e: ValidatorElement<any>, name: string, typ: string, event: any) => void)) {
+    constructor (value: T, callbackOnChange?: ((e: ValidatorElement<any>, name: string, value: T) => void),
+                           callbackIsValid?:  ((e: ValidatorElement<any>, name: string, value: T) => boolean),
+                           callbackOnEvent?:  ((e: ValidatorElement<any>, name: string, typ: string, event: any) => void)) {
         this.value = value;
         this.callbackOnChange = callbackOnChange;
         this.callbackIsValid = callbackIsValid;
         this.callbackOnEvent = callbackOnEvent;
     }
 
-    isValid (name?: string): boolean {
+    isValid (name?: string, value?: T): boolean {
         if (this.callbackIsValid) {
-            return this.callbackIsValid(this, name);
+            return this.callbackIsValid(this, name, value);
         } else {
             return true;
         }
     }
 
-    onChange (name?: string): void {
+    onChange (name?: string, value?: T): void {
         if (this.callbackOnChange) {
-            this.callbackOnChange(this, name);
+            this.callbackOnChange(this, name, value);
         }
     }
 

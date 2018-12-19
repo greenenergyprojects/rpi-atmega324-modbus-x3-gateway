@@ -25,27 +25,7 @@ export interface IModalLoginConfig {
                 <h5 class="modal-title" id="modal-basic-title">{{title}}</h5>
             </div>
             <div class="modal-body">
-                <!--<form class="form-signin" #loginForm="ngForm" (keydown)="keyDown($event)">
-                    <div class="form-group">
-                        <label class="sr-only" for="inputHtlid">HTL-ID</label>
-                        <input #inputUserid id="input-userid" class="form-control" type="Text" placeholder="User-ID"
-                            required minlength="2" maxlength="24"
-                            name="userid" #name="ngModel" [(ngModel)]="userid" [readonly]="!enableUserid"/>
-                    </div>
-                    <div class="form-group">
-                        <div class="input-group">
-                        <label class="sr-only" for="inputPassword">Password</label>
-                        <input #inputPassword id="input-password" class="form-control" type="{{passwordInputType}}" placeholder="Password"
-                                required name="password" #name="ngModel" [(ngModel)]="password" />
-                        <span *ngIf="buttonEyeVisible" class="input-group-btn">
-                            <button id="button-eye" class="btn btn-outline-secondary" type="button" style="display: block;" (click)="togglePasswordShown()">
-                                <fa-icon [icon]="(passwordInputType==='Password')?'eye':'eye-slash'"></fa-icon>
-                            </button>
-                        </span>
-                        </div>
-                    </div>
-                </form>-->
-                    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" (keydown)="keyDown($event)">
+                <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" (keydown)="keyDown($event)">
                     <div class="form-group">
                         <label class="sr-only" for="inputHtlid">HTL-ID</label>
                         <input formControlName="userid" class="form-control" type="Text" placeholder="User-ID" minlength="2" maxlength="24"
@@ -67,26 +47,23 @@ export interface IModalLoginConfig {
                 <button type="submit" class="btn btn-primary" [disabled]="!loginForm.valid" (click)="c('Login click'); login()">{{loginButtonText}}</button>
             </div>
         </ng-template>
-
-        <button class="btn btn-lg btn-outline-primary" (click)="open(content)">Launch demo modal</button>
-  `,
-  styles: [ `
-    .ng-valid[required], .ng-valid.required  {
-      border-left: 5px solid green
-    }
-    .ng-invalid:not(form) {
-      border-left: 5px solid red
-    }
-    .form-signin {
-      max-width: 300px;
-      padding: 0px;
-      margin: 0 auto;
-    }
-    #input-htlid, #input-password, #button-eye, #button-eye-slash {
-      border-radius: 0.25rem;
-    }
-  }
-  `]
+    `,
+    styles: [ `
+        .ng-valid[required], .ng-valid.required  {
+            border-left: 5px solid green
+        }
+        .ng-invalid:not(form) {
+            border-left: 5px solid red
+        }
+        .form-signin {
+            max-width: 300px;
+            padding: 0px;
+            margin: 0 auto;
+        }
+        #input-htlid, #input-password, #button-eye, #button-eye-slash {
+            border-radius: 0.25rem;
+        }
+    `]
 })
 export class ModalLoginComponent {
 
@@ -104,6 +81,7 @@ export class ModalLoginComponent {
 
     constructor (config: NgbModalConfig, private modalService: NgbModal) {
         // customize default values of modals used by this component tree
+        console.log('ModalLoginComponent constructor');
         config.backdrop = 'static';
         config.keyboard = false;
         this.title = 'Anmelden...';
@@ -170,9 +148,9 @@ export class ModalLoginComponent {
             this.isUseridEditable = true;
         }
         this.buttonEyeVisible = config.buttonEyeVisible || true;
-        if (config.userid) {
-            this.loginForm.setValue({ userid: config.userid });
-        }
+        // if (config.userid) {
+        //     this.loginForm.setValue({ userid: config.userid });
+        // }
 
         return new Promise<any> ( (resolve, reject) => {
             this._waiting = { res: resolve, rej: reject };

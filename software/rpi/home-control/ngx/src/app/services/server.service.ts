@@ -10,6 +10,7 @@ export class ServerService {
 
     private _viewContainerRefs: ViewContainerRef [] = [];
     private _isModalLoginEnabled = false;
+    private _isModalLoginActive = false;
     private _serverUri: string;
     private _authServerUri: string;
     private _authUri: string;
@@ -30,6 +31,10 @@ export class ServerService {
 
     public set enableModalLogin (enable: boolean) {
         this._isModalLoginEnabled = enable;
+    }
+
+    public get isModalLoginActive (): boolean {
+        return this._isModalLoginActive;
     }
 
     public pushViewContainerRef (viewContainerRef: ViewContainerRef) {
@@ -61,7 +66,7 @@ export class ServerService {
     //     }
     // }
 
-    public async httpGetJson (resource: string, options?: { headers?: HttpHeaders }, token?: string): Promise<Object> {
+    public async httpGetJson (resource: string, options?: { headers?: HttpHeaders }, token?: string): Promise<any> {
         if (!this.isModalLoginEnabled) {
             try {
                 return this.performHttpGetJson(resource, options, token);
@@ -74,6 +79,28 @@ export class ServerService {
             while (true) {
                 try {
                     const response = await this.performHttpGetJson(resource, options, token);
+                    return response;
+                } catch (err) {
+                    await this.handleHttpError(err, cnt++);
+                }
+            }
+        }
+    }
+
+
+    public async httpPostAndGetJson (resource: string, data: any,  options?: { headers?: HttpHeaders }, token?: string): Promise<any> {
+        if (!this.isModalLoginEnabled) {
+            try {
+                return this.performHttpPostAndGetJson(resource, data, options, token);
+            } catch (err) {
+                console.log(err);
+                throw err;
+            }
+        } else {
+            let cnt = 0;
+            while (true) {
+                try {
+                    const response = await this.performHttpPostAndGetJson(resource, data, options, token);
                     return response;
                 } catch (err) {
                     await this.handleHttpError(err, cnt++);
@@ -121,7 +148,6 @@ export class ServerService {
 
         try {
             const response2: any = await this.performHttpGetJson('/auth');
-            debugger;
             if (response2.htlid !== this._authService.userid || !response2.accessToken || !response2.user) {
                 throw new Error('invalid get auth response');
             }
@@ -132,7 +158,6 @@ export class ServerService {
             this._authService.token = response2.accessToken;
             this._authService.user = new User(response2.user);
         } catch (err) {
-            debugger;
             if (err instanceof HttpErrorResponse && err.status === 401) {
                 this.extractAuthUriFromHeader(err.headers);
                 this._remoteToken = undefined;
@@ -147,21 +172,29 @@ export class ServerService {
 
     private async performModalLoginDialog (config: IModalLoginConfig, viewContainerRef?: ViewContainerRef): Promise<IUserLogin> {
         if (!this.isModalLoginEnabled) { throw new Error('ModalLogin disabled'); }
-        viewContainerRef = viewContainerRef || this._viewContainerRefs[this._viewContainerRefs.length - 1];
-        const factory = this._componentFactoryResolver.resolveComponentFactory(ModalLoginComponent);
-        const modalLoginRef = viewContainerRef.createComponent(factory);
-        modalLoginRef.changeDetectorRef.detectChanges();
-        const modalLoginComponent: ModalLoginComponent = (<any>modalLoginRef)._component;
-
+        if (this.isModalLoginActive) { throw new Error('modal login is active'); }
+        console.log('---> open modal login');
+        this._isModalLoginActive = true;
         try {
-            const rv = await modalLoginComponent.show(config);
-            const index = viewContainerRef.indexOf(<any>modalLoginRef);
-            viewContainerRef.remove(index);
-            return rv;
-        } catch (err) {
-            const index = viewContainerRef.indexOf(<any>modalLoginRef);
-            viewContainerRef.remove(index);
-            throw err;
+            viewContainerRef = viewContainerRef || this._viewContainerRefs[this._viewContainerRefs.length - 1];
+            const factory = this._componentFactoryResolver.resolveComponentFactory(ModalLoginComponent);
+            const modalLoginRef = viewContainerRef.createComponent(factory);
+            modalLoginRef.changeDetectorRef.detectChanges();
+            const modalLoginComponent: ModalLoginComponent = (<any>modalLoginRef)._component;
+
+            try {
+                const rv = await modalLoginComponent.show(config);
+                const index = viewContainerRef.indexOf(<any>modalLoginRef);
+                viewContainerRef.remove(index);
+                return rv;
+            } catch (err) {
+                const index = viewContainerRef.indexOf(<any>modalLoginRef);
+                viewContainerRef.remove(index);
+                throw err;
+            }
+        } finally {
+            console.log('---> close modal login');
+            this._isModalLoginActive = false;
         }
     }
 
