@@ -1,6 +1,6 @@
 import { Injectable, isDevMode, ViewContainerRef, ComponentFactoryResolver } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
-import { IUserLogin, User, IUserAuth } from '../data/common/server/user';
+import { IUserLogin, User, IUserAuth } from '../data/common/home-control/user';
 import { AuthService } from './auth.service';
 import { IModalLoginConfig, ModalLoginComponent } from '../modals/modal-login';
 
@@ -22,6 +22,8 @@ export class ServerService {
         // npm run build --prod --> production mode, server can run on any host and supports loading ngx app
         this._serverUri = isDevMode() ? 'http://localhost:8080' : '';
         this._authServerUri = isDevMode() ? 'http://localhost:8080' : '';
+        // this._serverUri = isDevMode() ? 'http://192.168.1.201:8080' : '';
+        // this._authServerUri = isDevMode() ? 'http://192.168.1.201:8080' : '';
         this._authUri = this._authServerUri + '/auth';
     }
 

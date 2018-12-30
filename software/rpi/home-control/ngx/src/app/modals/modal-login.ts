@@ -6,7 +6,7 @@
 import { Component, Input, ViewChild, ElementRef } from '@angular/core';
 import { FormGroup, FormControl, Validators } from '@angular/forms';
 import { NgbModalConfig, NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
-import { IUserLogin } from '../data/common/server/user';
+import { IUserLogin } from '../data/common/home-control/user';
 
 export interface IModalLoginConfig {
     title?: string;

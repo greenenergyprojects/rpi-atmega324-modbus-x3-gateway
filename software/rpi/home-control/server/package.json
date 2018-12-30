@@ -23,6 +23,7 @@
     "nconf": "^0.10.0",
     "pug": "^2.0.3",
     "rpi-gpio": "^2.1.0",
+    "serialport": "^7.1.1",
     "sprintf-js": "^1.1.1"
   },
   "devDependencies": {
@@ -33,6 +34,7 @@
     "@types/morgan": "^1.7.35",
     "@types/nconf": "0.0.37",
     "@types/node": "^8.10.38",
+    "@types/serialport": "^7.0.1",
     "@types/sprintf-js": "^1.1.1",
     "del": "^3.0.0",
     "gulp": "^4.0.0",

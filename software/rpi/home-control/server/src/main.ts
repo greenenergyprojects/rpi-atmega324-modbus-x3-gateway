@@ -1,4 +1,4 @@
-export const VERSION = '0.1.0';
+export const VERSION = '1.0.1';
 
 import * as nconf from 'nconf';
 import * as fs from 'fs';
@@ -10,7 +10,6 @@ process.on('unhandledRejection', (reason, p) => {
     const now = new Date();
     console.log(now.toLocaleDateString() + '/' + now.toLocaleTimeString() + ': unhandled rejection at: Promise', p, 'reason:', reason);
 });
-
 
 
 // ***********************************************************
@@ -69,10 +68,20 @@ import { sprintf } from 'sprintf-js';
 import { Server } from './server';
 import { Auth } from './auth';
 import { DbUser } from './db-user';
+import { Monitor } from './monitor';
+import { Statistics } from './statistics';
+import { PiTechnik } from './devices/pi-technik';
+import { Nibe1155 } from './devices/nibe1155';
+import { HotWaterController } from './devices/hot-water-controller';
+import { FroniusSymo } from './devices/fronius-symo';
+import { ModbusDevice } from './devices/modbus-device';
+import { ModbusTcp } from './modbus/modbus-tcp';
 
 doStartup();
 
 async function doStartup () {
+    // await delay(3000);
+    // debugger;
     debug.info('Start of Home Control Server V' + VERSION);
     try {
         if (nconf.get('git')) {
@@ -81,6 +90,18 @@ async function doStartup () {
         }
 
         await startupParallel();
+        await Statistics.createInstance(nconf.get('statistics'));
+        await PiTechnik.createInstance(nconf.get('pi-technik'));
+        const monitor = await Monitor.createInstance(nconf.get('monitor'));
+        const nibe1155 = await Nibe1155.createInstance(nconf.get('nibe1155'));
+        const hwc = await HotWaterController.createInstance(nconf.get('hot-water-controller'));
+        const froniusSymo = new FroniusSymo(nconf.get('froniusSymo'));
+        ModbusDevice.addInstance(froniusSymo);
+        await froniusSymo.start();
+        await nibe1155.start();
+        await hwc.start();
+        await monitor.start();
+
         await startupServer();
         doSomeTests();
         process.on('SIGINT', () => {
@@ -164,6 +185,16 @@ async function startupShutdown (src?: string): Promise<void> {
         debug.info('startupShutdown finished, shutdown in ' + (shutdownMillis / 1000) + ' seconds.');
     }
 }
+
+
+async function delay (ms: number) {
+    return new Promise<void>( (res, rej) => {
+        setTimeout( () => {
+            res();
+        }, ms);
+    });
+}
+
 
 async function doSomeTests () {
     return;

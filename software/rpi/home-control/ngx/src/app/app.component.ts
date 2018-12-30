@@ -1,9 +1,9 @@
 import { Component, OnInit, ViewContainerRef } from '@angular/core';
-import { IUserAuth, User } from './data/common/server/user';
+import { IUserAuth, User } from './data/common/home-control/user';
 import { ServerService } from './services/server.service';
 import { AuthService } from './services/auth.service';
 import { UseExistingWebDriver } from 'protractor/built/driverProviders';
-import { IServerVersion } from './data/common/server/server-version';
+import { IServerVersion } from './data/common/home-control/server-version';
 import { ISyncButtonConfig } from './components/sync-button.component';
 
 @Component({

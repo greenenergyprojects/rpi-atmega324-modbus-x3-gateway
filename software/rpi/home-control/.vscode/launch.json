@@ -17,6 +17,9 @@
             "sourceMaps": true,
             "preLaunchTask": "build",
             "smartStep": true,
+            "skipFiles": [
+                "${workspaceFolder}/node_modules/**/*.js"
+            ],
             "outputCapture": "console"
         },
         {

@@ -3,12 +3,15 @@ import { Subject } from 'rxjs';
 import { Observable, Subscriber, TeardownLogic, of } from 'rxjs';
 
 import { ServerService } from './server.service';
+import * as serverHttp from '../data/common/home-control/server-http';
 import { IFroniusMeterValues } from '../data/common/fronius-meter/fronius-meter-values';
-import { IMonitorRecordData, MonitorRecord, IHeatpumpMode } from '../data/common/monitor-record';
+import { IMonitorRecordData, MonitorRecord, IHeatpumpMode } from '../data/common/home-control/monitor-record';
 import { IBoilerMode } from '../data/common/hwc/boiler-mode';
 import { IBoilerController } from '../data/common/hwc/boiler-controller';
 import * as froniusSymo from '../data/common/fronius-symo/fronius-symo-values';
-import * as nibe1155 from '../data/common/nibe1155/nibe1155-values';
+import { Nibe1155Value } from '../data/common/nibe1155/nibe1155-value';
+import { INibe1155Controller, Nibe1155Controller } from '../data/common/nibe1155/nibe1155-controller';
+// import * as nibe1155 from '../data/common/nibe1155/nibe1155-values';
 
 @Injectable({ providedIn: 'root' })
 export class DataService {
@@ -64,23 +67,29 @@ export class DataService {
         return this._serverService.httpGetJson(uri);
     }
 
-    public getNibe1155Values ( query?: {
-                                controller?: boolean;
-                                completeValues?: boolean;
-                                ids?: number [];
-                            }): Promise<nibe1155.INibe1155Values> {
+    public getNibe1155Values ( query?: serverHttp.IHttpGetDataNibe1155Query): Promise<serverHttp.IHttpGetDataNibe1155Response> {
         let uri = '/data/nibe1155';
-        query = query || {};
-        uri += '?' + (query.completeValues ? 'completeValues=true&simpleValues=false' :
-                                                  'completeValues=false&simpleValues=true');
-        uri += '&controller=' + (query.controller ? 'true' : 'false');
-        if (Array.isArray(query.ids)) {
-            for (const id of query.ids) {
-                if (id >= 0 && id <= 0xffff) {
-                    uri += '&id=' + id;
+        query = query || { logsetIds: true, controller: true, valueIds: 'all' };
+        let queryString = '';
+        if (query.logsetIds)  { queryString += (queryString !== '' ? '&' : '') + 'logsetIds=true'; }
+        if (query.controller) { queryString += (queryString !== '' ? '&' : '') + 'controller=true'; }
+        if (query.valueIds) {
+            if (query.valueIds === '*' || query.valueIds === 'all') {
+                queryString += (queryString !== '' ? '&' : '') + 'valueIds=all';
+            } else if (query.valueIds === 'none') {
+                queryString += (queryString !== '' ? '&' : '') + 'valueIds=none';
+            } else if (Array.isArray(query.valueIds)) {
+                for (const id of query.valueIds) {
+                    queryString += (queryString !== '' ? '&' : '') + 'valueIds=' + id;
                 }
+            } else {
+                queryString += (queryString !== '' ? '&' : '') + 'valueIds=' + query.valueIds;
             }
         }
+        if (queryString !== '') {
+            uri += '?' + queryString;
+        }
+
         console.log(uri);
         return this._serverService.httpGetJson(uri);
     }
@@ -101,7 +110,7 @@ export class DataService {
         return this._nibe1155;
     }
 
-    public handleNibe1155Values (v: nibe1155.INibe1155Values, clear?: boolean) {
+    public handleNibe1155Values (v: serverHttp.IHttpGetDataNibe1155Response, clear?: boolean) {
         if (!v) { return; }
         if (clear) {
             this._nibe1155 = {
@@ -117,10 +126,9 @@ export class DataService {
             } else {
                 console.log(new Error('unexpected response, missing logsetIds'));
             }
-            if (v.completeValues) {
-                for (const id in v.completeValues) {
-                    if (!v.completeValues.hasOwnProperty(id)) { continue; }
-                    if (!Array.isArray(this._nibe1155.logsetIds) || !this._nibe1155.logsetIds.find( (i) => i === +id)) {
+            if (v.values) {
+                for (const id of Object.getOwnPropertyNames(v.values)) {
+                    if (!this._nibe1155.logsetIds.find( (i) => i === +id)) {
                         this._nibe1155.nonLogsetIds.push(+id);
                     }
                 }
@@ -131,31 +139,30 @@ export class DataService {
 
         this._nibe1155.lastRefreshAt = new Date();
         if (v.controller) {
-            this._nibe1155.controller = v.controller;
-        }
-        if (v.completeValues) {
-            let cnt = 0;
-            for (const id in v.completeValues) {
-                if (!v.completeValues.hasOwnProperty(id)) { continue; }
-                this._nibe1155.values[id] = nibe1155.Nibe1155Value.createInstance(v.completeValues[id]);
-                cnt++;
+            try {
+                debugger;
+                this._nibe1155.controller = new Nibe1155Controller(v.controller);
+            } catch (err) {
+                console.log('ERROR: cannot create Nibe1155Controller', err);
             }
-            // console.log(cnt + ' completeValues defined');
         }
-        if (v.simpleValues) {
-            let cnt = 0;
-            for (const id in v.simpleValues) {
-                if (!v.simpleValues.hasOwnProperty(id)) { continue; }
-                const x = this._nibe1155.values[+id];
-                if (!x) {
-                    console.log(new Error('missing complete value for simpleValue id ' + id));
+        let cnt = 0;
+        if (v.values) {
+            for (const id of Object.getOwnPropertyNames(v.values)) {
+                const x = v.values[id];
+                if (!this._nibe1155.values[id]) {
+                    try {
+                        this._nibe1155.values[id] = new Nibe1155Value(x);
+                    } catch (err) {
+                        console.log('ERROR: cannot create Nibe1155Value id ' + id, err);
+                    }
                 } else {
-                    x.setRawValue(v.simpleValues[id].rawValue, new Date(v.simpleValues[id].rawValueAt));
+                    this._nibe1155.values[id].setRawValue(x.rawValue, new Date(x.rawValueAt));
                     cnt++;
                 }
             }
-            // console.log(cnt + ' simpleValues updated');
         }
+        // console.log(cnt + ' values updated');
     }
 
 
@@ -275,8 +282,8 @@ export class DataService {
 
 export interface IHeatpumpData {
     lastRefreshAt: Date;
-    controller: nibe1155.INibe1155Controller;
-    values: { [ id: number ]: nibe1155.Nibe1155Value };
+    controller: INibe1155Controller;
+    values: { [ id: number ]: Nibe1155Value };
     logsetIds: number [];
     nonLogsetIds: number [];
 }

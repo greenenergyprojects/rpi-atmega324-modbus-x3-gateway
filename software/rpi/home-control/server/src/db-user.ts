@@ -2,7 +2,7 @@
 import * as debugsx from 'debug-sx';
 const debug: debugsx.ISimpleLogger = debugsx.createSimpleLogger('dbUser');
 
-import { User } from './data/common/server/user';
+import { User } from './data/common/home-control/user';
 
 
 export interface IDbUserConfig {

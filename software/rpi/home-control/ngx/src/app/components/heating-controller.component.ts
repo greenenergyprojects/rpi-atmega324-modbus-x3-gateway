@@ -1,7 +1,7 @@
 import { Component, Input, OnInit, OnDestroy } from '@angular/core';
 import { DataService } from '../services/data.service';
 import { Subscription } from 'rxjs';
-import { MonitorRecord } from '../data/common/monitor-record';
+import { MonitorRecord } from '../data/common/home-control/monitor-record';
 import { ValidatorElement } from '../directives/validator.directive';
 
 @Component({
@@ -223,7 +223,7 @@ export class HeatingControllerComponent implements OnInit, OnDestroy {
     private handleMonitorValues (v: MonitorRecord) {
         const n = this.dataService.nibe1155;
         if (!n || !n.controller) { return; }
-        this.currentMode = n.controller.state;
+        this.currentMode = n.controller.currentMode;
         // nv = n.values[43136]; const compressorFrequency = this.isValueOk(nv, 10000) ? nv.value : null;
     }
 

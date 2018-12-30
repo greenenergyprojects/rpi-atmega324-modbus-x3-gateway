@@ -1,6 +1,6 @@
 {
     "server": {
-        "start": true,
+        "start": false,
         "port": 8080,
         "morgan": {
             "disabled": true,
@@ -21,6 +21,54 @@
             "password": "geheim"
         }]
     },
+    "froniusSymo": {
+        "disabled": false,
+        "host": "192.168.1.180",
+        "port": "502",
+        "modbusAddress": 1,
+        "register": { "pollingMillis": 2000, "timeoutMillis": 5000 },
+        "common":   { "pollingMillis": 5000, "timeoutMillis": 5000 }
+    },
+    "monitor": {
+        "disabled": true,
+        "periodMillis": 1000,
+        "timeOffset": { "sec": 1, "ms": 0 },
+        "froniusPeriodMillis": 2000,
+        "logfile": { "type": "csv", "path": "/var/lib/home-control/home-control_%Y-%M-%D.csv" },
+        "debugFile": { "path": "/var/lib/home-control/home-control-debug_%Y-%M-%D.csv" },
+        "tempFile": { "path": "/var/lib/home-control/.monitor-temp", "backups": 3 }
+    },
+    "statistics": {
+        "disabled": true,
+        "timeslotSeconds": 60,
+        "tmpFile": "/var/lib/home-control/.tmpDatabase",
+        "dbtyp": "csvfile",
+        "csvfile": { "filename": "/var/lib/home-control/home-control-data_%Y-%M-%D.csv" }
+    },
+    "pi-technik": {
+        "disabled": true,
+        "host": "192.168.1.4",
+        "port": 80,
+        "path": "/data"
+    },
+    "nibe1155": {
+        "disabled": true,
+        "host": "192.168.1.202",
+        "port": 8080,
+        "path": "/data/monitor",
+        "pathMode": "/nibe/mode",
+        "pollingPeriodMillis": 2000,
+        "timeoutMillis": 1000
+    },
+    "hot-water-controller": {
+        "disabled": true,
+        "host": "192.168.1.5",
+        "port": 80,
+        "path": "/data/monitor",
+        "pathController": "/controller",
+        "pollingPeriodMillis": 2000,
+        "timeoutMillis": 1000
+    },
     "debug": {
         "depth": 3,
         "colors" : true,
@@ -29,6 +77,9 @@
         "wmodule": 15,
         "wlevel": 6,
         "location": "-*",
-        "enabled": "*::WARN, *::INFO"
+        "enabled": "*::WARN, *::INFO, *::FINE"
+    },
+    "logfile": {
+        "fronius14": { "disabled": true, "filename": "/var/log/fronius/device14.log", "namespaces": "*FroniusDevice14::INFO", "locationNamespaces": "-*" }
     }
 }

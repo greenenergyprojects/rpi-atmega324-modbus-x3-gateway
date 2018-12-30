@@ -1,6 +1,17 @@
 
 export abstract class DataRecord<T> {
 
+    static getMissingAttributes (data: any, attributes: string []): string {
+        let rv = '';
+        const att = Object.getOwnPropertyNames(data);
+        for (const a of attributes) {
+            if (att.indexOf(a) < 0) {
+                rv += rv === '' ? a : ',' + a;
+            }
+        }
+        return rv;
+    }
+
     static parseNumber (data: any, options: IParseNumberOptions): number {
         if (!options || !options.attribute) { throw new ParseNumberError('missing options/attribute name'); }
         if (!data || typeof(data[options.attribute]) !== 'number') { throw new ParseNumberError('missing data/attribute name'); }
@@ -37,6 +48,50 @@ export abstract class DataRecord<T> {
             }
         } catch (err) {
             throw new ParseNumberError(options.attribute  + ' parse error', err);
+        }
+    }
+
+    static parseNumberArray (data: any, options: IParseNumberArrayOptions): number [] {
+        if (!options || !options.attribute) { throw new ParseNumberError('missing options/attribute name'); }
+        if (!data || typeof(data[options.attribute]) !== 'number') { throw new ParseNumberError('missing data/attribute name'); }
+        if (!options.validate && (!data || !data[options.attribute])) { return null; }
+        try {
+            const a = data[options.attribute];
+            if (!Array.isArray(a)) { throw new Error('value is not an array'); }
+            const rv: number [] = [];
+            for (let i = 0; i < a.length; i++) {
+                let value = a[i];
+                if (options) {
+                    if (!options.validate && (value === undefined || value === null)) {
+                        rv.push(null);
+                        continue;
+                    }
+                    if (options.allowNaN && Number.isNaN(value)) {
+                        rv.push(value);
+                        continue;
+                    }
+                    if (typeof options.min === 'number' && value < options.min) {
+                        throw new Error('value[' + i + ']=' + value + ' below min ' + options.min);
+                    }
+                    if (typeof options.max === 'number' && value > options.max) {
+                        throw new Error('value[' + i + ']=' + value + ' above max ' + options.max);
+                    }
+                    if (typeof options.lowerLimit === 'number' && value < options.lowerLimit) {
+                        value = options.lowerLimit;
+                    }
+                    if (typeof options.upperLimit === 'number' && value < options.upperLimit) {
+                        value = options.upperLimit;
+                    }
+                    if (typeof options.limitDecimalPlaces === 'number') {
+                        const k = Math.pow(10,  options.limitDecimalPlaces);
+                        value = Math.round(value * k) / k;
+                    }
+                    rv.push(value);
+                }
+            }
+            return rv;
+        } catch (err) {
+            throw new ParseNumberArrayError(options.attribute  + ' parse error', err);
         }
     }
 
@@ -153,6 +208,17 @@ export interface IParseNumberOptions {
     limitDecimalPlaces?: number;
 }
 
+export interface IParseNumberArrayOptions {
+    attribute: string;
+    validate?: boolean;
+    allowNaN?: boolean;
+    min?: number;
+    max?: number;
+    upperLimit?: number;
+    lowerLimit?: number;
+    limitDecimalPlaces?: number;
+}
+
 export interface IParseStringOptions {
     attribute: string;
     validate?: boolean;
@@ -174,6 +240,10 @@ export class ParseEnumError extends Error {
 }
 
 export class ParseNumberError extends Error {
+    constructor (msg: string, public cause?: Error) { super(msg); }
+}
+
+export class ParseNumberArrayError extends Error {
     constructor (msg: string, public cause?: Error) { super(msg); }
 }
 

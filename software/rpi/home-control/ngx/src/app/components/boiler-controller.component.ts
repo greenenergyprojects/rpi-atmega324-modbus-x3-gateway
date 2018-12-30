@@ -1,7 +1,7 @@
 import { Component, Input, OnInit, OnDestroy } from '@angular/core';
 import { DataService } from '../services/data.service';
 import { Subscription } from 'rxjs';
-import { MonitorRecord } from '../data/common/monitor-record';
+import { MonitorRecord } from '../data/common/home-control/monitor-record';
 import { MonitorRecord as HwcMonitorRecord } from '../data/common/hwc/monitor-record';
 import { ValidatorElement } from '../directives/validator.directive';
 import { ControllerMode } from '../data/common/hwc/boiler-mode';

@@ -3,7 +3,7 @@
 import { Subject } from 'rxjs';
 import { Observable } from 'rxjs';
 
-import { User } from '../data/common/server/user';
+import { User } from '../data/common/home-control/user';
 
 export class AuthService {
 

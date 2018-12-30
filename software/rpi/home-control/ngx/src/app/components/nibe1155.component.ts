@@ -1,10 +1,10 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { DataService } from '../services/data.service';
 import { ConfigService } from '../services/config.service';
-import * as nibe1155 from '../data/common/nibe1155/nibe1155-values';
+import { Nibe1155Value } from '../data/common/nibe1155/nibe1155-value';
 import { Subscription } from 'rxjs';
 import { sprintf } from 'sprintf-js';
-import { MonitorRecord } from '../data/common/monitor-record';
+import { MonitorRecord } from '../data/common/home-control/monitor-record';
 
 @Component({
     selector: 'app-nibe1155',
@@ -106,13 +106,13 @@ export class Nibe1155Component implements OnInit, OnDestroy {
             }).catch( (err) => { console.log(err); });
 
         } else if (a === this._accordionData.logsetIds) {
-            this._dataService.getNibe1155Values({ ids: this._dataService.nibe1155.logsetIds }).then( (values) => {
+            this._dataService.getNibe1155Values({ valueIds: this._dataService.nibe1155.logsetIds }).then( (values) => {
                 this._dataService.handleNibe1155Values(values);
                 this.handleLogsetIds();
             }).catch( (err) => { console.log(err); });
 
         } else if (a === this._accordionData.others) {
-            this._dataService.getNibe1155Values({ ids: this._dataService.nibe1155.nonLogsetIds }).then( (values) => {
+            this._dataService.getNibe1155Values({ valueIds: this._dataService.nibe1155.nonLogsetIds }).then( (values) => {
                 this._dataService.handleNibe1155Values(values);
                 this.handleNonLogsetIds();
             }).catch( (err) => { console.log(err); });
@@ -190,7 +190,7 @@ export class Nibe1155Component implements OnInit, OnDestroy {
             return;
         }
         const controller = n.controller;
-        let nv: nibe1155.Nibe1155Value;
+        let nv: Nibe1155Value;
         nv = n.values[43136]; const compressorFrequency = this.isValueOk(nv, 10000) ? nv.value : null;
         nv = n.values[43439]; const brinePumpSpeed      = this.isValueOk(nv, 10000) ? nv.value : null;
         nv = n.values[43437]; const supplyPumpSpeed     = this.isValueOk(nv, 10000) ? nv.value : null;
@@ -201,7 +201,7 @@ export class Nibe1155Component implements OnInit, OnDestroy {
         nv = n.values[40004]; const outdoor             = this.isValueOk(nv, 4 * 60000) ? nv.value : null;
 
         x.Update = new Date();
-        x.Heizung = controller ? controller.state : '?';
+        x.Heizung = controller ? controller.currentMode : '?';
         if (outdoor !== null) {
             x.Außentemperatur = sprintf('%.01f°C', outdoor);
         }
@@ -233,7 +233,7 @@ export class Nibe1155Component implements OnInit, OnDestroy {
         a.infos = this.createAccordionInfo(x);
     }
 
-    private isValueOk (v: nibe1155.Nibe1155Value, timeoutMillis: number) {
+    private isValueOk (v: { valueAt: Date }, timeoutMillis: number) {
         if (!v || !v.valueAt) { return false; }
         return (Date.now() - v.valueAt.getTime()) < timeoutMillis;
     }

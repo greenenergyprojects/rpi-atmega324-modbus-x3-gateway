@@ -1,10 +1,9 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { DataService } from '../services/data.service';
 import { ConfigService } from '../services/config.service';
-import * as nibe1155 from '../data/common/nibe1155/nibe1155-values';
 import { Subscription } from 'rxjs';
 import { sprintf } from 'sprintf-js';
-import { MonitorRecord } from '../data/common/monitor-record';
+import { MonitorRecord } from '../data/common/home-control/monitor-record';
 
 @Component({
     selector: 'app-boiler',
@@ -228,7 +227,7 @@ export class BoilerComponent implements OnInit, OnDestroy {
         a.infos = this.createAccordionInfo(x);
     }
 
-    private isValueOk (v: nibe1155.Nibe1155Value, timeoutMillis: number) {
+    private isValueOk (v: { valueAt: Date }, timeoutMillis: number) {
         if (!v || !v.valueAt) { return false; }
         return (Date.now() - v.valueAt.getTime()) < timeoutMillis;
     }

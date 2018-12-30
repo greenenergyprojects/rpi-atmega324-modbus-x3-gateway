@@ -10,7 +10,7 @@ import * as jwt from 'jsonwebtoken';
 
 import { handleError, RouterError, BadRequestError, AuthenticationError, NotFoundError } from './routers/router-error';
 
-import { User, IUserLogin, IUserAuth } from './data/common/server/user';
+import { User, IUserLogin, IUserAuth } from './data/common/home-control/user';
 import { DbUser } from './db-user';
 
 

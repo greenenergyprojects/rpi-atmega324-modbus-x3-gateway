@@ -24,7 +24,6 @@ export class BoilerMode extends DataRecord<IBoilerMode> implements IBoilerMode {
         try {
             let attCnt = 0;
             for (const a of Object.getOwnPropertyNames(data)) {
-                CommonLogger.info('check attribute %s', a);
                 if ( [ 'createdAt' ].indexOf(a) >= 0 ) {
                     (<any>this)['_' + a] = DataRecord.parseDate(data, { attribute: a, validate: true } );
                 } else if ( [ 'setpointPower' ].indexOf(a) >= 0 ) {

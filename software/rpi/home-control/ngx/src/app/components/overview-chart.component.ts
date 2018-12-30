@@ -2,8 +2,8 @@ import { Component, OnInit, OnDestroy, ViewChild, HostListener, ElementRef } fro
 import { Subscription } from 'rxjs';
 import { BaseChartDirective } from 'ng4-charts';
 import { DataService } from '../services/data.service';
-import { IMonitorRecordData, MonitorRecord } from '../data/common/monitor-record';
-import { INibe1155Value, Nibe1155Value } from '../data/common/nibe1155/nibe1155-values';
+import { IMonitorRecordData, MonitorRecord } from '../data/common/home-control/monitor-record';
+import { Nibe1155Value } from '../data/common/nibe1155/nibe1155-value';
 import { sprintf } from 'sprintf-js';
 
 @Component({
