@@ -55,6 +55,31 @@ export class ModbusString extends ModbusValue<string> {
         this._recentValue = null;
     }
 
+    public invalidateValue (at?: Date) {
+        at = at || new Date();
+        this._recentValue = this._value;
+        this._value = { at: at, value: null };
+        this.fireEvents();
+    }
+
+
+    public fireEvents () {
+        if (!this._value) {
+            this._value = { at: new Date(), value: null };
+        }
+        if (!this._recentValue) {
+            this._value = { at: new Date(), value: null };
+            this.fireValueUpdated(this._value, null);
+            this.fireValueChanged(this._value, null);
+        } else {
+            if (this._value.value !== this._recentValue.value) {
+                this.fireValueUpdated(this._value, null);
+                this.fireValueChanged(this._value, this._recentValue);
+            } else if (this._value.at !== this._recentValue.at) {
+                this.fireValueUpdated(this._value, null);
+            }
+        }
+    }
 
     public updateValue (firstId?: number, lastId?: number): boolean {
         firstId = (firstId >= 0 && firstId <= 0xffff) ? firstId : 0;
@@ -128,27 +153,17 @@ export class ModbusString extends ModbusValue<string> {
             x = String.fromCharCode(...utf16);
         }
 
+        this._recentValue = this._value;
         let rv = false;
-        if (!this._value && x !== null) {
+        if (!this._value) {
             this._value = { at: at, value: x };
-            this.fireValueUpdated(this._value, null);
-            this.fireValueChanged(this._value, null);
             rv = true;
-        } else if (this._value && x === null) {
-            this._recentValue = this._value;
-            this._value = { at: new Date(), value: null };
-            this.fireValueUpdated(this._value, null);
-            this.fireValueChanged(this._value, this._recentValue);
-            rv = true;
-        } else if (this._value && x !== null) {
-            this._recentValue = this._value;
-            this._value = { at: at, value: x };
-            this.fireValueUpdated(this._value, this._recentValue);
-            if (this._recentValue.value !== this._value.value) {
-                this.fireValueChanged(this._value, this._recentValue);
-            }
-            rv = true;
+        } else if (this._value) {
+            this._value = { at: at ? at : new Date(), value: x };
+            rv =  this._value.value !== x;
         }
+        this.fireEvents();
+
         return rv;
     }
 

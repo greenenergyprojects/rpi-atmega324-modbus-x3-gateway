@@ -54,6 +54,12 @@ export class ModbusNumber extends ModbusValue<number> {
         this._recentValue = null;
     }
 
+    public invalidateValue (at?: Date) {
+        at = at || new Date();
+        this._recentValue = this._value;
+        this._value = { at: at, value: null };
+        // this.fireEvents();
+    }
 
     public updateValue (firstId?: number, lastId?: number): boolean {
         firstId = (firstId >= 0 && firstId <= 0xffff) ? firstId : 0;
@@ -87,21 +93,13 @@ export class ModbusNumber extends ModbusValue<number> {
             /* tslint:disable:no-bitwise */
             switch (this._definition.code) {
                 case 'u8':  { x = x & 0xff; break; }
-                case 'u16': { x = x & 0xffff; break; }
-                case 'u32': { x = x & 0xffffffff; break; }
-                case 'u64': { x = x & 0xffffffffffffffff; break; }
+                case 'u16': break;
+                case 'u32': break;
+                case 'u64': break;
                 case 's8':  { x = x & 0xff; x = x >= 0x80 ? x - 0x100 : x; break; }
                 case 's16': { x = x & 0xffff; x = x >= 0x8000 ? x - 0x10000 : x; break; }
-                case 's32': {
-                    x = x & 0xffffffff;
-                    x = x >= 0x80000000 ? x - 0x100000000 : x;
-                    break;
-                }
-                case 's64': {
-                    x = x & 0xffffffffffffffff;
-                    x = x >= 0x8000000000000000 ? x - 0x10000000000000000 : x;
-                    break;
-                }
+                case 's32': { x = x & 0xffffffff; x = x >= 0x80000000 ? x - 0x100000000 : x; break; }
+                case 's64': { x = x >= 0x8000000000000000 ? x - 0x10000000000000000 : x; break; }
                 default: {
                     throw new Error('uid=' + this.uid + ': illegal definition.size (' + this._definition.code + ') for ModbusNumber');
                 }
@@ -125,30 +123,30 @@ export class ModbusNumber extends ModbusValue<number> {
                         throw new Error('cannot get scale factor for uid ' + this.uid);
                     }
                     switch (sf) {
-                        case  10: x = x * 10000000000; break;
-                        case   9: x = x * 1000000000; break;
-                        case   8: x = x * 100000000; break;
-                        case   7: x = x * 10000000; break;
-                        case   6: x = x * 1000000; break;
-                        case   5: x = x * 100000; break;
-                        case   4: x = x * 10000; break;
-                        case   3: x = x * 1000; break;
-                        case   2: x = x * 100; break;
-                        case   1: x = x * 10; break;
-                        case   0: break;
-                        case  -1: x = x * 0.1; break;
-                        case  -2: x = x * 0.01; break;
-                        case  -3: x = x * 0.001; break;
-                        case  -4: x = x * 0.0001; break;
-                        case  -5: x = x * 0.00001; break;
-                        case  -6: x = x * 0.000001; break;
-                        case  -7: x = x * 0.0000001; break;
-                        case  -8: x = x * 0.00000001; break;
-                        case  -9: x = x * 0.000000001; break;
-                        case -10: x = x * 0.0000000001; break;
-                        case 0x8000: x = Number.NaN; break;
+                        case     10: x = x * 10000000000; break;
+                        case      9: x = x * 1000000000; break;
+                        case      8: x = x * 100000000; break;
+                        case      7: x = x * 10000000; break;
+                        case      6: x = x * 1000000; break;
+                        case      5: x = x * 100000; break;
+                        case      4: x = x * 10000; break;
+                        case      3: x = x * 1000; break;
+                        case      2: x = x * 100; break;
+                        case      1: x = x * 10; break;
+                        case      0: break;
+                        case     -1: x = x * 0.1; break;
+                        case     -2: x = x * 0.01; break;
+                        case     -3: x = x * 0.001; break;
+                        case     -4: x = x * 0.0001; break;
+                        case     -5: x = x * 0.00001; break;
+                        case     -6: x = x * 0.000001; break;
+                        case     -7: x = x * 0.0000001; break;
+                        case     -8: x = x * 0.00000001; break;
+                        case     -9: x = x * 0.000000001; break;
+                        case    -10: x = x * 0.0000000001; break;
+                        case -32768: x = Number.NaN; break;
                         default: {
-                            throw new Error('invalid scale factor value (' + sf + ') for uid ' + this.uid);
+                            throw new Error('invalid scale factor value (' + sf + ') for uid ' + this.uid + ' (value=' + x + ')');
                         }
                     }
                 }

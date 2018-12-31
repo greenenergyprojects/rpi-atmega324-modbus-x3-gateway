@@ -4,6 +4,7 @@ import * as net from 'net';
 import { sprintf } from 'sprintf-js';
 
 import * as debugsx from 'debug-sx';
+import { SSL_OP_SSLREF2_REUSE_CERT_TYPE_BUG } from 'constants';
 const debug: debugsx.IFullLogger = debugsx.createFullLogger('modbus:ModbusTCP');
 
 export interface IModbusTcpConfig {
@@ -706,6 +707,7 @@ class ModbusTcpConnection {
                 wr.rej(new ModbusTcpTransactionError(mt, 'cannot send request, waiting timeout'));
                 this._waitingRequests.splice(i, 1);
                 i--;
+                debug.info('--> %d waiting requests %o', this._waitingRequests.length, this._waitingRequests);
             }
         }
         if (this._waitingRequests.length === 0) {

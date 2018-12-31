@@ -84,6 +84,7 @@ export abstract class ModbusValue<T> extends DataRecord<IModbusValue> {
     public abstract get hasChanged (): boolean;
     public abstract clearHasChanged (): void;
     public abstract updateValue (firstId?: number, lastId?: number): boolean;
+    public abstract invalidateValue (at?: Date): void;
 
 
     protected fireValueUpdated (newValue: { at: Date, value: T }, oldValue: { at: Date, value: T }) {

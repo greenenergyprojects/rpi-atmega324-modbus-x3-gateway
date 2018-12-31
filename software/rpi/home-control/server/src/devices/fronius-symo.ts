@@ -8,7 +8,15 @@ import { ModbusTcp, ModbusTransaction } from '../modbus/modbus-tcp';
 import { setInterval } from 'timers';
 import { FroniusSymoModelRegister } from '../data/common/fronius-symo/fronius-symo-model-register';
 import { FroniusSymoModelCommon } from '../data/common/fronius-symo/fronius-symo-model-common';
+import { FroniusSymoModelInverter } from '../data/common/fronius-symo/fronius-symo-model-inverter';
+import { FroniusSymoModelNameplate } from '../data/common/fronius-symo/fronius-symo-model-nameplate';
 import { IRegisterValues, RegisterValues } from '../data/common/modbus/register-values';
+import { FroniusSymoModelSettings } from '../data/common/fronius-symo/fronius-symo-model-settings';
+import { FroniusSymoModelStatus } from '../data/common/fronius-symo/fronius-symo-model-status';
+import { FroniusSymoModelControl } from '../data/common/fronius-symo/fronius-symo-model-control';
+import { FroniusSymoModelStorage } from '../data/common/fronius-symo/fronius-symo-model-storage';
+import { FroniusSymoModelInverterExtension } from '../data/common/fronius-symo/fronius-symo-model-inverter-extension';
+import { FroniusSymoModel } from '../data/common/fronius-symo/fronius-symo-model';
 
 export interface IFroniusSymoModelConfig {
     disabled?: boolean;
@@ -25,20 +33,18 @@ export interface IFroniusSymoConfig {
     common:             IFroniusSymoModelConfig;
     inverter?:          IFroniusSymoModelConfig;
     nameplate?:         IFroniusSymoModelConfig;
-    setting?:           IFroniusSymoModelConfig;
+    settings?:          IFroniusSymoModelConfig;
     status?:            IFroniusSymoModelConfig;
     control?:           IFroniusSymoModelConfig;
     storage?:           IFroniusSymoModelConfig;
     inverterExtension?: IFroniusSymoModelConfig;
-    stringCombiner?:    IFroniusSymoModelConfig;
-    meter?:             IFroniusSymoModelConfig;
 }
 
 export class FroniusSymo extends ModbusTcpDevice {
 
     public static MODELNAMES: string [] = [
-        'register', 'common', 'inverter', 'nameplate', 'setting', 'status',
-        'control', 'storage', 'inverterExtension', 'stringCombiner', 'meter'
+        'register', 'common', 'inverter', 'nameplate', 'settings', 'status',
+        'control', 'storage', 'inverterExtension'
     ];
 
     public static getInstance (id?: string | number): FroniusSymo {
@@ -62,8 +68,15 @@ export class FroniusSymo extends ModbusTcpDevice {
 
     private _config: IFroniusSymoConfig;
     private _timer: NodeJS.Timer;
-    private _register: { nextPollingAt: number, regs: FroniusSymoModelRegister, config: IFroniusSymoModelConfig };
-    private _common:   { nextPollingAt: number, regs: FroniusSymoModelCommon, config: IFroniusSymoModelConfig };
+    private _register:          { nextPollingAt: number, regs: FroniusSymoModelRegister, config: IFroniusSymoModelConfig };
+    private _common:            { nextPollingAt: number, regs: FroniusSymoModelCommon, config: IFroniusSymoModelConfig };
+    private _inverter:          { nextPollingAt: number, regs: FroniusSymoModelInverter, config: IFroniusSymoModelConfig };
+    private _nameplate:         { nextPollingAt: number, regs: FroniusSymoModelNameplate, config: IFroniusSymoModelConfig };
+    private _settings:          { nextPollingAt: number, regs: FroniusSymoModelSettings, config: IFroniusSymoModelConfig };
+    private _status:            { nextPollingAt: number, regs: FroniusSymoModelStatus, config: IFroniusSymoModelConfig };
+    private _control:           { nextPollingAt: number, regs: FroniusSymoModelControl, config: IFroniusSymoModelConfig };
+    private _storage:           { nextPollingAt: number, regs: FroniusSymoModelStorage, config: IFroniusSymoModelConfig };
+    private _inverterExtension: { nextPollingAt: number, regs: FroniusSymoModelInverterExtension, config: IFroniusSymoModelConfig };
 
     public constructor (config: IFroniusSymoConfig) {
         super(new ModbusTcp(config), config.modbusAddress);
@@ -72,34 +85,37 @@ export class FroniusSymo extends ModbusTcpDevice {
                 if (!config.host || typeof(config.host) !== 'string') { throw new Error('missing/invalid host'); }
                 if (!(config.port >= 0 && config.port <= 0xffff)) { throw new Error('missing/invalid port'); }
                 if (!(config.modbusAddress >= 1 && config.modbusAddress < 255)) { throw new Error('missing/invalid modbusAddress'); }
-                try {
-                    if (config.register && !config.register.disabled) {
-                        this._register = {
-                            nextPollingAt: null,
-                            regs: FroniusSymoModelRegister.createInstance(),
-                            config: this.verifyModelConfig(config.register)
-                        };
-                        this._register.regs.on('f_site_energy_year', 'value', (src, value) => {
-                            debug.info(' ---> update: %o (%o)', value, src);
-                        });
+                for (const mn of FroniusSymo.MODELNAMES) {
+                    if (!config || !(<any>config)[mn] || (<any>config)[mn].disabled) { continue; }
+                    const x: IMyFroniusSymoModel = {
+                        nextPollingAt: Date.now(),
+                        regs: null,
+                        config: this.verifyModelConfig((<any>config)[mn])
+                    };
+                    switch (mn) {
+                        case 'register':          x.regs = FroniusSymoModelRegister.createInstance(); break;
+                        case 'common':            x.regs = FroniusSymoModelCommon.createInstance(); break;
+                        case 'inverter':          x.regs = FroniusSymoModelInverter.createInstance(); break;
+                        case 'nameplate':         x.regs = FroniusSymoModelNameplate.createInstance(); break;
+                        case 'settings':          x.regs = FroniusSymoModelSettings.createInstance(); break;
+                        case 'status':            x.regs = FroniusSymoModelStatus.createInstance(); break;
+                        case 'control':           x.regs = FroniusSymoModelControl.createInstance(); break;
+                        case 'storage':           x.regs = FroniusSymoModelStorage.createInstance(); break;
+                        case 'inverterExtension': x.regs = FroniusSymoModelInverterExtension.createInstance(); break;
+                        default: {
+                            throw new Error('unsupported modelname ' + mn);
+                        }
                     }
-                } catch (err) {
-                    throw new FroniusSymoError('invalid config.register', err);
-                }
-                try {
-                    if (config.common && !config.common.disabled) {
-                        this._common = {
-                            nextPollingAt: null,
-                            regs: FroniusSymoModelCommon.createInstance(),
-                            config: this.verifyModelConfig(config.common)
-                        };
-                    }
-                    this._common.regs.on('all', 'value', (src, value) => {
-                        debug.info(' ---> update: %o (%o)', value, src);
+                    (<any>this)['_' + mn] = x;
+                    x.regs.on('all', 'update', (src, v) => {
+                        debug.fine(' ---> %o\n%o', v, src);
                     });
 
-                } catch (err) {
-                    throw new FroniusSymoError('invalid config.common', err);
+                }
+                if (this._status) {
+                    this._status.regs.on('all', 'update', (src, v) => {
+                        debug.fine(' ---> %o\n%o', v, src);
+                    });
                 }
             }
             this._config = config;
@@ -112,14 +128,13 @@ export class FroniusSymo extends ModbusTcpDevice {
         if (this._timer) { throw new Error('FroniusSymo already started'); }
         if (this._config.disabled) { return; }
         let dt;
-        if (this._register && this._register.config.pollingMillis > 0) {
-            dt = dt === undefined ? this._register.config.pollingMillis : this.greatestCommonDivider(this._register.config.pollingMillis, dt);
-            this._register.nextPollingAt = Date.now();
+        for (const mn of FroniusSymo.MODELNAMES) {
+            const x = <IMyFroniusSymoModel>(<any>this)['_' + mn];
+            if (!x || !x.config || !(x.config.pollingMillis > 0)) { continue; }
+            dt = dt === undefined ? x.config.pollingMillis : this.greatestCommonDivider(x.config.pollingMillis, dt);
+            x.nextPollingAt = Date.now();
         }
-        if (this._common && this._common.config.pollingMillis > 0) {
-            dt = dt === undefined ? this._common.config.pollingMillis : this.greatestCommonDivider(this._common.config.pollingMillis, dt);
-            this._common.nextPollingAt = Date.now();
-        }
+
         if (!(dt >= 100)) { throw new Error('invalid dt ' + dt ); }
         this._timer = setInterval( () => this.handleTimer(), dt);
         if (!this._gateway.isConnected) {
@@ -207,8 +222,14 @@ export class FroniusSymo extends ModbusTcpDevice {
                 const values = m.response.getValues();
                 debug.finest('update with idStart=%d, values=%o at=%o', startId, values, m.response.at);
                 regs.updateValues(startId, values, m.response.at);
-                this._register.regs.updateValues(startId, startId  + values.length - 1);
-                this._common.regs.updateValues(startId, startId  + values.length - 1);
+                if (this._register)          { this._register.regs.updateValues(startId, startId  + values.length - 1); }
+                if (this._common)            { this._common.regs.updateValues(startId, startId  + values.length - 1); }
+                if (this._inverter)          { this._inverter.regs.updateValues(startId, startId  + values.length - 1); }
+                if (this._nameplate)         { this._nameplate.regs.updateValues(startId, startId  + values.length - 1); }
+                if (this._settings)          { this._settings.regs.updateValues(startId, startId  + values.length - 1); }
+                if (this._status)            { this._status.regs.updateValues(startId, startId  + values.length - 1); }
+                if (this._control)           { this._control.regs.updateValues(startId, startId  + values.length - 1); }
+                if (this._inverterExtension) { this._inverterExtension.regs.updateValues(startId, startId  + values.length - 1); }
             } catch (err) {
                 rv.push( err instanceof Error ? err : new Error('modbus transaction fails') );
             }
@@ -216,9 +237,6 @@ export class FroniusSymo extends ModbusTcpDevice {
         return rv;
     }
 
-    private refreshRegisters (regs: RegisterValues, modbus: ModbusTransaction []) {
-
-    }
 
     private async handleTimer () {
         try {
@@ -226,6 +244,37 @@ export class FroniusSymo extends ModbusTcpDevice {
             debug.fine('handleTimer()');
             if (!this._gateway.isConnected) {
                 await this._gateway.start();
+            }
+
+            for (const mn of FroniusSymo.MODELNAMES) {
+                const x = <IMyFroniusSymoModel>(<any>this)['_' + mn];
+                if (!x || !x.config || !(x.config.pollingMillis > 0)) { continue; }
+                try {
+                    if (x.nextPollingAt <= Date.now()) {
+                        debug.finer('update FroniusSymo %s model now...', mn);
+                        x.nextPollingAt = now + x.config.pollingMillis;
+                        this.readRegisters(x.regs.registerValues, x.config.timeoutMillis).then( (rv) => {
+                            let ok = true;
+                            for (let i = 0; i < rv.length; i++) {
+                                const r = rv[i];
+                                if (r instanceof Error) {
+                                    debug.warn('updating FroniusSymo register model fails on part %d/%d\n%e', i + 1, rv.length, r);
+                                    ok = false;
+                                } else {
+                                    debug.fine(' --> reading FroniusSymo %s model regs (%d/%d) ok: %o -> %o',
+                                               mn, i + 1, rv.length, r.request.pdu, r.response.pdu);
+                                }
+                            }
+                        }).catch( (err) => {
+                            debug.warn('updating FroniusSymo %s fails\n%e', mn, err);
+                        });
+                    }
+
+                } catch (err) {
+                    debug.warn('polling FroniusSymo %s fails\n%e', mn, err);
+                    this._register.regs.invalidiateValues();
+                }
+
             }
 
             try {
@@ -244,17 +293,13 @@ export class FroniusSymo extends ModbusTcpDevice {
                                            i + 1, rv.length, x.request.pdu, x.response.pdu);
                             }
                         }
-                        if (!ok) {
-                            throw new Error('reading from modbus fails');
-                        } else {
-                            this.refreshRegisters(this._register.regs.registerValues, <ModbusTransaction []>rv);
-                        }
                     }).catch( (err) => {
                         debug.warn('updating FroniusSymo register fails\n%e', err);
                     });
                 }
             } catch (err) {
                 debug.warn('polling FroniusSymo register fails\n%e', err);
+                this._register.regs.invalidiateValues();
             }
 
             try {
@@ -275,7 +320,51 @@ export class FroniusSymo extends ModbusTcpDevice {
                 }
             } catch (err) {
                 debug.warn('polling FroniusSymo common fails\n%e', err);
+                this._common.regs.invalidiateValues();
             }
+
+            try {
+                if (this._inverter && this._inverter.nextPollingAt <= Date.now()) {
+                    debug.finer('update FroniusSymo inverter model now...');
+                    this._inverter.nextPollingAt = now + this._inverter.config.pollingMillis;
+                    this.readRegisters(this._inverter.regs.registerValues, this._inverter.config.timeoutMillis).then( (rv) => {
+                        for (const x of rv) {
+                            if (x instanceof Error) {
+                                debug.warn('updating FroniusSymo inverter model fails\n%e', x);
+                            } else {
+                                debug.info(' --> polling inverter ok: %o -> %o', x.request.pdu, x.response.pdu);
+                            }
+                        }
+                    }).catch( (err) => {
+                        debug.warn('polling FroniusSymo inverter fails\n%e', err);
+                        this._inverter.regs.invalidiateValues();
+                    });
+                }
+            } catch (err) {
+                debug.warn('polling FroniusSymo inverter fails\n%e', err);
+            }
+
+            try {
+                if (this._nameplate && this._nameplate.nextPollingAt <= Date.now()) {
+                    debug.finer('update FroniusSymo nameplate model now...');
+                    this._nameplate.nextPollingAt = now + this._nameplate.config.pollingMillis;
+                    this.readRegisters(this._nameplate.regs.registerValues, this._nameplate.config.timeoutMillis).then( (rv) => {
+                        for (const x of rv) {
+                            if (x instanceof Error) {
+                                debug.warn('updating FroniusSymo nameplate model fails\n%e', x);
+                            } else {
+                                debug.info(' --> polling nameplate ok: %o -> %o', x.request.pdu, x.response.pdu);
+                            }
+                        }
+                    }).catch( (err) => {
+                        debug.warn('polling FroniusSymo nameplate fails\n%e', err);
+                        this._nameplate.regs.invalidiateValues();
+                    });
+                }
+            } catch (err) {
+                debug.warn('polling FroniusSymo nameplate fails\n%e', err);
+            }
+
 
         } catch (err) {
             debug.warn('handleTimer() fails\n%e', err);
@@ -289,3 +378,8 @@ export class FroniusSymoError extends Error {
     }
 }
 
+interface IMyFroniusSymoModel {
+    nextPollingAt: number;
+    regs: FroniusSymoModel<any, any>;
+    config: IFroniusSymoModelConfig;
+}
