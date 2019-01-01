@@ -39,7 +39,7 @@ export class FroniusSymoModelCommon extends FroniusSymoModel<IFroniusSymoModelCo
 
     public constructor (data: IFroniusSymoModelCommon) {
         try {
-           super(data);
+            super(data, (uid: string) => { return <IRegisterDefinition>(<any>FroniusSymoModbusRegisters.regDefByUid)[uid]; });
         } catch (err) {
             throw new FroniusSymoCommonModelError(data, 'parsing IFroniusSymoModelCommon fails', err);
         }

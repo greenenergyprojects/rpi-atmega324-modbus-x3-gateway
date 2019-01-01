@@ -7,7 +7,6 @@ import * as fs from 'fs';
 import * as nconf from 'nconf';
 import { sprintf } from 'sprintf-js';
 
-import { FroniusMeter } from './devices/fronius-meter';
 import { FroniusSymo } from './devices/fronius-symo';
 import { PiTechnik } from './devices/pi-technik';
 import { Nibe1155 } from './devices/nibe1155';

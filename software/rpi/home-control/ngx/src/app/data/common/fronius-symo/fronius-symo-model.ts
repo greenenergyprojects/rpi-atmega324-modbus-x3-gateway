@@ -4,7 +4,7 @@ import { sprintf } from 'sprintf-js';
 import { CommonLogger } from '../../common-logger';
 import { DataRecord } from '../data-record';
 import { RegisterValues, IRegisterValues } from '../modbus/register-values';
-import { FroniusSymoModbusRegisters, ControlAttributes } from './fronius-symo-modbus-registers';
+// import { FroniusSymoModbusRegisters } from './fronius-symo-modbus-registers';
 import { IRegisterDefinition, RegisterDefinition } from '../modbus/register-definition';
 import { IRegisterBlock } from '../modbus/register-block';
 import { ModbusNumber } from '../modbus/modbus-number';
@@ -20,25 +20,25 @@ export abstract class FroniusSymoModel<T extends IFroniusSymoModel, K> extends D
 
     protected _registerValues: RegisterValues;
     protected _values: { [ label: string ]: ModbusNumber | ModbusString } = {};
+    private   _getDefByUid: (uid: string) => IRegisterDefinition;
 
-
-    public constructor (data: T) {
+    public constructor (data: T, getDefByUid: (uid: string) => IRegisterDefinition) {
         super(data);
+        this._getDefByUid = getDefByUid;
         try {
-            const missing = DataRecord.getMissingAttributes( data, [ 'registerValues' ]);
+            const missing = DataRecord.getMissingAttributes( data, [ 'registerValues']);
             if (missing) {
                 throw new Error('missing attribute ' + missing);
             }
             let attCnt = 0;
             for (const a of Object.getOwnPropertyNames(data)) {
-                if ( a === 'registerValues' ) {
-                    this._registerValues = new RegisterValues(data.registerValues);
-                } else {
-                    throw new Error('attribute ' + a + ' not found in data');
+                switch (a) {
+                    case 'registerValues': this._registerValues = new RegisterValues(data.registerValues); break;
+                    default: throw new Error('attribute ' + a + ' not found in data');
                 }
                 attCnt++;
             }
-            if (attCnt !== Object.getOwnPropertyNames(this).length - 1) {
+            if (attCnt !== Object.getOwnPropertyNames(this).length - 2) {
                 throw new Error('attribute count mismatch');
             }
 
@@ -141,7 +141,12 @@ export abstract class FroniusSymoModel<T extends IFroniusSymoModel, K> extends D
 
 
     private getScaleFactor (uid: string): number {
-        const d = <IRegisterDefinition>(<any>FroniusSymoModbusRegisters.regDefById)[uid];
+        if (!this._getDefByUid) {
+            CommonLogger.warn('getScaleFactor(): uid %s -> no getDefByUid() function, return factor 1.0', uid);
+            return 1.0;
+        }
+        // const d = <IRegisterDefinition>(<any>FroniusSymoModbusRegisters.regDefById)[uid];
+        const d = this._getDefByUid(uid);
         if (!d) {
             CommonLogger.warn('getScaleFactor(): uid %s not know for scalefactor, return factor 1.0', uid);
             return 1.0;
@@ -162,7 +167,7 @@ export abstract class FroniusSymoModel<T extends IFroniusSymoModel, K> extends D
         if (sf.value >= 32768) {
             sf.value = sf.value - 65536;
         }
-        CommonLogger.info('--> scalefactor %s = %d', uid, sf.value);
+        // CommonLogger.info('--> scalefactor %s = %d', uid, sf.value);
         return sf.value;
     }
 

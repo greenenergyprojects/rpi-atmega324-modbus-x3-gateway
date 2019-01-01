@@ -40,7 +40,7 @@ export class FroniusSymoModelNameplate extends FroniusSymoModel<IFroniusSymoMode
 
     public constructor (data: IFroniusSymoModelNameplate) {
         try {
-           super(data);
+            super(data, (uid: string) => { return <IRegisterDefinition>(<any>FroniusSymoModbusRegisters.regDefByUid)[uid]; });
         } catch (err) {
             throw new FroniusSymoModelNameplateError(data, 'parsing IFroniusSymoModelNameplate fails', err);
         }

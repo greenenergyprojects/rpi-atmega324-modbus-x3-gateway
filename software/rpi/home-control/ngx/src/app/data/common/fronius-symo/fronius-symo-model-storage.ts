@@ -38,7 +38,7 @@ export class FroniusSymoModelStorage extends FroniusSymoModel<IFroniusSymoModelS
 
     public constructor (data: IFroniusSymoModelStorage) {
         try {
-           super(data);
+           super(data, (uid: string) => { return <IRegisterDefinition>(<any>FroniusSymoModbusRegisters.regDefByUid)[uid]; });
         } catch (err) {
             throw new FroniusSymoModelStorageError(data, 'parsing IFroniusSymoModelStorage fails', err);
         }

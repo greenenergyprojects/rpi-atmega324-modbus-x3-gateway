@@ -39,7 +39,7 @@ export class FroniusSymoModelInverter extends FroniusSymoModel<IFroniusSymoModel
 
     public constructor (data: IFroniusSymoModelInverter) {
         try {
-           super(data);
+            super(data, (uid: string) => { return <IRegisterDefinition>(<any>FroniusSymoModbusRegisters.regDefByUid)[uid]; });
         } catch (err) {
             throw new FroniusSymoModelInverterError(data, 'parsing IFroniusSymoModelInverter fails', err);
         }

@@ -286,6 +286,8 @@ export class FroniusSymoModbusRegisters {
 
     };
 
+    static regDefByUid = FroniusSymoModbusRegisters.regDefById;
+
     static regDefByLabel: {
         register:          { [ id1 in FroniusRegisterAttributes ]:   IRegisterDefinition },
         common:            { [ id2 in CommonAttributes ]:            IRegisterDefinition },

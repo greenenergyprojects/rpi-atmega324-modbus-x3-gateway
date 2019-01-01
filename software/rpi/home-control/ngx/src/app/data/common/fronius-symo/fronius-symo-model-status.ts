@@ -38,7 +38,7 @@ export class FroniusSymoModelStatus extends FroniusSymoModel<IFroniusSymoModelSt
 
     public constructor (data: IFroniusSymoModelStatus) {
         try {
-           super(data);
+            super(data, (uid: string) => { return <IRegisterDefinition>(<any>FroniusSymoModbusRegisters.regDefByUid)[uid]; });
         } catch (err) {
             throw new FroniusSymoModelStatusError(data, 'parsing IFroniusSymoModelStatus fails', err);
         }

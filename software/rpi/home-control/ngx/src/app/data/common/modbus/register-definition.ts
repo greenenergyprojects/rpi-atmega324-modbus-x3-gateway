@@ -13,7 +13,7 @@ export interface IRegisterDefinition {
     format:       string;
     description:  string;
     type?:        { int?: { factor?: number, scale?: string }, float?: { factor?: number }, string?: { code?: 'utf-8' } };
-    unit?:        '°C' | 's' | 'Wh' | 'W' | 'VA' | 'var' | 'V' | 'A' | 'Hz' | '%';
+    unit?:        '°C' | 's' | 'Wh' | 'VAh' | 'varh' | 'W' | 'VA' | 'var' | 'V' | 'A' | 'Hz' | '%';
     range?:       { min?: number, max?: number, values?: number [], minmax?: { min: number, max: number } [] };
     tooltip?:     { [ lang: string ]: string };
 }

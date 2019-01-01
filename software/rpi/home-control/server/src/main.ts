@@ -76,6 +76,7 @@ import { HotWaterController } from './devices/hot-water-controller';
 import { FroniusSymo } from './devices/fronius-symo';
 import { ModbusDevice } from './devices/modbus-device';
 import { ModbusTcp } from './modbus/modbus-tcp';
+import { FroniusMeterTcp } from './devices/fronius-meter-tcp';
 
 doStartup();
 
@@ -96,8 +97,10 @@ async function doStartup () {
         const nibe1155 = await Nibe1155.createInstance(nconf.get('nibe1155'));
         const hwc = await HotWaterController.createInstance(nconf.get('hot-water-controller'));
         const froniusSymo = new FroniusSymo(nconf.get('froniusSymo'));
+        const gridmeter = new FroniusMeterTcp(nconf.get('gridMeter'));
         ModbusDevice.addInstance(froniusSymo);
         await froniusSymo.start();
+        await gridmeter.start();
         await nibe1155.start();
         await hwc.start();
         await monitor.start();
