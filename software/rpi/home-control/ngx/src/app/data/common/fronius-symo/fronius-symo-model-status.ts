@@ -9,6 +9,7 @@ import { FroniusSymoModbusRegisters, StatusAttributes } from './fronius-symo-mod
 import { RegisterDefinition, IRegisterDefinition } from '../modbus/register-definition';
 import { ModbusNumber } from '../modbus/modbus-number';
 import { IRegisterBlock } from '../modbus/register-block';
+import { ModbusString } from '../modbus/modbus-string';
 
 
 export interface IFroniusSymoModelStatus extends IFroniusSymoModel {
@@ -64,6 +65,42 @@ export class FroniusSymoModelStatus extends FroniusSymoModel<IFroniusSymoModelSt
         const x = <ModbusNumber>this._values.l;
         return  x instanceof ModbusNumber ? x.value : null;
     }
+
+    public get pvConn (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.pvConn;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get storconn (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.storconn;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get ecpconn (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.ecpconn;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get actwh (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.actwh;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get stactctl (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.stactctl;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get tmsrc (): { at: Date, value: string } | null  {
+        const x = <ModbusString>this._values.tmsrc;
+        return  x instanceof ModbusString ? x.value : null;
+    }
+
+    public get tms (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.tms;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
 }
 
 export class FroniusSymoModelStatusError extends Error {

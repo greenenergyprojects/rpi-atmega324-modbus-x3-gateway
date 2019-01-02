@@ -64,6 +64,87 @@ export class FroniusSymoModelControl extends FroniusSymoModel<IFroniusSymoModelC
         const x = <ModbusNumber>this._values.l;
         return  x instanceof ModbusNumber ? x.value : null;
     }
+
+    public get conn_wintms (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.conn_wintms;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get conn_rvrttms (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.conn_rvrttms;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get conn (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.conn;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get wmaxlimpct (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.wmaxlimpct;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get wmaxlimpct_wintms (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.wmaxlimpct_wintms;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get wmaxlimpct_rvrttms (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.wmaxlimpct_rvrttms;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get wmaxlim_ena (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.wmaxlim_ena;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get outpfset (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.outpfset;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get outpfset_wintms (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.outpfset_wintms;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get outpfset_rvrttms (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.outpfset_rvrttms;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get outpfset_ena (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.outpfset_ena;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get varmaxpct (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.varmaxpct;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get varpct_wintms (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.varpct_wintms;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get varpct_rvrttms (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.varpct_rvrttms;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get varpct_mod (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.varpct_mod;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get varpct_ena (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.varpct_ena;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
 }
 
 export class FroniusSymoModelControlError extends Error {

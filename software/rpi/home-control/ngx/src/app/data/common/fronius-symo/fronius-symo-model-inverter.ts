@@ -67,49 +67,146 @@ export class FroniusSymoModelInverter extends FroniusSymoModel<IFroniusSymoModel
         return  x instanceof ModbusNumber ? x.value : null;
     }
 
-// a:      
-// apha:   
-// aphb:   
-// aphc:   
-// a_sf:   
-// ppvphab:
-// ppvphbc:
-// ppvphca:
-// phvpha: 
-// phvphb: 
-// phvphc: 
-// v_sf:   
-// w:      
-// w_sf:   
-// hz:     
-// hz_sf:  
-// va:     
-// va_sf:  
-// var:    
-// var_sf: 
-// pf:     
-// pf_sf:  
-// wh:     
-// wh_sf:  
-// dca:    
-// dca_sf: 
-// dcv:    
-// dcv_sf: 
-// dcw:    
-// dcw_sf: 
-// tmpcab: 
-// tmpsnk: 
-// tmptms: 
-// tmpot:  
-// tmp_sf: 
-// st:     
-// stvnd:  
-// evt1:   
-// evt2:   
-// evtvnd1:
-// evtvnf2:
-// evtvnd3:
-// evtvnd4:
+    public get a (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.a;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get apha (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.apha;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get aphb (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.aphb;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get aphc (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.aphc;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get ppvphab (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.ppvphab;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get ppvphbc (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.ppvphbc;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get ppvphca (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.ppvphca;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get phvpha (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.phvpha;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get phvphb (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.phvphb;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get phvphc (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.phvphc;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get w (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.w;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get hz (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.hz;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get va (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.va;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get var (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.var;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get pf (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.pf;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get wh (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.wh;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get dca (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.dca;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get dcv (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.dcv;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get dcw (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.dcw;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get st (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.st;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get stvnd (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.stvnd;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get evt1 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.evt1;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get evt2 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.evt2;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get evtvnd1 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.evtvnd1;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get evtvnd2 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.evtvnd2;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get evtvnd3 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.evtvnd3;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get evtvnd4 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.evtvnd4;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    // tmpcab
+    // tmpsnk
+    // tmptms
+    // tmpot
+    // tmp_sf
 
 }
 

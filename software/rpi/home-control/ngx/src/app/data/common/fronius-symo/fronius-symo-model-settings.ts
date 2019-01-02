@@ -64,6 +64,47 @@ export class FroniusSymoModelSettings extends FroniusSymoModel<IFroniusSymoModel
         const x = <ModbusNumber>this._values.l;
         return  x instanceof ModbusNumber ? x.value : null;
     }
+
+    public get wmax (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.wmax;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get vref (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.vref;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get vrefofs (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.vrefofs;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get vamax (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.vamax;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get varmaxq1 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.varmaxq1;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get varmaxq4 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.varmaxq4;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get pfminq1 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.pfminq1;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get pfminq4 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.pfminq4;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
 }
 
 export class FroniusSymoModelSettingsError extends Error {

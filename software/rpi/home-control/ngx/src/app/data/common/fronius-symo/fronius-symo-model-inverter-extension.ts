@@ -9,6 +9,7 @@ import { FroniusSymoModbusRegisters, InverterExtensionAttributes } from './froni
 import { RegisterDefinition, IRegisterDefinition } from '../modbus/register-definition';
 import { ModbusNumber } from '../modbus/modbus-number';
 import { IRegisterBlock } from '../modbus/register-block';
+import { ModbusString } from '../modbus/modbus-string';
 
 
 export interface IFroniusSymoModelInverterExtension extends IFroniusSymoModel {
@@ -65,6 +66,108 @@ export class FroniusSymoModelInverterExtension extends FroniusSymoModel<IFronius
         const x = <ModbusNumber>this._values.l;
         return  x instanceof ModbusNumber ? x.value : null;
     }
+
+    public get evt (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.evt;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get n (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.n;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get id_1 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.id_1;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get idstr_1 (): { at: Date, value: string } | null  {
+        const x = <ModbusString>this._values.idstr_1;
+        return  x instanceof ModbusString ? x.value : null;
+    }
+
+    public get dca_1 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.dca_1;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get dcv_1 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.dcv_1;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get dcw_1 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.dcw_1;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get dcwh_1 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.dcwh_1;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get tms_1 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.tms_1;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get dcst_1 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.dcst_1;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get dcevt_1 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.dcevt_1;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get id_2 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.id_2;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get idstr_2 (): { at: Date, value: string } | null  {
+        const x = <ModbusString>this._values.idstr_2;
+        return  x instanceof ModbusString ? x.value : null;
+    }
+
+    public get dca_2 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.dca_2;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get dcv_2 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.dcv_2;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get dcw_2 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.dcw_2;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get dcwh_2 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.dcwh_2;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get tms_2 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.tms_2;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get dcst_2 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.dcst_2;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get dcevt_2 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.dcevt_2;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+
 }
 
 export class FroniusSymoModelInverterExtensionError extends Error {

@@ -68,6 +68,136 @@ export class FroniusSymoModelNameplate extends FroniusSymoModel<IFroniusSymoMode
         return  x instanceof ModbusNumber ? x.value : null;
     }
 
+    public get dertyp (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.dertyp;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get wrtg (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.wrtg;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get wrtg_sf (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.wrtg_sf;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get vatg (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.vatg;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get vatg_sf (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.vatg_sf;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get vartgq1 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.vartgq1;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get vartgq2 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.vartgq2;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get vartgq3 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.vartgq3;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get vartgq4 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.vartgq4;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get vartgx_sf (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.vartgx_sf;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get artg (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.artg;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get artg_sf (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.artg_sf;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get pfrtgq1 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.pfrtgq1;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get pfrtgq2 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.pfrtgq2;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get pfrtgq3 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.pfrtgq3;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get pfrtgq4 (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.pfrtgq4;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get pfrtg_sf (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.pfrtg_sf;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get whrtg (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.whrtg;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get whrtg_sf (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.whrtg_sf;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get ahrrtg (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.ahrrtg;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get ahrrtg_sf (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.ahrrtg_sf;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get maxcharte (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.maxcharte;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get maxcharte_sf (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.maxcharte_sf;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get maxdischarte (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.ahrrtgmaxdischarte_sf;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get maxdischarte_sf (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.maxdischarte_sf;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get pad (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.pad;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
 }
 
 export class FroniusSymoModelNameplateError extends Error {

@@ -7,6 +7,7 @@ import { ModbusDevice } from './modbus-device';
 import { ModbusTcp, ModbusTransaction } from '../modbus/modbus-tcp';
 import { FroniusMeterModel } from '../data/common/fronius-meter/fronius-meter-model';
 import { RegisterValues } from '../data/common/modbus/register-values';
+import { IEnergyMeter, EnergyMeter } from '../data/common/home-control/energy-meter';
 
 export interface IFroniusMeterConfig {
     disabled?:          boolean;
@@ -43,6 +44,7 @@ export class FroniusMeterTcp extends ModbusTcpDevice {
     private _timer: NodeJS.Timer;
     private _nextPollingAt: number;
     private _regs: FroniusMeterModel;
+    private _serialNumber: string;
 
     public constructor (config: IFroniusMeterConfig) {
         super(new ModbusTcp(config), config.modbusAddress);
@@ -84,6 +86,18 @@ export class FroniusMeterTcp extends ModbusTcpDevice {
         if (!this._timer) { return; }
         clearInterval(this._timer);
         this._timer = null;
+    }
+
+    public get serialNumber (): string {
+        return this._serialNumber;
+    }
+
+    public set serialNumber (sn: string) {
+        this._serialNumber = sn;
+    }
+
+    public toEnergyMeter (serialNumber: string, preserveDate = true): EnergyMeter {
+        return this._regs.toEnergyMeter(this._serialNumber || null);
     }
 
 

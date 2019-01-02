@@ -10,7 +10,7 @@ import { RegisterDefinition, IRegisterDefinition } from '../modbus/register-defi
 import { ModbusNumber } from '../modbus/modbus-number';
 import { IRegisterBlock } from '../modbus/register-block';
 import { ModbusString } from '../modbus/modbus-string';
-import { IEnergyMeter } from '../home-control/energy-meter';
+import { IEnergyMeter, EnergyMeter } from '../home-control/energy-meter';
 
 
 export interface IFroniusMeterModel extends IFroniusSymoModel {
@@ -62,7 +62,7 @@ export class FroniusMeterModel extends FroniusSymoModel<IFroniusMeterModel, Fron
     //     return  x instanceof ModbusString ? x.value : null;
     // }
 
-    public toEnergyMeter (serialNumber: string, preserveDate = true): IEnergyMeter {
+    public toEnergyMeter (serialNumber: string, preserveDate = true): EnergyMeter {
         let rv: IEnergyMeter;
         try {
             rv = {
@@ -100,7 +100,7 @@ export class FroniusMeterModel extends FroniusSymoModel<IFroniusMeterModel, Fron
                 energyTotalImported: null,
             };
         }
-        return rv;
+        return new EnergyMeter(rv);
     }
 
     public get id (): { at: Date, value: number } | null {

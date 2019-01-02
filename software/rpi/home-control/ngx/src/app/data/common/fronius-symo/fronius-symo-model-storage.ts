@@ -65,6 +65,56 @@ export class FroniusSymoModelStorage extends FroniusSymoModel<IFroniusSymoModelS
         return  x instanceof ModbusNumber ? x.value : null;
     }
 
+    public get wchamax (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.wchamax;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get wchagra (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.wchagra;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get wdischagra (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.wdischagra;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get storctl_mod (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.storctl_mod;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get minrsvpct (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.minrsvpct;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get chastate (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.chastate;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get chast (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.chast;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get outwrte (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.outwrte;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get inwrte (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.inwrte;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
+    public get chagriset (): { at: Date, value: number } | null {
+        const x = <ModbusNumber>this._values.inwrte;
+        return  x instanceof ModbusNumber ? x.value : null;
+    }
+
 }
 
 export class FroniusSymoModelStorageError extends Error {
