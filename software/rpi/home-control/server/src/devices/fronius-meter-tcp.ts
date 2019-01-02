@@ -53,12 +53,12 @@ export class FroniusMeterTcp extends ModbusTcpDevice {
                 if (!config.host || typeof(config.host) !== 'string') { throw new Error('missing/invalid host'); }
                 if (!(config.port >= 0 && config.port <= 0xffff)) { throw new Error('missing/invalid port'); }
                 if (!(config.modbusAddress >= 1 && config.modbusAddress < 255)) { throw new Error('missing/invalid modbusAddress'); }
-                this._config = config;
                 this._regs = FroniusMeterModel.createInstance();
                 this._regs.on('all', 'update', (src, v) => {
                     debug.info('     ---> %s\n%o', v.value, src);
                 });
             }
+            this._config = config;
         } catch (err) {
             throw new FroniusMeterTcpError('invalid FroniusMeterTcp config', err);
         }

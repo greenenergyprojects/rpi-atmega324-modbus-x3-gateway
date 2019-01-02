@@ -112,10 +112,26 @@ export class ModbusNumber extends ModbusValue<number> {
                 if (this._definition.type.float.factor || this._definition.type.float.factor === 0) {
                     x = x * this._definition.type.float.factor;
                 }
-            } else if (!t || t.int) {
-                // scale factor see http://sunspec.org/wp-content/uploads/2015/06/SunSpec-Information-Models-12041.pdf
-                // valid scale factors: -10 to 10, 0x8000 for not implemented (NaN)
-                if (t && t.int.scale) {
+            } else if (t && t.int) {
+                if (t.int.const) {
+                    if (typeof t.int.const === 'number') {
+                        x = t.int.const;
+                    } else {
+                        switch (t.int.const) {
+                            case 'NaN': x = Number.NaN; break;
+                            case 'POSITIVE_INFINITY': x = Number.POSITIVE_INFINITY; break;
+                            case 'NEGATIVE_INFINITY': x = Number.NEGATIVE_INFINITY; break;
+                            case 'MIN_VALUE':         x = Number.MIN_VALUE; break;
+                            case 'MAX_VALUE':         x = Number.MAX_VALUE; break;
+                            case 'MIN_SAFE_INTEGER':  x = Number.MIN_SAFE_INTEGER; break;
+                            case 'MAX_SAFE_INTEGER':  x = Number.MAX_SAFE_INTEGER; break;
+                            default: throw new Error('invalid type int.const');
+                        }
+                    }
+
+                } else if (t && t.int.scale) {
+                    // scale factor see http://sunspec.org/wp-content/uploads/2015/06/SunSpec-Information-Models-12041.pdf
+                    // valid scale factors: -10 to 10, 0x8000 for not implemented (NaN)
                     let sf: number;
                     try {
                         sf = this._getScaleFactor(this._definition.type.int.scale);

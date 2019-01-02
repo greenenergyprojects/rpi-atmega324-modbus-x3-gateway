@@ -85,8 +85,10 @@ export class FroniusSymo extends ModbusTcpDevice {
                 if (!config.host || typeof(config.host) !== 'string') { throw new Error('missing/invalid host'); }
                 if (!(config.port >= 0 && config.port <= 0xffff)) { throw new Error('missing/invalid port'); }
                 if (!(config.modbusAddress >= 1 && config.modbusAddress < 255)) { throw new Error('missing/invalid modbusAddress'); }
+                config.disabled = true;
                 for (const mn of FroniusSymo.MODELNAMES) {
                     if (!config || !(<any>config)[mn] || (<any>config)[mn].disabled) { continue; }
+                    config.disabled = false;
                     const x: IMyFroniusSymoModel = {
                         nextPollingAt: Date.now(),
                         regs: null,
@@ -112,11 +114,11 @@ export class FroniusSymo extends ModbusTcpDevice {
                     });
 
                 }
-                if (this._status) {
-                    this._status.regs.on('all', 'update', (src, v) => {
-                        debug.fine(' ---> %o\n%o', v, src);
-                    });
-                }
+                // if (this._status) {
+                //     this._status.regs.on('all', 'update', (src, v) => {
+                //         debug.fine(' ---> %o\n%o', v, src);
+                //     });
+                // }
             }
             this._config = config;
         } catch (err) {
@@ -139,8 +141,10 @@ export class FroniusSymo extends ModbusTcpDevice {
         this._timer = setInterval( () => this.handleTimer(), dt);
         if (!this._gateway.isConnected) {
             process.nextTick( () => {
-                this._gateway.start().catch( (err) => {
-                    debug.warn('connecting FroniusSymo fails\n%e', err);
+                this._gateway.start().then( () => {
+                    process.nextTick( () => { this.handleTimer(); });
+                }).catch( (err) => {
+                    debug.warn('connecting FroniusMeterTcp fails\n%e', err);
                 });
             });
         }
@@ -222,14 +226,12 @@ export class FroniusSymo extends ModbusTcpDevice {
                 const values = m.response.getValues();
                 debug.finest('update with idStart=%d, values=%o at=%o', startId, values, m.response.at);
                 regs.updateValues(startId, values, m.response.at);
-                if (this._register)          { this._register.regs.updateValues(startId, startId  + values.length - 1); }
-                if (this._common)            { this._common.regs.updateValues(startId, startId  + values.length - 1); }
-                if (this._inverter)          { this._inverter.regs.updateValues(startId, startId  + values.length - 1); }
-                if (this._nameplate)         { this._nameplate.regs.updateValues(startId, startId  + values.length - 1); }
-                if (this._settings)          { this._settings.regs.updateValues(startId, startId  + values.length - 1); }
-                if (this._status)            { this._status.regs.updateValues(startId, startId  + values.length - 1); }
-                if (this._control)           { this._control.regs.updateValues(startId, startId  + values.length - 1); }
-                if (this._inverterExtension) { this._inverterExtension.regs.updateValues(startId, startId  + values.length - 1); }
+                for (const mn of FroniusSymo.MODELNAMES) {
+                    const x = <IMyFroniusSymoModel>(<any>this)['_' + mn];
+                    if (x && x.regs) {
+                        x.regs.updateValues(startId, startId  + values.length - 1);
+                    }
+                }
             } catch (err) {
                 rv.push( err instanceof Error ? err : new Error('modbus transaction fails') );
             }
