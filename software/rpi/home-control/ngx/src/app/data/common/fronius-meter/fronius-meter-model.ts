@@ -80,11 +80,11 @@ export class FroniusMeterModel extends FroniusSymoModel<IFroniusMeterModel, Fron
                 energyTotal:         this.totwhimp.value - this.totwhexp.value,
                 energyTotalExported: this.totwhexp.value,
                 energyTotalImported: this.totwhimp.value,
-            }
+            };
         } catch (err) {
             CommonLogger.warn('toEnergyMeter() fails\n%e', err);
             rv = {
-                createdAt:           null,
+                createdAt:           new Date(),
                 manufacturer:        'Fronius',
                 type:                'Smartmeter 63A-3',
                 serial:              serialNumber,

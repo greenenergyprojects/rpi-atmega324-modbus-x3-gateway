@@ -136,6 +136,13 @@ export abstract class FroniusSymoModel<T extends IFroniusSymoModel, K> extends D
         }
     }
 
+    public getMaxDeltaTimeMillis (model: FroniusSymoModel<any, any>): number | null {
+        if (!this._registerValues || !model._registerValues) {
+            return null;
+        }
+        return this._registerValues.getMaxDeltaTimeMillis(model._registerValues);
+    }
+
     protected abstract getDefintion (): { [ id: string ]: IRegisterDefinition };
 
 

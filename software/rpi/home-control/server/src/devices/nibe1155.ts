@@ -7,6 +7,8 @@ import * as http from 'http';
 import { INibe1155Value, Nibe1155Value } from '../data/common/nibe1155/nibe1155-value';
 import { IHttpGetDataMonitorQuery, IHttpGetDataMonitorResponse } from '../data/common/nibe1155/server-http';
 import { Nibe1155Controller, HeatpumpControllerMode, INibe1155Controller } from '../data/common/nibe1155/nibe1155-controller';
+// import { MonitorRecordNibe1155, IMonitorRecordNibe1155 } from '../data/common/home-control/monitor-record-nibe1155';
+import { INibe1155MonitorRecord } from '../data/common/nibe1155/nibe1155-monitor-record';
 
 
 interface INibe1155Config {
@@ -78,6 +80,22 @@ export class Nibe1155 {
         clearInterval(this._timer);
         this._timer = null;
         debug.info('periodic polling stopped');
+    }
+
+    public toObject (preserveDate = true): INibe1155MonitorRecord {
+        const rv: INibe1155MonitorRecord = {
+            createdAt: new Date(),
+            values:    {}
+        };
+        if (this._controller) { rv.controller = this._controller.toObject(preserveDate); }
+        if (Array.isArray(this._logsetIds) && this._logsetIds.length > 0) {
+            rv.logsetIds = this._logsetIds;
+        }
+        const ids = Object.getOwnPropertyNames(this._values);
+        ids.forEach( (id) => {
+            (<any>rv.values)[id] = (<any>this._values)[id].toObject(preserveDate);
+        });
+        return rv;
     }
 
     public get logsetIds (): number [] {

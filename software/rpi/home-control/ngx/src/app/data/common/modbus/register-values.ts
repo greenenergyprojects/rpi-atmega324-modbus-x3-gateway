@@ -93,17 +93,6 @@ export class RegisterValues extends DataRecord<IRegisterValues> {
         return false;
     }
 
-    // public areValuesEqual (o: IRegisterValues) {
-    //     if (!o || !Array.isArray(o.regBlocks)) { return false; }
-    //     const ids = Object.getOwnPropertyNames(o.values);
-    //     if (ids.length !== this.ids.length) { return false; }
-    //     for (const idStr of ids) {
-    //         const v1 = this._values[+idStr];
-    //         const v2 = this._values[+idStr];
-    //         if (v1 !== v2) { return false; }
-    //     }
-    //     return true;
-    // }
 
     public getValue (id: number): { at: Date, value: number | null } | null | undefined {
         for (const rb of this._regBlocks) {
@@ -123,6 +112,39 @@ export class RegisterValues extends DataRecord<IRegisterValues> {
         }
         throw new Error('id mismatch, register block with firstId=' + firstId + ' not found');
     }
+
+
+    public getMaxDeltaTimeMillis (r: RegisterValues): number | null {
+        if (r === this) { return 0; }
+        if (!(r instanceof RegisterValues)) { return null; }
+        if (!Array.isArray(this._regBlocks) || this._regBlocks.length < 1) { return null; }
+        if (!Array.isArray(r._regBlocks) || r._regBlocks.length < 1) { return null; }
+        let min = null;
+        let max = null;
+        for (const rb of this._regBlocks) {
+            if (!min || (rb.at && rb.at.getTime() < min.getTime()) ) {
+                min = rb.at;
+            }
+            if (!max || (rb.at && rb.at.getTime() > max.getTime()) ) {
+                max = rb.at;
+            }
+        }
+        for (const rb of r._regBlocks) {
+            if (!min || (rb.at && rb.at.getTime() < min.getTime()) ) {
+                min = rb.at;
+            }
+            if (!max || (rb.at && rb.at.getTime() > max.getTime()) ) {
+                max = rb.at;
+            }
+        }
+        if (!(min instanceof Date && max instanceof Date)) {
+            return null;
+        }
+
+        return Math.abs(max.getTime() - min.getTime());
+    }
+
+
 
 }
 

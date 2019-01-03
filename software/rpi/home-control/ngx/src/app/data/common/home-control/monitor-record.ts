@@ -3,15 +3,16 @@ import { DataRecord } from '../data-record';
 
 import { IFroniusSymo, FroniusSymo } from '../fronius-symo/fronius-symo';
 import { IEnergyMeter, EnergyMeter } from './energy-meter';
-import { IMonitorRecordNibe1155, MonitorRecordNibe1155 } from './monitor-record-nibe1155';
+// import { IMonitorRecordNibe1155, MonitorRecordNibe1155 } from './monitor-record-nibe1155';
 import { IMonitorRecordBoiler, MonitorRecordBoiler } from './monitor-record-boiler';
 import { ICalculated, Calculated } from './calculated';
+import { INibe1155MonitorRecord, Nibe1155MonitorRecord } from '../nibe1155/nibe1155-monitor-record';
 
 export interface IMonitorRecord {
     createdAt:    Date | number | string;
     froniussymo?: IFroniusSymo;
     gridmeter?:   IEnergyMeter;
-    nibe1155?:    IMonitorRecordNibe1155;
+    nibe1155?:    INibe1155MonitorRecord;
     calculated?:  ICalculated;
     boiler?:      IMonitorRecordBoiler;
     extPvMeter?:  { [ name: string ]: IEnergyMeter };
@@ -22,7 +23,7 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
     private _createdAt:    Date;
     private _froniussymo?: FroniusSymo;
     private _gridmeter?:   EnergyMeter;
-    private _nibe1155?:    MonitorRecordNibe1155;
+    private _nibe1155?:    Nibe1155MonitorRecord;
     private _boiler?:      MonitorRecordBoiler;
     private _calculated?:  Calculated;
     private _extPvMeter?:  { [ name: string ]: EnergyMeter };
@@ -31,7 +32,7 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
     constructor (data: IMonitorRecord) {
         super(data);
         try {
-            const missing = DataRecord.getMissingAttributes( data, [ 'startedAt', 'endedAt', 'energyWattHours' ]);
+            const missing = DataRecord.getMissingAttributes( data, [ 'createdAt' ]);
             if (missing) {
                 throw new Error('missing attribute ' + missing);
             }
@@ -41,7 +42,7 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
                     case 'createdAt':   this._createdAt = DataRecord.parseDate(data, { attribute: a, validate: true } ); break;
                     case 'froniussymo': this._froniussymo = new FroniusSymo(data[a]); break;
                     case 'gridmeter':   this._gridmeter = new EnergyMeter(data[a]); break;
-                    case 'nibe1155':    this._nibe1155 = new MonitorRecordNibe1155(data[a]); break;
+                    case 'nibe1155':    this._nibe1155 = new Nibe1155MonitorRecord(data[a]); break;
                     case 'boiler':      this._boiler = new MonitorRecordBoiler(data[a]); break;
                     case 'calculated':  this._calculated = new Calculated(data[a]); break;
                     case 'extPvMeter': {
@@ -93,7 +94,7 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
         return this._gridmeter;
     }
 
-    public get nibe1155 ():  MonitorRecordNibe1155 | undefined {
+    public get nibe1155 ():  Nibe1155MonitorRecord | undefined {
         return this._nibe1155;
     }
 

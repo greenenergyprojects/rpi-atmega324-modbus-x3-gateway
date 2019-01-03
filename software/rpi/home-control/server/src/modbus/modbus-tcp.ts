@@ -77,7 +77,7 @@ export class ModbusTcp {
         b[9] = (addr - 1) & 0xff;
         b[10] = (quantity >> 8) & 0xff;
         b[11] = quantity & 0xff;
-        debug.fine('Read %d Hold registers from devId/addr=%d/%d (timeout=%d)\nsending: %o', quantity, devId, addr, timeoutMillis, b);
+        debug.finer('Read %d Hold registers from devId/addr=%d/%d (timeout=%d)\nsending: %o', quantity, devId, addr, timeoutMillis, b);
 
         return this._connection.send(b, timeoutMillis);
     }
@@ -577,7 +577,7 @@ class ModbusTcpConnection {
         return new Promise<void>( (res, rej) => {
             this._connectionReject = rej;
             this._socket.connect(this._port, this._host, () => {
-                debug.fine('%s: socket %s:%s to %s:%s opened',
+                debug.finer('%s: socket %s:%s to %s:%s opened',
                             this._name, this._socket.localAddress, this._socket.localPort, this._host, this._port);
                 this._connectionReject = null;
                 res();
@@ -663,7 +663,7 @@ class ModbusTcpConnection {
     }
 
     private handleEnd () {
-        debug.fine('%s handleEnd()', this._name);
+        debug.finer('%s handleEnd()', this._name);
         // if (this._socket) {
         //     this._socket.destroy();
         // }
@@ -671,7 +671,7 @@ class ModbusTcpConnection {
     }
 
     private handleError (err: any) {
-        debug.fine('%s handleError()\n%o', this._name, err);
+        debug.finer('%s handleError()\n%o', this._name, err);
         debug.warn(err);
         if (this._connectionReject) {
             const r = this._connectionReject;
@@ -689,7 +689,7 @@ class ModbusTcpConnection {
     }
 
     private handleClose () {
-        debug.fine('%s handleClose()\n%o', this._name);
+        debug.finer('%s handleClose()\n%o', this._name);
         if (this._destroyResolve) {
             const r = this._destroyResolve;
             this._destroyResolve = null;

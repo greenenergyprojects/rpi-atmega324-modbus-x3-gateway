@@ -17,6 +17,7 @@ import { FroniusSymoModelControl } from '../data/common/fronius-symo/fronius-sym
 import { FroniusSymoModelStorage } from '../data/common/fronius-symo/fronius-symo-model-storage';
 import { FroniusSymoModelInverterExtension } from '../data/common/fronius-symo/fronius-symo-model-inverter-extension';
 import { FroniusSymoModel } from '../data/common/fronius-symo/fronius-symo-model';
+import { IFroniusSymo } from '../data/common/fronius-symo/fronius-symo';
 
 export interface IFroniusSymoModelConfig {
     disabled?: boolean;
@@ -48,7 +49,7 @@ export class FroniusSymo extends ModbusTcpDevice {
     ];
 
     public static getInstance (id?: string | number): FroniusSymo {
-        id = id.toString();
+        id = id && id.toString();
         let d: ModbusDevice;
         if (id) {
             d = ModbusDevice.getInstance(id);
@@ -109,9 +110,9 @@ export class FroniusSymo extends ModbusTcpDevice {
                         }
                     }
                     (<any>this)['_' + mn] = x;
-                    x.regs.on('all', 'update', (src, v) => {
-                        debug.fine(' ---> %o\n%o', v, src);
-                    });
+                    // x.regs.on('all', 'update', (src, v) => {
+                    //     debug.fine(' ---> %o\n%o', v, src);
+                    // });
 
                 }
                 // if (this._status) {
@@ -155,6 +156,90 @@ export class FroniusSymo extends ModbusTcpDevice {
         clearInterval(this._timer);
         this._timer = null;
     }
+
+    public toObject (preserveDate = true): IFroniusSymo {
+        const rv: IFroniusSymo = {
+            createdAt: new Date()
+        };
+        if (this._register) { rv.register = this._register.regs.toObject(preserveDate); }
+        if (this._common) { rv.common = this._common.regs.toObject(preserveDate); }
+        if (this._inverter) { rv.inverter = this._inverter.regs.toObject(preserveDate); }
+        if (this._nameplate) { rv.nameplate = this._nameplate.regs.toObject(preserveDate); }
+        if (this._settings) { rv.settings = this._settings.regs.toObject(preserveDate); }
+        if (this._status) { rv.status = this._status.regs.toObject(preserveDate); }
+        if (this._control) { rv.control = this._control.regs.toObject(preserveDate); }
+        if (this._storage) { rv.storage = this._storage.regs.toObject(preserveDate); }
+        if (this._inverterExtension) { rv.inverterExtension = this._inverterExtension.regs.toObject(preserveDate); }
+        return rv;
+    }
+
+    public get register (): FroniusSymoModelRegister {
+        return this._register ? this._register.regs : null;
+    }
+
+    public get common (): FroniusSymoModelCommon {
+        return this._common ? this._common.regs : null;
+    }
+
+    public get inverter (): FroniusSymoModelInverter {
+        return this._inverter ? this._inverter.regs : null;
+    }
+
+    public get nameplate (): FroniusSymoModelNameplate {
+        return this._nameplate ? this._nameplate.regs : null;
+    }
+
+    public get settings (): FroniusSymoModelSettings {
+        return this._settings ? this._settings.regs : null;
+    }
+
+    public get status (): FroniusSymoModelStatus {
+        return this._status ? this._status.regs : null;
+    }
+
+    public get control (): FroniusSymoModelControl {
+        return this._control ? this._control.regs : null;
+    }
+
+    public get storage (): FroniusSymoModelStorage {
+        return this._storage ? this._storage.regs : null;
+    }
+
+    public get inverterExtension (): FroniusSymoModelInverterExtension {
+        return this._inverterExtension ? this._inverterExtension.regs : null;
+    }
+
+    // ************************************************************************
+
+    public getPvSouthActivePower (): { at: Date, value: number } | null {
+        if (!this._inverterExtension || !this._inverterExtension.regs) { return null; }
+        return this._inverterExtension.regs.getPvSouthActivePower();
+    }
+
+    public getBatteryActivePower (): { at: Date, value: number } | null {
+        if (!this._inverterExtension || !this._inverterExtension.regs) { return null; }
+        if (!this._inverter || !this._inverter.regs) { return null; }
+        const dt = this._inverter.regs.getMaxDeltaTimeMillis(this._inverterExtension.regs);
+        if (!(dt >= 0 && dt <= 2000)) {
+            debug.warn('getBatteryActivePower() fails, values out of sync (%d)', dt);
+            return null;
+        }
+        // const pInv = this._inverter.regs.pf.at ? this._inverter.regs.pf.value : null;
+        const pInv = this._inverter.regs.dcw.at ? this._inverter.regs.dcw.value : null;
+        let pBatt = this._inverterExtension.regs.dcw_2.at ? this._inverterExtension.regs.dcw_2.value : null;
+        const pPvSouth = this._inverterExtension.regs.dcw_1.at ? this._inverterExtension.regs.dcw_1.value : null;
+        if (pInv === null || pBatt === null || pPvSouth === null) { return null; }
+
+        if (pPvSouth > pInv) {
+            pBatt = -pBatt;
+        }
+
+        debug.fine('-----------> getBatteryActivePower() => %d (PInv=%d, String1=%d, String2=%d)', pBatt, pInv, pPvSouth, pBatt);
+        return { at: this._inverterExtension.regs.dcw_2.at, value: pBatt };
+    }
+
+
+    // ************************************************************************
 
     private greatestCommonDivider (a: number, b: number): number {
         if (!(a > 0 && b >= 0)) { throw new Error('illegal arguments'); }
@@ -243,7 +328,7 @@ export class FroniusSymo extends ModbusTcpDevice {
     private async handleTimer () {
         try {
             const now = Date.now();
-            debug.fine('handleTimer()');
+            debug.finest('handleTimer()');
             if (!this._gateway.isConnected) {
                 await this._gateway.start();
             }
@@ -263,8 +348,8 @@ export class FroniusSymo extends ModbusTcpDevice {
                                     debug.warn('updating FroniusSymo register model fails on part %d/%d\n%e', i + 1, rv.length, r);
                                     ok = false;
                                 } else {
-                                    debug.fine(' --> reading FroniusSymo %s model regs (%d/%d) ok: %o -> %o',
-                                               mn, i + 1, rv.length, r.request.pdu, r.response.pdu);
+                                    debug.finer(' --> reading FroniusSymo %s model regs (%d/%d) ok: %o -> %o',
+                                                mn, i + 1, rv.length, r.request.pdu, r.response.pdu);
                                 }
                             }
                         }).catch( (err) => {

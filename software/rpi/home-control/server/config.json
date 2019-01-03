@@ -26,27 +26,27 @@
         "host": "192.168.1.180",
         "port": "502",
         "modbusAddress": 1,
-        "register":          { "disabled": true, "pollingMillis": 10000, "timeoutMillis": 5000 },
-        "common":            { "disabled": true, "pollingMillis": 11000, "timeoutMillis": 5000 },
-        "inverter":          { "disabled": true, "pollingMillis":  2000, "timeoutMillis": 5000 },
-        "nameplate":         { "disabled": true, "pollingMillis": 12000, "timeoutMillis": 5000 },
-        "settings":          { "disabled": true, "pollingMillis":  5000, "timeoutMillis": 5000 },
-        "status":            { "disabled": true, "pollingMillis":  2000, "timeoutMillis": 5000 },
-        "control":           { "disabled": true, "pollingMillis":  2000, "timeoutMillis": 5000 },
+        "register":          { "disabled": true, "pollingMillis": 55000, "timeoutMillis": 5000 },
+        "common":            { "disabled": true, "pollingMillis": 56000, "timeoutMillis": 5000 },
+        "inverter":          { "disabled": false, "pollingMillis":  2000, "timeoutMillis": 5000 },
+        "nameplate":         { "disabled": true, "pollingMillis": 57000, "timeoutMillis": 5000 },
+        "settings":          { "disabled": true, "pollingMillis":  3000, "timeoutMillis": 5000 },
+        "status":            { "disabled": true, "pollingMillis":  3000, "timeoutMillis": 5000 },
+        "control":           { "disabled": true, "pollingMillis":  3000, "timeoutMillis": 5000 },
         "storage":           { "disabled": true, "pollingMillis":  2000, "timeoutMillis": 5000 },
         "inverterExtension": { "disabled": false, "pollingMillis":  2000, "timeoutMillis": 5000 }
     },
     "gridMeter": {
-        "disabled": true,
+        "disabled": false,
         "host": "192.168.1.180",
         "port": "502",
         "type": "froniusmeter",
         "modbusAddress": 240,
-        "pollingMillis": 5000,
+        "pollingMillis": 1000,
         "timeoutMillis": 5000
     },
     "monitor": {
-        "disabled": true,
+        "disabled": false,
         "periodMillis": 1000,
         "timeOffset": { "sec": 1, "ms": 0 },
         "froniusPeriodMillis": 2000,
@@ -62,10 +62,12 @@
         "csvfile": { "filename": "/var/lib/home-control/home-control-data_%Y-%M-%D.csv" }
     },
     "pi-technik": {
-        "disabled": true,
+        "disabled": false,
         "host": "192.168.1.4",
         "port": 80,
-        "path": "/data"
+        "path": "/data",
+        "pollingMillis": 2000,
+        "timeoutMillis": 1000
     },
     "nibe1155": {
         "disabled": true,
@@ -86,14 +88,14 @@
         "timeoutMillis": 1000
     },
     "debug": {
-        "depth": 3,
+        "depth": 6 ,
         "colors" : true,
         "wtimediff": 6,
         "time": "ddd, yyyy-mm-dd HH:MM:ss.l",
         "wmodule": 15,
         "wlevel": 6,
         "location": "-*",
-        "enabled": "*::WARN, *::INFO, *::FINE"
+        "enabled": "*::WARN, *::INFO, *::FINE, -devices:FroniusMeterTcp::WARN, -devices:FroniusSymo::WARN"
     },
     "logfile": {
         "fronius14": { "disabled": true, "filename": "/var/log/fronius/device14.log", "namespaces": "*FroniusDevice14::INFO", "locationNamespaces": "-*" }

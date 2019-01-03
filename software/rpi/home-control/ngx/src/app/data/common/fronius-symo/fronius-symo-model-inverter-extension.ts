@@ -167,6 +167,9 @@ export class FroniusSymoModelInverterExtension extends FroniusSymoModel<IFronius
         return  x instanceof ModbusNumber ? x.value : null;
     }
 
+    public getPvSouthActivePower (): { at: Date, value: number } | null {
+        return this.dcw_1;
+    }
 
 }
 

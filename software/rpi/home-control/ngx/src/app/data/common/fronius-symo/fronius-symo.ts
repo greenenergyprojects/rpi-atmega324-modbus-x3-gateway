@@ -15,16 +15,16 @@ import { FroniusSymoModelStorage, IFroniusSymoModelStorage } from './fronius-sym
 import { FroniusSymoModelInverterExtension, IFroniusSymoModelInverterExtension } from './fronius-symo-model-inverter-extension';
 
 export interface IFroniusSymo {
-    createdAt:         Date | number | string;
-    register:          IFroniusSymoModelRegister;
-    common:            IFroniusSymoModelCommon;
-    inverter:          IFroniusSymoModelInverter;
-    nameplate:         IFroniusSymoModelNameplate;
-    settings:          IFroniusSymoModelSettings;
-    status:            IFroniusSymoModelStatus;
-    control:           IFroniusSymoModelControl;
-    storage:           IFroniusSymoModelStorage;
-    inverterExtension: IFroniusSymoModelInverterExtension;
+    createdAt:          Date | number | string;
+    register?:          IFroniusSymoModelRegister;
+    common?:            IFroniusSymoModelCommon;
+    inverter?:          IFroniusSymoModelInverter;
+    nameplate?:         IFroniusSymoModelNameplate;
+    settings?:          IFroniusSymoModelSettings;
+    status?:            IFroniusSymoModelStatus;
+    control?:           IFroniusSymoModelControl;
+    storage?:           IFroniusSymoModelStorage;
+    inverterExtension?: IFroniusSymoModelInverterExtension;
 }
 
 export class FroniusSymo extends DataRecord<IFroniusSymo> implements IFroniusSymo {
@@ -59,7 +59,7 @@ export class FroniusSymo extends DataRecord<IFroniusSymo> implements IFroniusSym
     public constructor (data: IFroniusSymo) {
         super(data);
         try {
-            const missing = DataRecord.getMissingAttributes( data, [ 'createdAt', 'register', 'common', 'inverter'  ]);
+            const missing = DataRecord.getMissingAttributes( data, [ 'createdAt'  ]);
             if (missing) {
                 throw new Error('missing attribute ' + missing);
             }
@@ -69,13 +69,13 @@ export class FroniusSymo extends DataRecord<IFroniusSymo> implements IFroniusSym
                     case 'createdAt':         this._createdAt         = DataRecord.parseDate(data, { attribute: 'createdAt', validate: true }); break;
                     case 'register':          this._register          = new FroniusSymoModelRegister(data.register); break;
                     case 'common':            this._common            = new FroniusSymoModelCommon(data.common); break;
-                    case 'inverter':          this._inverter          = new FroniusSymoModelInverter(data.common); break;
-                    case 'nameplate':         this._nameplate         = new FroniusSymoModelNameplate(data.common); break;
-                    case 'settings':          this._settings          = new FroniusSymoModelSettings(data.common); break;
-                    case 'status':            this._status            = new FroniusSymoModelStatus(data.common); break;
-                    case 'control':           this._control           = new FroniusSymoModelControl(data.common); break;
-                    case 'storage':           this._storage           = new FroniusSymoModelStorage(data.common); break;
-                    case 'inverterExtension': this._inverterExtension = new FroniusSymoModelInverterExtension(data.common); break;
+                    case 'inverter':          this._inverter          = new FroniusSymoModelInverter(data.inverter); break;
+                    case 'nameplate':         this._nameplate         = new FroniusSymoModelNameplate(data.nameplate); break;
+                    case 'settings':          this._settings          = new FroniusSymoModelSettings(data.settings); break;
+                    case 'status':            this._status            = new FroniusSymoModelStatus(data.status); break;
+                    case 'control':           this._control           = new FroniusSymoModelControl(data.control); break;
+                    case 'storage':           this._storage           = new FroniusSymoModelStorage(data.storage); break;
+                    case 'inverterExtension': this._inverterExtension = new FroniusSymoModelInverterExtension(data.inverterExtension); break;
                     default: throw new Error('attribute ' + a + ' not found in data:IFroniusSymo');
                 }
                 attCnt++;
@@ -91,16 +91,17 @@ export class FroniusSymo extends DataRecord<IFroniusSymo> implements IFroniusSym
     public toObject (preserveDate = true): IFroniusSymo {
         const rv: IFroniusSymo = {
             createdAt: preserveDate ? this._createdAt : this._createdAt.getTime(),
-            register:          this._register.toObject(preserveDate),
-            common:            this._common.toObject(preserveDate),
-            inverter:          this._inverter.toObject(preserveDate),
-            nameplate:         this._nameplate.toObject(preserveDate),
-            settings:          this._settings.toObject(preserveDate),
-            status:            this._status.toObject(preserveDate),
-            control:           this._control.toObject(preserveDate),
-            storage:           this._storage.toObject(preserveDate),
-            inverterExtension: this._inverterExtension.toObject(preserveDate)
         };
+        if (this._register) { rv.register = this._register.toObject(preserveDate); }
+        if (this._common) { rv.common = this._common.toObject(preserveDate); }
+        if (this._inverter) { rv.inverter = this._inverter.toObject(preserveDate); }
+        if (this._nameplate) { rv.nameplate = this._nameplate.toObject(preserveDate); }
+        if (this._settings) { rv.settings = this._settings.toObject(preserveDate); }
+        if (this._status) { rv.status = this._status.toObject(preserveDate); }
+        if (this._control) { rv.control = this._control.toObject(preserveDate); }
+        if (this._storage) { rv.storage = this._storage.toObject(preserveDate); }
+        if (this._inverterExtension) { rv.inverterExtension = this._inverterExtension.toObject(preserveDate); }
+
         return rv;
     }
 

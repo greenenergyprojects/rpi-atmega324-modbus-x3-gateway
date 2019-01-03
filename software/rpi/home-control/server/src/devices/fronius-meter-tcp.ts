@@ -21,7 +21,7 @@ export interface IFroniusMeterConfig {
 export class FroniusMeterTcp extends ModbusTcpDevice {
 
     public static getInstance (id?: string | number): FroniusMeterTcp {
-        id = id.toString();
+        id = id && id.toString();
         let d: ModbusDevice;
         if (id) {
             d = ModbusDevice.getInstance(id);
@@ -54,9 +54,9 @@ export class FroniusMeterTcp extends ModbusTcpDevice {
                 if (!(config.port >= 0 && config.port <= 0xffff)) { throw new Error('missing/invalid port'); }
                 if (!(config.modbusAddress >= 1 && config.modbusAddress < 255)) { throw new Error('missing/invalid modbusAddress'); }
                 this._regs = FroniusMeterModel.createInstance();
-                this._regs.on('all', 'update', (src, v) => {
-                    debug.info('     ---> %s\n%o', v.value, src);
-                });
+                // this._regs.on('all', 'update', (src, v) => {
+                //     debug.info('     ---> %s\n%o', v.value, src);
+                // });
             }
             this._config = config;
         } catch (err) {
@@ -97,7 +97,7 @@ export class FroniusMeterTcp extends ModbusTcpDevice {
     }
 
     public toEnergyMeter (serialNumber: string, preserveDate = true): EnergyMeter {
-        return this._regs.toEnergyMeter(this._serialNumber || null);
+        return this._regs ? this._regs.toEnergyMeter(serialNumber || this._serialNumber || null) : null;
     }
 
 
@@ -152,16 +152,16 @@ export class FroniusMeterTcp extends ModbusTcpDevice {
     private async handleTimer () {
         try {
             const now = Date.now();
-            debug.fine('handleTimer()');
+            debug.finest('handleTimer()');
             if (!this._config || !(this._config.pollingMillis > 0) || this._nextPollingAt > now) {
-                debug.fine('--> skip reading...');
+                debug.finer('--> skip reading...');
                 return;
             }
             while (this._nextPollingAt <= Date.now()) {
                 this._nextPollingAt += this._config.pollingMillis;
             }
             try {
-                debug.fine('  --> read values');
+                debug.finer('  --> read values');
                 if (!this._gateway.isConnected) {
                     debug.finer('no connection established, try to reconnect...');
                     await this._gateway.start();
@@ -174,8 +174,8 @@ export class FroniusMeterTcp extends ModbusTcpDevice {
                             debug.warn('updating FroniusMeter model fails on part %d/%d\n%e', i + 1, rv.length, r);
                             ok = false;
                         } else {
-                            debug.fine(' --> reading FroniusMeter model regs (%d/%d) ok: %o -> %o',
-                                       i + 1, rv.length, r.request.pdu, r.response.pdu);
+                            debug.finer(' --> reading FroniusMeter model regs (%d/%d) ok: %o -> %o',
+                                        i + 1, rv.length, r.request.pdu, r.response.pdu);
                         }
                     }
                 }).catch( (err) => {

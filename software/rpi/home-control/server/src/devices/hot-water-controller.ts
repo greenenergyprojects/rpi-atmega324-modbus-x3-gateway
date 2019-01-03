@@ -21,7 +21,7 @@ interface IHotWaterControllerConfig {
 
 export class HotWaterController {
 
-    public static get Instance (): HotWaterController {
+    public static getInstance (): HotWaterController {
         if (!this._instance) { throw new Error('instance not initialized'); }
         return this._instance;
     }

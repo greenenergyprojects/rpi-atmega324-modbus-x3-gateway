@@ -92,17 +92,19 @@ async function doStartup () {
 
         await startupParallel();
         await Statistics.createInstance(nconf.get('statistics'));
-        await PiTechnik.createInstance(nconf.get('pi-technik'));
+        const piTechnik = await PiTechnik.createInstance(nconf.get('pi-technik'));
         const monitor = await Monitor.createInstance(nconf.get('monitor'));
         const nibe1155 = await Nibe1155.createInstance(nconf.get('nibe1155'));
         const hwc = await HotWaterController.createInstance(nconf.get('hot-water-controller'));
         const froniusSymo = new FroniusSymo(nconf.get('froniusSymo'));
         const gridmeter = new FroniusMeterTcp(nconf.get('gridMeter'));
         ModbusDevice.addInstance(froniusSymo);
+        ModbusDevice.addInstance(gridmeter);
         await froniusSymo.start();
         await gridmeter.start();
         await nibe1155.start();
         await hwc.start();
+        await piTechnik.start();
         await monitor.start();
 
         await startupServer();

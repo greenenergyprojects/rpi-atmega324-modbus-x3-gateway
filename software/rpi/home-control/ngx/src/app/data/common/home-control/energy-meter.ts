@@ -54,7 +54,7 @@ export class EnergyMeter extends DataRecord<IEnergyMeter> implements IEnergyMete
                 } else if ( [ 'numberOfPhases' ].indexOf(a) >= 0 ) {
                     (<any>this)['_' + a] = DataRecord.parseNumber(data, { attribute: a, validate: true, min: 0 } );
                 } else if ( [ 'activePower', 'apparentPower', 'energyTotal', 'energyTotalExported', 'energyTotalImported'  ].indexOf(a) >= 0 ) {
-                    (<any>this)['_' + a] = DataRecord.parseNumber(data, { attribute: a, validate: true, min: 0 } );
+                    (<any>this)['_' + a] = DataRecord.parseNumber(data, { attribute: a } );
                 } else if ( [ 'voltagePxToN', 'voltagePxToPx', , 'activePxPower', , 'apparentPxPower', , 'energyPartitial' ].indexOf(a) >= 0 ) {
                     (<any>this)['_' + a] = DataRecord.parseNumberArray(data, { attribute: a, validate: true } );
                 } else {
@@ -65,19 +65,21 @@ export class EnergyMeter extends DataRecord<IEnergyMeter> implements IEnergyMete
             if (attCnt !== Object.getOwnPropertyNames(this).length) {
                 throw new Error('attribute count mismatch');
             }
-            if (!this._voltagePxToN)    { this._voltagePxToN = []; }
-            if (!this._voltagePxToPx)   { this._voltagePxToPx = []; }
-            if (!this._activePxPower)   { this._activePxPower = []; }
-            if (!this._apparentPxPower) { this._apparentPxPower = []; }
-            if (!this._energyPartitial) { this._energyPartitial = []; }
-            if (this._energyTotalExported === undefined) { this._energyTotalExported = null; }
-            if (this._energyTotalImported === undefined) { this._energyTotalImported = null; }
 
             if (this._numberOfPhases === undefined) {
                 this._numberOfPhases = 0;
             } else if (this._numberOfPhases < 0) {
                 throw new Error('numberOfPhases: illegal value ' + this._numberOfPhases);
             }
+
+            if (!this._voltagePxToN)    { this._voltagePxToN = Array(this._numberOfPhases).fill(null); }
+            if (!this._voltagePxToPx)   { this._voltagePxToPx = Array(this._numberOfPhases).fill(null); }
+            if (!this._activePxPower)   { this._activePxPower = Array(this._numberOfPhases).fill(null); }
+            if (!this._apparentPxPower) { this._apparentPxPower = Array(this._numberOfPhases).fill(null); }
+            if (!this._energyPartitial) { this._energyPartitial = []; }
+            if (this._energyTotalExported === undefined) { this._energyTotalExported = null; }
+            if (this._energyTotalImported === undefined) { this._energyTotalImported = null; }
+
 
             if (this._voltagePxToN.length !== this._numberOfPhases) { throw new Error('voltagePxToN: invalid array length'); }
             if (this._voltagePxToPx.length !== this._numberOfPhases) { throw new Error('voltagePxToPx: invalid array length'); }
