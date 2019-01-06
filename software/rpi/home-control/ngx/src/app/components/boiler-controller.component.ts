@@ -2,9 +2,9 @@ import { Component, Input, OnInit, OnDestroy } from '@angular/core';
 import { DataService } from '../services/data.service';
 import { Subscription } from 'rxjs';
 import { MonitorRecord } from '../data/common/home-control/monitor-record';
-import { MonitorRecord as HwcMonitorRecord } from '../data/common/hwc/monitor-record';
+import { MonitorRecord as HwcMonitorRecord } from '../data/common/hot-water-controller/monitor-record';
 import { ValidatorElement } from '../directives/validator.directive';
-import { ControllerMode } from '../data/common/hwc/boiler-mode';
+import { ControllerMode } from '../data/common/hot-water-controller/boiler-mode';
 
 @Component({
     selector: 'app-boiler-controller',
@@ -117,19 +117,19 @@ export class BoilerControllerComponent implements OnInit, OnDestroy {
     }
 
     private handleMonitorValues (v: MonitorRecord) {
-        const m = v.hwcMonitorRecord;
-        if (!m || (Date.now() - m.createdAt.getTime() > 10000)) {
-            this.currentMode = '?';
-            if (m) {
-                this.currentMode += ' (' + m.createdAt.toLocaleDateString() + ')';
-            }
-        } else {
-            this.currentMode = m.mode;
-            if (!this._lastMonitorRecord) {
-                this._inputPower.validator.value = m.setpointPower.value;
-            }
-            this._lastMonitorRecord = m;
-        }
+        const m = v.boiler;
+        // if (!m || (Date.now() - m.createdAt.getTime() > 10000)) {
+        //     this.currentMode = '?';
+        //     if (m) {
+        //         this.currentMode += ' (' + m.createdAt.toLocaleDateString() + ')';
+        //     }
+        // } else {
+        //     this.currentMode = m.controller.mode;
+        //     if (!this._lastMonitorRecord) {
+        //         this._inputPower.validator.value = m.setpointPower.value;
+        //     }
+        //     this._lastMonitorRecord = m;
+        // }
         // console.log(v.hwcMonitorRecord);
     }
 

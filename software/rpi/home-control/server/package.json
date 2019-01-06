@@ -24,6 +24,7 @@
     "pug": "^2.0.3",
     "rpi-gpio": "^2.1.0",
     "serialport": "^7.1.1",
+    "sha256": "^0.2.0",
     "sprintf-js": "^1.1.1"
   },
   "devDependencies": {

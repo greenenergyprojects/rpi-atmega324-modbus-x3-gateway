@@ -15,6 +15,7 @@ import { Nibe1155Value } from '../data/common/nibe1155/nibe1155-value';
 import * as serverHttp from '../data/common/home-control/server-http';
 import { Nibe1155MonitorRecord } from '../data/common/nibe1155/nibe1155-monitor-record';
 import { Nibe1155ModbusRegisters, Nibe1155ModbusIds } from '../data/common/nibe1155/nibe1155-modbus-registers';
+import { IMonitorRecord } from '../data/common/home-control/monitor-record';
 
 export class RouterData {
 
@@ -193,16 +194,15 @@ export class RouterData {
     private async getMonitorJson (req: express.Request, res: express.Response, next: express.NextFunction) {
         try {
             const monitor = Monitor.getInstance();
-            // const rv: IMonitorRecordRawData [] = [];
-            // if (req.query.latest !== undefined || Object.keys(req.query).length === 0) {
-            //     const d = monitor.latest;
-            //     if (d) {
-            //         rv.push(d.rawData);
-            //     }
-            // }
-            // debug.fine('query %o -> response: %o', req.query, rv);
-            // res.json(rv);
-            res.json({});
+            const rv: IMonitorRecord [] = [];
+            if (req.query.latest !== undefined || Object.keys(req.query).length === 0) {
+                const d = monitor.getLatestMonitorRecord();
+                if (d) {
+                     rv.push(d.toObject());
+                }
+            }
+            debug.finer('query %o -> response: %o', req.query, rv);
+            res.json(rv);
         } catch (err) {
             handleError(err, req, res, next, debug);
         }

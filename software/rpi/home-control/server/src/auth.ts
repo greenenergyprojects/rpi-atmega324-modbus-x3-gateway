@@ -151,7 +151,7 @@ export class Auth {
             const userLogin = <IUserLogin>req.body;
             let authorizedByUserId: string;
             try {
-                DbUser.getInstance().verifyPassword(userLogin.userid, userLogin.password);
+                DbUser.getInstance().verifyPassword(userLogin.userid, userLogin.password, userLogin.passwordType);
                 authorizedByUserId = userLogin.userid;
             } catch (err) {
                 if (Array.isArray(this._config.foreignLogin)) {

@@ -3,34 +3,46 @@ import { CommonLogger } from '../../common-logger';
 import { DataRecord } from '../data-record';
 
 export interface ICalculated {
-    pvSouthEnergyDaily:     number;
-    saiaDe1Offset:          number;
-    froniusSiteDailyOffset: number;
-    eOutDaily:              number;
-    eInDaily:               number;
+    createdAt:             Date | number | string;
+    eOutDaily:             number;
+    eInDaily:              number;
+    batOutDaily:           number;
+    batInDaily:            number;
+    pvSouthEnergy:         number;
+    pvSouthEnergyDaily:    number;
+    pvEastWestEnergyDaily: number;
+    froniusSiteDaily:      number;
 }
 
 export class Calculated extends DataRecord<ICalculated> implements ICalculated {
 
-    private _pvSouthEnergyDaily:     number;
-    private _saiaDe1Offset:          number;
-    private _froniusSiteDailyOffset: number;
-    private _eOutDaily:              number;
-    private _eInDaily:               number;
+    public static ATTRIBUTES = [
+        'createdAt', 'eOutDaily', 'eInDaily', 'batOutDaily', 'batInDaily', 'pvSouthEnergy', 'pvSouthEnergyDaily', 'pvEastWestEnergyDaily', 'froniusSiteDaily'
+    ];
+
+    private _createdAt:             Date;
+    private _eOutDaily:             number;
+    private _eInDaily:              number;
+    private _batOutDaily:           number;
+    private _batInDaily:            number;
+    private _pvSouthEnergy:         number;
+    private _pvSouthEnergyDaily:    number;
+    private _pvEastWestEnergyDaily: number;
+    private _froniusSiteDaily:      number;
 
     constructor (data: ICalculated) {
         super(data);
         try {
-            const missing = DataRecord.getMissingAttributes( data, [
-                'pvSouthEnergyDaily', 'saiaDe1Offset', 'froniusSiteDailyOffset', 'eOutDaily', 'eInDaily'
-            ]);
+            const missing = DataRecord.getMissingAttributes( data, Calculated.ATTRIBUTES);
             if (missing) {
                 throw new Error('missing attribute ' + missing);
             }
             let attCnt = 0;
             for (const a of Object.getOwnPropertyNames(data)) {
-                if ( [ 'pvSouthEnergyDaily', 'saiaDe1Offset', 'froniusSiteDailyOffset', 'eOutDaily', 'eInDaily' ].indexOf(a) >= 0 ) {
-                    (<any>this)['_' + a] = DataRecord.parseNumber(data, { attribute: a, validate: true } );
+                if ( [ 'createdAt' ].indexOf(a) >= 0 ) {
+                    (<any>this)['_' + a] = DataRecord.parseDate(data, { attribute: a, validate: true } );
+                } else if ( Calculated.ATTRIBUTES.indexOf(a) >= 0 ) {
+                    (<any>this)['_' + a] = DataRecord.parseNumber(data, { attribute: a, validate: false } );
                 } else {
                     throw new Error('attribute ' + a + ' not found in data:ICalculated');
                 }
@@ -46,25 +58,21 @@ export class Calculated extends DataRecord<ICalculated> implements ICalculated {
 
     public toObject (preserveDate = true): ICalculated {
         const rv: ICalculated = {
-            pvSouthEnergyDaily:     this._pvSouthEnergyDaily,
-            saiaDe1Offset:          this._saiaDe1Offset,
-            froniusSiteDailyOffset: this._froniusSiteDailyOffset,
+            createdAt:              preserveDate ? this._createdAt : this._createdAt.getTime(),
             eOutDaily:              this._eOutDaily,
-            eInDaily:               this._eInDaily
+            eInDaily:               this._eInDaily,
+            batOutDaily:            this._batOutDaily,
+            batInDaily:             this._batInDaily,
+            pvSouthEnergy:          this._pvSouthEnergy,
+            pvSouthEnergyDaily:     this._pvSouthEnergyDaily,
+            pvEastWestEnergyDaily:  this._pvEastWestEnergyDaily,
+            froniusSiteDaily:       this._froniusSiteDaily
         };
         return rv;
     }
 
-    public get pvSouthEnergyDaily (): number {
-        return this._pvSouthEnergyDaily;
-    }
-
-    public get saiaDe1Offset (): number {
-        return this._saiaDe1Offset;
-    }
-
-    public get froniusSiteDailyOffset (): number {
-        return this._froniusSiteDailyOffset;
+    public get createdAt (): Date {
+        return this._createdAt;
     }
 
     public get eOutDaily (): number {
@@ -74,6 +82,31 @@ export class Calculated extends DataRecord<ICalculated> implements ICalculated {
     public get eInDaily (): number {
         return this._eInDaily;
     }
+
+    public get batOutDaily (): number {
+        return this._batOutDaily;
+    }
+
+    public get batInDaily (): number {
+        return this._batInDaily;
+    }
+
+    public get pvSouthEnergy (): number {
+        return this._pvSouthEnergy;
+    }
+
+    public get pvSouthEnergyDaily (): number {
+        return this._pvSouthEnergyDaily;
+    }
+
+    public get pvEastWestEnergyDaily (): number {
+        return this._pvEastWestEnergyDaily;
+    }
+
+    public get froniusSiteDaily (): number {
+        return this._froniusSiteDaily;
+    }
+
 
 }
 

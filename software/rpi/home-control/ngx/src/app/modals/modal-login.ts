@@ -77,7 +77,7 @@ export class ModalLoginComponent {
     public buttonEyeVisible: boolean;
 
     private _modalReference: NgbModalRef;
-    private _waiting: { res: (result: IUserLogin) => void, rej: (error: any) => void };;
+    private _waiting: { res: (result: IUserLogin) => void, rej: (error: any) => void };
 
     constructor (config: NgbModalConfig, private modalService: NgbModal) {
         // customize default values of modals used by this component tree
@@ -159,77 +159,3 @@ export class ModalLoginComponent {
     }
 
 }
-
-
-//     public show (config?: IModalLoginConfig): Promise<IUserLogin> {
-//         if (this._isVisible) {
-//             return Promise.reject(new Error('Modal dialog already visibl'));
-//         }
-//         this._isVisible = true;
-//         this.title = config.title || 'Authorize';
-//         this.htlid = config.htlid || '';
-//         this.password = '';
-//         this.checkbox = config.checkbox || { visible: false, selected: true, text: 'Stay loggined' };
-//         this.loginButtonText = config.loginButtonText || 'Login';
-//         this.buttonEyeVisible = config.buttonEyeVisible || true;
-//         this.enableHtlid = (this.htlid === '');
-
-//         return new Promise<any> ( (resolve, reject) => {
-//             this._resolve = resolve;
-//             this._reject = reject;
-//             this.childModal.show();
-
-//             // needed beacuse autofocus does not work in modal
-//             // see https://v4-alpha.getbootstrap.com/components/modal/#how-it-works
-//             this.childModal.onShown.subscribe(() => {
-//                 if (this.enableHtlid) {
-//                     this. _inputHtlid.nativeElement.focus();
-//                 } else {
-//                     this. _inputPassword.nativeElement.focus();
-//                 }
-//             });
-
-//         // needed when user clicks escape
-//             this.childModal.onEsc = this.cancel.bind(this);
-
-//             // needed when user hides modal by clicking outside
-//             this.childModal.onHidden.subscribe( () => {
-
-//                 if (!this._isCancelled) {
-//                     this.cancel();
-//                 }
-//             });
-//         });
-//     }
-
-//     public login () {
-//         this.childModal.hide();
-//         this._isVisible = false;
-//         this._resolve( { htlid: this.htlid, password: this.password });
-//     }
-
-//     public cancel (e?) {
-//         this._isCancelled = true;
-//         this.childModal.hide();
-//         this._isVisible = false;
-//         this.htlid = undefined;
-//         this.password = undefined;
-//         this._resolve( { htlid: this.htlid, password: this.password } );
-//     }
-
-// }
-
-
-// export class IModalLoginCheckbox {
-//     visible: boolean;
-//     selected: boolean;
-//     text: string;
-// }
-
-// export class IModalLoginConfig {
-//     title?: string;
-//     htlid?: string;
-//     loginButtonText?: string;
-//     checkbox?: IModalLoginCheckbox;
-//     buttonEyeVisible?: boolean;
-// }

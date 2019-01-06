@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { DataService } from '../services/data.service';
 import { ConfigService } from '../services/config.service';
-import { MonitorRecord, IMonitorRecordData } from '../data/common/home-control/monitor-record';
+import { MonitorRecord, IMonitorRecord } from '../data/common/home-control/monitor-record';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -76,22 +76,22 @@ export class OverviewComponent implements OnInit, OnDestroy {
     private handleMonitorValues (v: MonitorRecord) {
         if (v) {
             this._data = v;
-            this._accordionData.data.infos = this.createAccordionInfo(this._data.toHumanReadableObject());
+            this._accordionData.data.infos = this.createAccordionInfo(this._data.toObject());
         } else {
             this._data = null;
             this._accordionData.data.infos = [];
         }
     }
 
-    public handleMonitorData (data: IMonitorRecordData []) {
+    public handleMonitorData (data: IMonitorRecord []) {
         if (!Array.isArray(data) || data.length === 0) {
             this._data = null;
             this._accordionData.data.infos = [];
 
         } else {
             const v = data[data.length - 1];
-            this._data = MonitorRecord.create(v);
-            this._accordionData.data.infos = this.createAccordionInfo(this._data.toHumanReadableObject());
+            this._data = new MonitorRecord(v);
+            this._accordionData.data.infos = this.createAccordionInfo(this._data.toObject());
         }
     }
 

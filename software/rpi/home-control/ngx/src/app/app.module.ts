@@ -17,6 +17,7 @@ import { BoilerControllerComponent } from './components/boiler-controller.compon
 import { HeatingControllerComponent } from './components/heating-controller.component';
 import { FroniusSymoComponent } from './components/fronius-symo.component';
 import { Nibe1155Component } from './components/nibe1155.component';
+import { TestComponent } from './components/test.component';
 
 import { ConfigService } from './services/config.service';
 import { DataService } from './services/data.service';
@@ -37,7 +38,8 @@ library.add(faEye, faEyeSlash, faSpinner, faSync);
         OverviewComponent, OverviewChartComponent,
         BoilerComponent, BoilerControllerComponent, HeatingControllerComponent,
         FroniusSymoComponent,
-        Nibe1155Component
+        Nibe1155Component,
+        TestComponent
     ],
     imports: [
         BrowserModule,

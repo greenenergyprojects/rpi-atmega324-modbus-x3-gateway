@@ -1,12 +1,16 @@
 import { CommonLogger } from '../../common-logger';
 import { DataRecord } from '../data-record';
 
+import { sprintf } from 'sprintf-js';
 import { IFroniusSymo, FroniusSymo } from '../fronius-symo/fronius-symo';
 import { IEnergyMeter, EnergyMeter } from './energy-meter';
 // import { IMonitorRecordNibe1155, MonitorRecordNibe1155 } from './monitor-record-nibe1155';
 import { IMonitorRecordBoiler, MonitorRecordBoiler } from './monitor-record-boiler';
 import { ICalculated, Calculated } from './calculated';
 import { INibe1155MonitorRecord, Nibe1155MonitorRecord } from '../nibe1155/nibe1155-monitor-record';
+import { FroniusSymoModel } from '../fronius-symo/fronius-symo-model';
+import { FroniusSymoModelInverter } from '../fronius-symo/fronius-symo-model-inverter';
+import { Nibe1155Value } from '../nibe1155/nibe1155-value';
 
 export interface IMonitorRecord {
     createdAt:    Date | number | string;
@@ -108,6 +112,217 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
 
     public get extPvMeter (): { [ name: string ]: EnergyMeter } | undefined {
         return this._extPvMeter;
+    }
+
+    // *****************************************************
+
+    public getGridActivePower (maxAgeSeconds = 10000): number | null {
+        if (!this.gridmeter) { return null; }
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = this._gridmeter.createdAt;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        return this._gridmeter.activePower; // >0 ==> get power from grid, <0 -> feed power to grid
+    }
+
+    public getPvEastWestActivePower (maxAgeSeconds = 10000): number | null {
+        if (!this._extPvMeter) { return null; }
+        const x = <EnergyMeter>this._extPvMeter['pveastwest'];
+        if (!x) { return null; }
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = x.createdAt;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        return x.activePower; // >0 ==> get power from photovoltaik
+    }
+
+    public getPvSouthActivePower (maxAgeSeconds = 10000): number | null {
+        if (!this.froniussymo || !this.froniussymo.inverterExtension) { return null; }
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = this.froniussymo.inverterExtension.dcw_1.at;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        if (this.froniussymo.inverterExtension.dcst_1.value !== 4) { return 0; }
+        return this.froniussymo.inverterExtension.dcw_1.value;
+    }
+
+    public getLoadActivePower (maxAgeSeconds = 10000): number | null {
+        if (!this.gridmeter) { return null; }
+        if (!this.extPvMeter) { return null; }
+        if (!this.froniussymo || !this.froniussymo.inverter) { return null; }
+        const valueInv = this._froniussymo.inverter.w;
+        if (!valueInv) { return null; }
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+
+        let ts = valueInv.at;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        const pInv = valueInv.value;
+
+        ts = this.gridmeter.createdAt;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        const pGrid = this.gridmeter.activePower;
+
+        const pPvEastWest = this.getPvEastWestActivePower();
+        if (pInv === null || pPvEastWest === null || pGrid === null) {
+            return null;
+        }
+
+        const rv = pGrid - pInv - pPvEastWest;
+        // CommonLogger.info(sprintf('--> load: Grid = %7.1fW  Inv=%7.1f  PV-E/W=%7.1fW   ==>  Load = %.1fW', pGrid, pInv, pPvEastWest, rv));
+        return rv; // >= 0W
+    }
+
+
+    public getBatteryPower (maxAgeSeconds = 10000): number | null {
+        if (!this._froniussymo) { return null; }
+        const inv = this._froniussymo.inverter;
+        const invEx = this._froniussymo.inverterExtension;
+        if (!inv || !inv.registerValues || !invEx || !invEx.registerValues) { return null; }
+
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = inv.registerValues.getMinMaxTimeMillis(invEx.registerValues);
+        if (!ts) { return null; }
+        const dt = ts.tMax - ts.tMin;
+        if (!(dt >= 0 && dt <= 2000) || ts.tMin < tMin) { return null; }
+
+        // const pInv = this._inverter.regs.pf.at ? this._inverter.regs.pf.value : null;
+        const pInv = inv.dcw.value;
+        let pBatt = (invEx.dcst_2.value === 4) ? invEx.dcw_2.value : 0;
+        const pPvSouth = invEx.dcw_1.value;
+        if (pInv === null || pBatt === null || pPvSouth === null) { return null; }
+
+        if (pPvSouth > pInv) {
+            pBatt = -pBatt;
+        }
+
+        return pBatt;
+    }
+
+    public getBatteryNominalEnergy (maxAgeSeconds = 10000): number | null {
+        if (!this._froniussymo) { return null; }
+        const np = this._froniussymo.nameplate;
+        if (!np || !np.registerValues) { return null; }
+        const x = np.whrtg;
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = x.at;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        return x.value;
+    }
+
+    public getBatteryEnergyInPercent (maxAgeSeconds = 10000): number | null {
+        if (!this._froniussymo) { return null; }
+        const fronStor = this._froniussymo.storage;
+        if (!fronStor || !fronStor.registerValues) { return null; }
+        const x = fronStor.chastate;
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = x.at;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        return x.value;
+    }
+
+    public getPvActivePower (maxAgeSeconds = 10000): number | null {
+        const p1 = this.getPvSouthActivePower(maxAgeSeconds);
+        const p2 = this.getPvEastWestActivePower(maxAgeSeconds);
+        if (p1 === null || p2 === null) { return null; }
+        return p1 + p2;
+    }
+
+    public getPvEnergyDaily (maxAgeSeconds = 10000): number | null {
+        const e1 = this.getPvEastWestEnergyDaily(maxAgeSeconds);
+        const e2 = this.getPvSouthEnergyDaily(maxAgeSeconds);
+        if (e1 === null || e2 === null) { return null; }
+        return e1 + e2;
+    }
+
+    public getPvSouthEnergyDaily (maxAgeSeconds = 10000): number | null {
+        if (!this._calculated || typeof this._calculated.pvSouthEnergyDaily !== 'number') { return null; }
+        return this._calculated.pvSouthEnergyDaily;
+    }
+
+    public getPvEastWestEnergyDaily (maxAgeSeconds = 10000): number | null {
+        if (!this._calculated || typeof this._calculated.pvSouthEnergyDaily !== 'number') { return null; }
+        return this._calculated.pvEastWestEnergyDaily;
+    }
+
+    public getPvSouthEnergy (maxAgeSeconds = 10000): number | null {
+        if (!this._calculated || typeof this._calculated.pvSouthEnergy !== 'number') { return null; }
+        return this._calculated.pvSouthEnergy;
+    }
+
+    public getEOut (maxAgeSeconds = 10000): number | null {
+        if (!this.gridmeter) { return null; }
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = this.gridmeter.createdAt;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        return this.gridmeter.energyTotalExported;
+    }
+
+    public getEIn (maxAgeSeconds = 10000): number | null {
+        if (!this.gridmeter) { return null; }
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = this.gridmeter.createdAt;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        return this.gridmeter.energyTotalImported;
+
+    }
+
+    public getEOutDaily (maxAgeSeconds = 10000): number | null {
+        if (!this._calculated || typeof this._calculated.eOutDaily !== 'number') { return null; }
+        return this._calculated.eOutDaily;
+    }
+
+    public getEInDaily (maxAgeSeconds = 10000): number | null {
+        if (!this._calculated || typeof this._calculated.eInDaily !== 'number') { return null; }
+        return this._calculated.eInDaily;
+
+    }
+
+    public getPvEastWestEnergy (maxAgeSeconds = 10000): number | null {
+        if (!this._extPvMeter) { return null; }
+        const x = <EnergyMeter>this._extPvMeter['pveastwest'];
+        if (!x) { return null; }
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = x.createdAt;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        return x.energyTotal;
+    }
+
+    public getFroniusSiteEnergy (maxAgeSeconds = 10000): number | null {
+        const freg = this._froniussymo.register;
+        if (!freg || !freg.registerValues) { return null; }
+
+        const x = freg.f_site_energy_total;
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = x.at;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        return x.value;
+    }
+
+    public getFroniusSiteDailyEnergy (maxAgeSeconds = 10000): number | null {
+        const freg = this._froniussymo.register;
+        if (!freg || !freg.registerValues) { return null; }
+
+        const x = freg.f_site_energy_day;
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = x.at;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        return x.value;
+    }
+
+
+    public getCompresserFrequencyValue (maxAgeSeconds = 10000): number | null {
+        if (!this._nibe1155) { return null; }
+        return this._nibe1155.getCompressorFrequencyAsNumber(maxAgeSeconds);
+    }
+
+    public getCompresserFrequency (): Nibe1155Value | null {
+        if (!this._nibe1155) { return null; }
+        return this._nibe1155.getCompressorFrequency();
+    }
+
+    public getHeatpumpPower (maxAgeSeconds = 10000): number | null {
+        const nibe = this._nibe1155;
+        if (!nibe || !nibe.values) { return null; }
+        const x = nibe.getCompressorInPowerAsNumber(maxAgeSeconds);
+        if (x === null) { return null; }
+        return x;
     }
 
 }

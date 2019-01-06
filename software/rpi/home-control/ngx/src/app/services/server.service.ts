@@ -3,7 +3,7 @@ import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http
 import { IUserLogin, User, IUserAuth } from '../data/common/home-control/user';
 import { AuthService } from './auth.service';
 import { IModalLoginConfig, ModalLoginComponent } from '../modals/modal-login';
-
+import { generate as generateHash } from '../data/common/authentication/passwords';
 
 @Injectable()
 export class ServerService {
@@ -20,10 +20,10 @@ export class ServerService {
     constructor (private httpClient: HttpClient, private _authService: AuthService, private _componentFactoryResolver: ComponentFactoryResolver) {
         // ng serve      --> development mode, server running on same host
         // npm run build --prod --> production mode, server can run on any host and supports loading ngx app
-        this._serverUri = isDevMode() ? 'http://localhost:8080' : '';
-        this._authServerUri = isDevMode() ? 'http://localhost:8080' : '';
-        // this._serverUri = isDevMode() ? 'http://192.168.1.201:8080' : '';
-        // this._authServerUri = isDevMode() ? 'http://192.168.1.201:8080' : '';
+        // this._serverUri = isDevMode() ? 'http://localhost:8080' : '';
+        // this._authServerUri = isDevMode() ? 'http://localhost:8080' : '';
+        this._serverUri = isDevMode() ? 'http://192.168.1.201:8081' : '';
+        this._authServerUri = isDevMode() ? 'http://192.168.1.201:8081' : '';
         this._authUri = this._authServerUri + '/auth';
     }
 
@@ -131,11 +131,19 @@ export class ServerService {
                 if (this._autoLogin) {
                     userLogin = this._autoLogin;
                     this._autoLogin = undefined;
+                    console.log('auto login with ', userLogin);
                 } else {
                     userLogin = await this.performModalLoginDialog(config);
                 }
+                if (!userLogin.passwordType) {
+                    userLogin.passwordType = 'sha-256';
+                    userLogin.password = generateHash(userLogin.password, { algorithm: 'sha256'} );
+                    console.log(userLogin);
+                }
                 try {
+                    console.log('login as user ' + userLogin.userid);
                     response = <IUserAuth> await this.performHttpPostAndGetJson(this._authUri, userLogin);
+                    console.log('... get response', response);
                     if (!response.userid || !response.token.value) {
                         console.log('Error: invalid response from auth server');
                     }
@@ -146,6 +154,7 @@ export class ServerService {
             this._remoteToken = response.token.value;
             this._authService.userid = response.userid;
             this._authService.token = response.token.value;
+            console.log('user ' + response.userid + ' successfully authenticated');
         }
 
         try {

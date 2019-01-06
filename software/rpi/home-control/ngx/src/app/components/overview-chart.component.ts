@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, ViewChild, HostListener, ElementRef } fro
 import { Subscription } from 'rxjs';
 import { BaseChartDirective } from 'ng4-charts';
 import { DataService } from '../services/data.service';
-import { IMonitorRecordData, MonitorRecord } from '../data/common/home-control/monitor-record';
+import { IMonitorRecord, MonitorRecord } from '../data/common/home-control/monitor-record';
 import { Nibe1155Value } from '../data/common/nibe1155/nibe1155-value';
 import { sprintf } from 'sprintf-js';
 
@@ -126,19 +126,19 @@ export class OverviewChartComponent implements OnInit, OnDestroy {
             this.chartData[3].data.push(null);
             this.chartData[4].data.push(null);
         } else {
-            this.chartData[0].data.push(v.gridActivePower);
-            this.chartData[1].data.push(v.storagePower);
-            this.chartData[2].data.push(v.pvActivePower);
+            this.chartData[0].data.push(v.getGridActivePower());
+            this.chartData[1].data.push(v.getBatteryPower());
+            this.chartData[2].data.push(v.getPvActivePower());
             const heatPumpPower = !n ? 0.0 :
                 n.values[43084].value + // electricHeaterPower
                 n.values[43141].value + // copressorInPower
                 n.values[43437].value / 100 * 30 + // supplyPumpSpeed
                 n.values[43439].value / 100 * 30; // brinePumpSpeed
             if (typeof(heatPumpPower) === 'number' && !Number.isNaN(heatPumpPower)) {
-                this.chartData[3].data.push(-v.loadActivePower + heatPumpPower);
+                this.chartData[3].data.push(-v.getLoadActivePower() + heatPumpPower);
                 this.chartData[4].data.push(-heatPumpPower);
             } else {
-                this.chartData[3].data.push(-v.loadActivePower);
+                this.chartData[3].data.push(-v.getLoadActivePower());
                 this.chartData[4].data.push(null);
             }
 
@@ -169,16 +169,17 @@ export class OverviewChartComponent implements OnInit, OnDestroy {
             // }
             // first line - photovoltaik overview
             {
-                const ps = this.getValue(v.data.inverterExtension.string1_Power);
-                const es = this.getValue(v.data.calculated.pvSouthEnergyDaily);
-                const esSite = this.getValue(v.data.froniusRegister.siteEnergyDay);
+                const ps = this.getValue(v.froniussymo.inverterExtension.dcw_1);
+                const es = this.getValue(v.calculated.pvSouthEnergyDaily);
+                const esSite = this.getValue(v.froniussymo.register.f_site_energy_day);
                 let pew = null;
                 let eew = null;
                 let ppv = ps;
                 let epv = es;
-                if (Array.isArray(v.data.extPvMeter) && v.data.extPvMeter.length === 1) {
-                    pew = this.getValue(v.data.extPvMeter[0].p);
-                    eew = this.getValue(v.data.extPvMeter[0].de1);
+                const meter = v.extPvMeter ? v.extPvMeter['pveastwest'] : null;
+                if (meter) {
+                    pew = this.getValue(meter.activePower);
+                    eew = this.getValue(meter.energyPartitial[0]);
                     ppv = ps + pew;
                     epv = es + eew;
                 }
@@ -207,9 +208,9 @@ export class OverviewChartComponent implements OnInit, OnDestroy {
             }
             // second line - grid/battery power/energy overview
             {
-                const p = this.getValue(v.data.meter.activePower);
-                const eIn = this.getValue(v.data.calculated.eInDaily);
-                const eOut = this.getValue(v.data.calculated.eOutDaily);
+                const p = this.getValue(v.gridmeter.activePower);
+                const eIn = this.getValue(v.calculated.eInDaily);
+                const eOut = this.getValue(v.calculated.eOutDaily);
 
                 const gridPower: IShowValueItem = {
                     key: 'P-Netz',
@@ -223,9 +224,9 @@ export class OverviewChartComponent implements OnInit, OnDestroy {
                            'out=' + (eOut !== null ? sprintf('%.01fkWh', eOut / 1000) : '?kWh')
                 };
 
-                const cap = this.getValue(v.data.nameplate.nominalStorageEnergy * v.data.storage.chargeLevelInPercent / 100);
-                const pct = this.getValue(v.data.storage.chargeLevelInPercent);
-                const state = v.data.storage.chargeState;
+                const cap = this.getValue(v.froniussymo.nameplate.whrtg.value * v.froniussymo.storage.chastate.value / 100);
+                const pct = this.getValue(v.froniussymo.storage.chastate.value);
+                const state = v.froniussymo.storage.chast;
 
                 const battery: IShowValueItem = {
                     key: 'Speicher',
@@ -238,7 +239,7 @@ export class OverviewChartComponent implements OnInit, OnDestroy {
             }
 
             if (n) {
-                const pBoiler = v.boilerPower;
+                const pBoiler = v.boiler.monitorRecord.activePower;
                 let nv: Nibe1155Value;
                 nv = n.values[43136]; const compressorFrequency = nv && nv.valueAt ? nv.value : null;
                 nv = n.values[43141]; const compressorInPower   = nv && nv.valueAt ? nv.value : null;

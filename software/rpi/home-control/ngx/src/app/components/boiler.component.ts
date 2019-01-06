@@ -191,8 +191,8 @@ export class BoilerComponent implements OnInit, OnDestroy {
             try {
                 switch (att) {
                     case 'Leistung': {
-                        const o = v.hwcMonitorRecord;
-                        if (o.activePower) {
+                        const o = v.boiler.monitorRecord;
+                        if (o && o.activePower) {
                             const dt = Date.now() - o.activePower.createdAt.getTime();
                             if (dt < 10000) {
                                 val = '' + Math.round(o.activePower.value) + 'W (' + this.ageToString(o.createdAt) + ')';
@@ -203,17 +203,17 @@ export class BoilerComponent implements OnInit, OnDestroy {
                         break;
                     }
                     case 'Energie(Tag)': {
-                        const o = v.hwcMonitorRecord.energyDaily;
+                        const o = v.boiler.monitorRecord.energyDaily;
                         val = '' + Math.round(o.value) + o.unit + ' (' + this.ageToString(o.createdAt) + ')';
                         break;
                     }
                     case '4..20mA Sollwert': {
-                        const o = v.hwcMonitorRecord.current4to20mA;
+                        const o = v.boiler.monitorRecord.current4to20mA;
                         val = '' + o.setpoint.value + o.setpoint.unit + ' (' + this.ageToString(o.setpoint.createdAt) + ')';
                         break;
                     }
                     case '4..20mA Istwert': {
-                        const o = v.hwcMonitorRecord.current4to20mA;
+                        const o = v.boiler.monitorRecord.current4to20mA;
                         val = '' + o.current.value + o.current.unit + ' (' + this.ageToString(o.current.createdAt) + ')';
                         break;
                     }

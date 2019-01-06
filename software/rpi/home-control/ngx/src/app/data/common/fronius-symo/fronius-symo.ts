@@ -45,6 +45,7 @@ export class FroniusSymo extends DataRecord<IFroniusSymo> implements IFroniusSym
         return new FroniusSymo(data);
     }
 
+    // tslint:disable:member-ordering */
     private _createdAt: Date;
     private _register:  FroniusSymoModelRegister;
     private _common:    FroniusSymoModelCommon;
@@ -55,6 +56,7 @@ export class FroniusSymo extends DataRecord<IFroniusSymo> implements IFroniusSym
     private _control: FroniusSymoModelControl;
     private _storage: FroniusSymoModelStorage;
     private _inverterExtension: FroniusSymoModelInverterExtension;
+    // tslint:enable:member-ordering */
 
     public constructor (data: IFroniusSymo) {
         super(data);
@@ -143,6 +145,13 @@ export class FroniusSymo extends DataRecord<IFroniusSymo> implements IFroniusSym
 
     public get inverterExtension (): FroniusSymoModelInverterExtension {
         return this._inverterExtension;
+    }
+
+    // ***********************************************
+
+    public getPvSouthActivePower (): { at: Date, value: number } | null {
+        if (!this._inverterExtension) { return null; }
+        return this._inverterExtension.getPvSouthActivePower();
     }
 
 }

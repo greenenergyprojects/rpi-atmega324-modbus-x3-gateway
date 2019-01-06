@@ -8,7 +8,8 @@ import { INibe1155Value, Nibe1155Value } from '../data/common/nibe1155/nibe1155-
 import { IHttpGetDataMonitorQuery, IHttpGetDataMonitorResponse } from '../data/common/nibe1155/server-http';
 import { Nibe1155Controller, HeatpumpControllerMode, INibe1155Controller } from '../data/common/nibe1155/nibe1155-controller';
 // import { MonitorRecordNibe1155, IMonitorRecordNibe1155 } from '../data/common/home-control/monitor-record-nibe1155';
-import { INibe1155MonitorRecord } from '../data/common/nibe1155/nibe1155-monitor-record';
+import { INibe1155MonitorRecord, Nibe1155MonitorRecord } from '../data/common/nibe1155/nibe1155-monitor-record';
+import { Nibe1155ModbusIds, Nibe1155ModbusRegisters } from '../data/common/nibe1155/nibe1155-modbus-registers';
 
 
 interface INibe1155Config {
@@ -102,7 +103,7 @@ export class Nibe1155 {
         return this._logsetIds;
     }
 
-    public get controller (): any {
+    public get controller (): Nibe1155Controller {
         return this._controller;
     }
 
@@ -110,36 +111,459 @@ export class Nibe1155 {
         return this._values;
     }
 
-    public get brinePumpPower (): number {
-        const v = this._values[43439];
-        if (!v || v.label !== 'brinePumpSpeed' || (Date.now() - v.valueAt.getTime()) > 5000) { return Number.NaN; }
-        return 30 / 100 * v.value;
+    // **********************************************
+
+    public getSupplyS1Temp (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['supplyS1Temp'].id; // 40008
+        return new Nibe1155MonitorRecord(this._values[id]).getSupplyS1Temp();
     }
 
-    public get supplyPumpPower (): number {
-        const v = this._values[43437];
-        if (!v || v.label !== 'supplyPumpSpeed' || (Date.now() - v.valueAt.getTime()) > 5000) { return Number.NaN; }
-        return 30 / 100 * v.value;
+    public getSupplyS1TempAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['supplyS1Temp'].id; // 40008
+        return new Nibe1155MonitorRecord(this._values[id]).getSupplyS1TempAsNumber();
     }
 
-    public get compressorPower (): number {
-        const v = this._values[43141];
-        if (!v || v.label !== 'compressorInPower' || (Date.now() - v.valueAt.getTime()) > 5000) { return Number.NaN; }
-        return v.value;
+    public getSupplyS1ReturnTemp (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['supplyS1ReturnTemp'].id; // 40012
+        return new Nibe1155MonitorRecord(this._values[id]).getSupplyS1ReturnTemp();
     }
 
-    public get compressorFrequency (): number {
-        const v = this._values[43136];
-        if (!v || v.label !== 'compressorFrequency' || (Date.now() - v.valueAt.getTime()) > 5000) { return Number.NaN; }
-        return v.value;
+    public getSupplyS1ReturnTempAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['supplyS1ReturnTemp'].id; // 40012
+        return new Nibe1155MonitorRecord(this._values[id]).getSupplyS1ReturnTempAsNumber();
+    }
+
+    public getBrineInTemp (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['brineInTemp'].id; // 40015
+        return new Nibe1155MonitorRecord(this._values[id]).getBrineInTemp();
+    }
+
+    public getBrineInTempAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['brineInTemp'].id; // 40015
+        return new Nibe1155MonitorRecord(this._values[id]).getBrineInTempAsNumber();
+    }
+
+    public getBrineOutTemp (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['brineOutTemp'].id; // 40016
+        return new Nibe1155MonitorRecord(this._values[id]).getBrineOutTemp();
+    }
+
+    public getBrineOutTempAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['brineOutTemp'].id; // 40016
+        return new Nibe1155MonitorRecord(this._values[id]).getBrineOutTempAsNumber();
+    }
+
+    public getCondensorOutTemp (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['condensorOutTemp'].id; // 40017
+        return new Nibe1155MonitorRecord(this._values[id]).getCondensorOutTemp();
+    }
+
+    public getCondensorOutTempAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['condensorOutTemp'].id; // 40017
+        return new Nibe1155MonitorRecord(this._values[id]).getCondensorOutTempAsNumber();
+    }
+
+    public getHotGasTemp (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['hotGasTemp'].id; // 40018
+        return new Nibe1155MonitorRecord(this._values[id]).getHotGasTemp();
+    }
+
+    public getHotGasTempAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['hotGasTemp'].id; // 40018
+        return new Nibe1155MonitorRecord(this._values[id]).getHotGasTempAsNumber();
+    }
+
+    public getLiquidLineTemp (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['liquidLineTemp'].id; // 40019
+        return new Nibe1155MonitorRecord(this._values[id]).getLiquidLineTemp();
+    }
+
+    public getLiquidLineTempAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['liquidLineTemp'].id; // 40019
+        return new Nibe1155MonitorRecord(this._values[id]).getLiquidLineTempAsNumber();
+    }
+
+    public getSuctionTemp (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['suctionTemp'].id; // 40022
+        return new Nibe1155MonitorRecord(this._values[id]).getSuctionTemp();
+    }
+
+    public getSuctionTempAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['suctionTemp'].id; // 40022
+        return new Nibe1155MonitorRecord(this._values[id]).getSuctionTempAsNumber();
+    }
+
+    public getSupplyTemp (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['supplyTemp'].id; // 40071
+        return new Nibe1155MonitorRecord(this._values[id]).getSupplyTemp();
+    }
+
+    public getSupplyTempAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['supplyTemp'].id; // 40071
+        return new Nibe1155MonitorRecord(this._values[id]).getSupplyTempAsNumber();
+    }
+
+    public getDegreeMinutes (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['degreeMinutes'].id; // 43005
+        return new Nibe1155MonitorRecord(this._values[id]).getDegreeMinutes();
+    }
+
+    public getDegreeMinutesAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['degreeMinutes'].id; // 43005
+        return new Nibe1155MonitorRecord(this._values[id]).getDegreeMinutesAsNumber();
+    }
+
+    public getCalcSupplyTemp (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['calcSupplyTemp'].id; // 43009
+        return new Nibe1155MonitorRecord(this._values[id]).getCalcSupplyTemp();
+    }
+
+    public getCalcSupplyTempAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['calcSupplyTemp'].id; // 43009
+        return new Nibe1155MonitorRecord(this._values[id]).getCalcSupplyTempAsNumber();
+    }
+
+    public getElectricHeaterPower (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['electricHeaterPower'].id; // 43084
+        return new Nibe1155MonitorRecord(this._values[id]).getElectricHeaterPower();
+    }
+
+    public getElectricHeaterPowerAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['electricHeaterPower'].id; // 43084
+        return new Nibe1155MonitorRecord(this._values[id]).getElectricHeaterPowerAsNumber();
+    }
+
+    public getCompressorFrequency (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['compressorFrequency'].id; // 43136
+        return new Nibe1155MonitorRecord(this._values[id]).getCompressorFrequency();
+    }
+
+    public getCompressorFrequencyAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['compressorFrequency'].id; // 43136
+        return new Nibe1155MonitorRecord(this._values[id]).getCompressorFrequencyAsNumber();
+    }
+
+    public getCompressorInPower (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['compressorInPower'].id; // 43141
+        return new Nibe1155MonitorRecord(this._values[id]).getCompressorInPower();
+    }
+
+    public getCompressorInPowerAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['compressorInPower'].id; // 43141
+        return new Nibe1155MonitorRecord(this._values[id]).getCompressorInPowerAsNumber();
+    }
+
+    public getCompressorState (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['compressorState'].id; // 43427
+        return new Nibe1155MonitorRecord(this._values[id]).getCompressorState();
+    }
+
+    public getCompressorStateAsString (maxAgeSeconds = 10000): string | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['compressorState'].id; // 43427
+        return new Nibe1155MonitorRecord(this._values[id]).getCompressorStateAsString();
+    }
+
+    public getSupplyPumpState (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['supplyPumpState'].id; // 43431
+        return new Nibe1155MonitorRecord(this._values[id]).getSupplyPumpState();
+    }
+
+    public getSupplyPumpStateAsString (maxAgeSeconds = 10000): string | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['supplyPumpState'].id; // 43431
+        return new Nibe1155MonitorRecord(this._values[id]).getSupplyPumpStateAsString();
+    }
+
+    public getBrinePumpState (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['brinePumpState'].id; // 43433
+        return new Nibe1155MonitorRecord(this._values[id]).getBrinePumpState();
+    }
+
+    public getBrinePumpStateAsString (maxAgeSeconds = 10000): string | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['brinePumpState'].id; // 43433
+        return new Nibe1155MonitorRecord(this._values[id]).getBrinePumpStateAsString();
+    }
+
+    public getSupplyPumpSpeed (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['supplyPumpSpeed'].id; // 40437
+        return new Nibe1155MonitorRecord(this._values[id]).getSupplyPumpSpeed();
+    }
+
+    public getSupplyPumpSpeedAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['supplyPumpSpeed'].id; // 40437
+        return new Nibe1155MonitorRecord(this._values[id]).getSupplyPumpSpeedAsNumber();
+    }
+
+    public getBrinePumpSpeed (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['brinePumpSpeed'].id; // 40439
+        return new Nibe1155MonitorRecord(this._values[id]).getBrinePumpSpeed();
+    }
+
+    public getBrinePumpSpeedAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['brinePumpSpeed'].id; // 40439
+        return new Nibe1155MonitorRecord(this._values[id]).getBrinePumpSpeedAsNumber();
+    }
+
+    // ******************************************************************
+
+    public getOutdoorTemp (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['outdoorTemp'].id; // 40004
+        return new Nibe1155MonitorRecord(this._values[id]).getOutdoorTemp();
+    }
+
+    public getOutdoorTempAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['outdoorTemp'].id; // 40004
+        return new Nibe1155MonitorRecord(this._values[id]).getOutdoorTempAsNumber();
+    }
+
+    public getRoomTemp (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['roomTemp'].id; // 40033
+        return new Nibe1155MonitorRecord(this._values[id]).getRoomTemp();
+    }
+
+    public getRoomTempAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['roomTemp'].id; // 40033
+        return new Nibe1155MonitorRecord(this._values[id]).getRoomTempAsNumber();
+    }
+
+    // outdoorTempAverage:     Nibe1155ModbusRegisters.regDefById[40067]
+    // currentL1:              Nibe1155ModbusRegisters.regDefById[40079]
+    // currentL2:              Nibe1155ModbusRegisters.regDefById[40081]
+    // currentL3:              Nibe1155ModbusRegisters.regDefById[40083]
+
+    public getEnergyCompAndElHeater (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['energyCompAndElHeater'].id; // 42439
+        return new Nibe1155MonitorRecord(this._values[id]).getEnergyCompAndElHeater();
+    }
+
+    public getEnergyCompAndElHeaterAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['energyCompAndElHeater'].id; // 42439
+        return new Nibe1155MonitorRecord(this._values[id]).getEnergyCompAndElHeaterAsNumber();
+    }
+
+    public getEnergyCompressor (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['energyCompressor'].id; // 42447
+        return new Nibe1155MonitorRecord(this._values[id]).getEnergyCompressor();
+    }
+
+    public getEnergyCompressorAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['energyCompressor'].id; // 42447
+        return new Nibe1155MonitorRecord(this._values[id]).getEnergyCompressorAsNumber();
+    }
+
+    public getCompFrequTarget (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['compFrequTarget'].id; // 43182
+        return new Nibe1155MonitorRecord(this._values[id]).getCompFrequTarget();
+    }
+
+    public getCompFrequTargetAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['compFrequTarget'].id; // 43182
+        return new Nibe1155MonitorRecord(this._values[id]).getCompFrequTargetAsNumber();
+    }
+
+    // compPower10Min:         Nibe1155ModbusRegisters.regDefById[43375]
+
+    public getCompNumberOfStarts (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['compNumberOfStarts'].id; // 43416
+        return new Nibe1155MonitorRecord(this._values[id]).getCompNumberOfStarts();
+    }
+
+    public getCompNumberOfStartsAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['compNumberOfStarts'].id; // 43416
+        return new Nibe1155MonitorRecord(this._values[id]).getCompNumberOfStartsAsNumber();
+    }
+
+    public getCompTotalOperationTime (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['compTotalOperationTime'].id; // 43420
+        return new Nibe1155MonitorRecord(this._values[id]).getCompTotalOperationTime();
+    }
+
+    public getCompTotalOperationTimeAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['compTotalOperationTime'].id; // 43420
+        return new Nibe1155MonitorRecord(this._values[id]).getCompTotalOperationTimeAsNumber();
+    }
+
+    public getAlarm (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['alarm'].id; // 45001
+        return new Nibe1155MonitorRecord(this._values[id]).getAlarm();
+    }
+
+    public getAlarmAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['alarm'].id; // 45001
+        return new Nibe1155MonitorRecord(this._values[id]).getAlarmAsNumber();
+    }
+
+    public getAlarmAsString (maxAgeSeconds = 10000): string | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['alarm'].id; // 45001
+        return new Nibe1155MonitorRecord(this._values[id]).getAlarmAsString();
+    }
+
+    // alarmReset:             Nibe1155ModbusRegisters.regDefById[45171]
+
+    public getHeatCurveS1 (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['heatCurveS1'].id; // 47007
+        return new Nibe1155MonitorRecord(this._values[id]).getHeatCurveS1();
+    }
+
+    public getHeatCurveS1AsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['heatCurveS1'].id; // 47007
+        return new Nibe1155MonitorRecord(this._values[id]).getHeatCurveS1AsNumber();
+    }
+
+    public getHeatOffsetS1 (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['heatOffsetS1'].id; // 47011
+        return new Nibe1155MonitorRecord(this._values[id]).getHeatOffsetS1();
+    }
+
+    public getHeatOffsetS1AsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['heatOffsetS1'].id; // 47011
+        return new Nibe1155MonitorRecord(this._values[id]).getHeatOffsetS1AsNumber();
+    }
+
+    public getSupplyMinS1 (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['supplyMinS1'].id; // 47015
+        return new Nibe1155MonitorRecord(this._values[id]).getSupplyMinS1();
+    }
+
+    public getSupplyMinS1AsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['supplyMinS1'].id; // 47015
+        return new Nibe1155MonitorRecord(this._values[id]).getSupplyMinS1AsNumber();
+    }
+
+    public getSupplyMaxS1 (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['supplyMaxS1'].id; // 47019
+        return new Nibe1155MonitorRecord(this._values[id]).getSupplyMaxS1();
+    }
+
+    public getSupplyMaxS1AsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['supplyMaxS1'].id; // 47019
+        return new Nibe1155MonitorRecord(this._values[id]).getSupplyMaxS1AsNumber();
+    }
+
+    // ownHeatCurveP7:         Nibe1155ModbusRegisters.regDefById[47020]
+    // ownHeatCurveP6:         Nibe1155ModbusRegisters.regDefById[47021]
+    // ownHeatCurveP5:         Nibe1155ModbusRegisters.regDefById[47022]
+    // ownHeatCurveP4:         Nibe1155ModbusRegisters.regDefById[47023]
+    // ownHeatCurveP3:         Nibe1155ModbusRegisters.regDefById[47024]
+    // ownHeatCurveP2:         Nibe1155ModbusRegisters.regDefById[47025]
+    // ownHeatCurveP1:         Nibe1155ModbusRegisters.regDefById[47026]
+
+    public getRegMaxSupplyDiff (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['regMaxSupplyDiff'].id; // 47100
+        return new Nibe1155MonitorRecord(this._values[id]).getRegMaxSupplyDiff();
+    }
+
+    public getRegMaxSupplyDiffAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['regMaxSupplyDiff'].id; // 47100
+        return new Nibe1155MonitorRecord(this._values[id]).getRegMaxSupplyDiffAsNumber();
+    }
+
+    public getRegMinCompFrequ (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['regMinCompFrequ'].id; // 47103
+        return new Nibe1155MonitorRecord(this._values[id]).getRegMinCompFrequ();
+    }
+
+    public getRegMinCompFrequAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['regMinCompFrequ'].id; // 47103
+        return new Nibe1155MonitorRecord(this._values[id]).getRegMinCompFrequAsNumber();
+    }
+
+    public getRegMaxCompFrequ (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['regMaxCompFrequ'].id; // 47104
+        return new Nibe1155MonitorRecord(this._values[id]).getRegMaxCompFrequ();
+    }
+
+    public getRegMaxCompFrequAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['regMaxCompFrequ'].id; // 47104
+        return new Nibe1155MonitorRecord(this._values[id]).getRegMaxCompFrequAsNumber();
+    }
+
+    public getOperationalMode (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['operationalMode'].id; // 47137
+        return new Nibe1155MonitorRecord(this._values[id]).getOperationalMode();
+    }
+
+    public getOperationalModeAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['operationalMode'].id; // 47137
+        return new Nibe1155MonitorRecord(this._values[id]).getOperationalModeAsNumber();
+    }
+
+    public getOperationalModeAsString (maxAgeSeconds = 10000): string | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['operationalMode'].id; // 47137
+        return new Nibe1155MonitorRecord(this._values[id]).getOperationalModeAsString();
+    }
+
+    public getSupplyPumpMode (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['supplyPumpMode'].id; // 47138
+        return new Nibe1155MonitorRecord(this._values[id]).getSupplyPumpMode();
+    }
+
+    public getSupplyPumpModeAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['supplyPumpMode'].id; // 47138
+        return new Nibe1155MonitorRecord(this._values[id]).getSupplyPumpModeAsNumber();
+    }
+
+    public getSupplyPumpModeAsString (maxAgeSeconds = 10000): string | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['supplyPumpMode'].id; // 47138
+        return new Nibe1155MonitorRecord(this._values[id]).getSupplyPumpModeAsString();
+    }
+
+    public getBrinePumpMode (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['brinePumpMode'].id; // 47139
+        return new Nibe1155MonitorRecord(this._values[id]).getBrinePumpMode();
+    }
+
+    public getBrinePumpModeAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['brinePumpMode'].id; // 47139
+        return new Nibe1155MonitorRecord(this._values[id]).getBrinePumpModeAsNumber();
+    }
+
+    public getBrinePumpModeAsString (maxAgeSeconds = 10000): string | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['brinePumpMode'].id; // 47139
+        return new Nibe1155MonitorRecord(this._values[id]).getBrinePumpModeAsString();
+    }
+
+    public getDmStartHeating (): Nibe1155Value | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['dmStartHeating'].id; // 47206
+        return new Nibe1155MonitorRecord(this._values[id]).getDmStartHeating();
+    }
+
+    public getDmStartHeatingAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['dmStartHeating'].id; // 47206
+        return new Nibe1155MonitorRecord(this._values[id]).getDmStartHeatingAsNumber();
     }
 
 
-    public get electricHeaterPower (): number {
-        const v = this._values[43084];
-        if (!v || v.label !== 'electricHeaterPower' || (Date.now() - v.valueAt.getTime()) > 5000) { return Number.NaN; }
-        return v.value;
+    // addHeatingStep:         Nibe1155ModbusRegisters.regDefById[47209]
+    // addHeatingMaxPower:     Nibe1155ModbusRegisters.regDefById[47212]
+    // addHeatingFuse:         Nibe1155ModbusRegisters.regDefById[47214]
+    // allowAdditiveHeating:   Nibe1155ModbusRegisters.regDefById[47370]
+    // allowHeating:           Nibe1155ModbusRegisters.regDefById[47371]
+    // stopTempHeating:        Nibe1155ModbusRegisters.regDefById[47375]
+    // stopTempAddHeating:     Nibe1155ModbusRegisters.regDefById[47376]
+    // dmDiffStartAddHeating:  Nibe1155ModbusRegisters.regDefById[48072]
+    // autoHeatMedPumpSpeed:   Nibe1155ModbusRegisters.regDefById[48453]
+    // cutOffFrequActivated2:  Nibe1155ModbusRegisters.regDefById[48659]
+    // cutOffFrequActivated1:  Nibe1155ModbusRegisters.regDefById[48660]
+    // cutOffFrequStart2:      Nibe1155ModbusRegisters.regDefById[48661]
+    // cutOffFrequStart1:      Nibe1155ModbusRegisters.regDefById[48662]
+    // cutOffFrequStop2:       Nibe1155ModbusRegisters.regDefById[48663]
+    // cutOffFrequStop1:       Nibe1155ModbusRegisters.regDefById[48664]
+
+
+
+    // *******************************************************************
+
+    public getBrinePumpPowerAsNumber (maxAgeSeconds = 10000): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['brinePumpSpeed'].id; // 43439
+        return new Nibe1155MonitorRecord(this._values[id]).getBrinePumpPowerAsNumber();
     }
+
+    public getSupplyPumpPowerAsNumber (): number | null {
+        const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['supplyPumpSpeed'].id; // 43437
+        return new Nibe1155MonitorRecord(this._values[id]).getSupplyPumpPowerAsNumber();
+    }
+
+    // *******************************************************************
 
     public async getData (query?: IHttpGetDataMonitorQuery): Promise<IHttpGetDataMonitorResponse> {
         if (this._config.disabled) { throw new Error('nibe1155 is disabled'); }
@@ -291,7 +715,7 @@ export class Nibe1155 {
     private async handleTimer (init?: boolean) {
         if (init || !this._values || Object.keys(this._values).length === 0) {
             try {
-                debug.fine('no values found, send request for all');
+                debug.finer('no values found, send request for all');
                 const rv = await this.getData();
                 if (!Array.isArray(rv.logsetIds)) {
                     throw new Error('invalid/missing logsetIds in response');
@@ -317,26 +741,28 @@ export class Nibe1155 {
 
         } else {
             try {
-                debug.fine('values available, send request values');
-                const rv = await this.getData({ controller: true, valueIds: 'all' });
+                debug.finer('values available, send request values');
+                const rv = <INibe1155MonitorRecord>await this.getData({ controller: true, valueIds: 'all' });
                 let cnt = 0;
                 if (rv.controller) {
                     this._controller = new Nibe1155Controller(rv.controller);
                 }
                 if (rv.values) {
                     for (const id of Object.getOwnPropertyNames(rv.values)) {
-                        const vNew = (<any>rv.values)[id];
+                        const vNew = <INibe1155Value>(<any>rv.values)[id];
                         const v = this._values[+id];
                         if (!v) {
                             debug.warn('cannot find id %s in values, reinit values...', id);
                             await this.handleTimer(true);
                             return;
                         }
-                        v.setRawValue(vNew.rawValue, new Date(vNew.rawValueAt));
+                        if (vNew && vNew.valueAt) {
+                            v.setRawValue(vNew.rawValue, new Date(vNew.valueAt));
+                        }
                         cnt++;
                     }
                 }
-                debug.fine('%s values updated', cnt);
+                debug.finer('%s values updated', cnt);
             } catch (err) {
                 this._values = {};
                 debug.warn('request for simple values fails\n%e', err);

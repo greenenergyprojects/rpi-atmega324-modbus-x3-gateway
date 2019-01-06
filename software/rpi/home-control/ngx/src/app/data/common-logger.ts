@@ -1,16 +1,12 @@
 
 export class CommonLogger {
 
-    public static info (src: any, msg: string) {
-        console.log('INFO', msg);
+    public static info (format: string, ...param: any) {
+        console.log('INFO:', format, ...param);
     }
 
-    public static warn (src: any, msg: string, cause?: any) {
-        if (cause) {
-            console.log('WARNING', msg, cause);
-        } else {
-            console.log('WARNING', msg);
-        }
+    public static warn (format: string, ...param: any) {
+        console.log('WARNING:', format, ...param);
     }
 
 }

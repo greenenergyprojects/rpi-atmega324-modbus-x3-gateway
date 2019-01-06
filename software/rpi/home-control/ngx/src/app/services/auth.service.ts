@@ -56,6 +56,7 @@ export class AuthService {
             return;
         }
         this._user = value;
+        console.log('new user, inform listeners...');
         this._userSubject.next(value);
     }
 

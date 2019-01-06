@@ -14,6 +14,7 @@ import { ISyncButtonConfig } from './components/sync-button.component';
 export class AppComponent implements OnInit {
     title = 'Home Control';
     cnt = 1;
+    showContent = false;
 
     buttonConfig: ISyncButtonConfig = {
         text: 'Hello',
@@ -36,15 +37,24 @@ export class AppComponent implements OnInit {
         try {
             const v = <IServerVersion> await this._serverService.httpGetJson('/version', null);
 
-            if (v && v.user && v.user.token) {
-                const x = Object.assign( {}, v.user);
-                delete x.token;
-                const user = new User(x);
-                this._authService.userid = user.userid;
-                this._authService.token = v.user.token.value;
-                this._authService.user = user;
-                console.log('set user', user.toObject());
-            }
+            this._authService.useridObservable.subscribe((userid) => {
+                if (userid) {
+                    this.showContent = true;
+                } else {
+                    this.showContent = false;
+                }
+            });
+            this._serverService.authenticate();
+            // if (v && v.user && v.user.token) {
+            //     const x = Object.assign( {}, v.user);
+            //     delete x.token;
+            //     const user = new User(x);
+            //     this._authService.userid = user.userid;
+            //     this._authService.token = v.user.token.value;
+            //     this._authService.user = user;
+            //     console.log('set user', user.toObject());
+            // }
+
         } catch (err) {
             console.log(err);
         }

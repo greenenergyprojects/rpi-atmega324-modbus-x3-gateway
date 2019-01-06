@@ -4,25 +4,25 @@ import { Observable, Subscriber, TeardownLogic, of } from 'rxjs';
 
 import { ServerService } from './server.service';
 import * as serverHttp from '../data/common/home-control/server-http';
-import { IFroniusMeterValues } from '../data/common/fronius-meter/fronius-meter-values';
-import { IMonitorRecordData, MonitorRecord, IHeatpumpMode } from '../data/common/home-control/monitor-record';
-import { IBoilerMode } from '../data/common/hwc/boiler-mode';
-import { IBoilerController } from '../data/common/hwc/boiler-controller';
-import * as froniusSymo from '../data/common/fronius-symo/fronius-symo-values';
+import { IFroniusMeter } from '../data/common/fronius-meter/fronius-meter';
+import { IMonitorRecord, MonitorRecord } from '../data/common/home-control/monitor-record';
+import { IBoilerMode } from '../data/common/hot-water-controller/boiler-mode';
+import { IBoilerController } from '../data/common/hot-water-controller/boiler-controller';
+import { IFroniusSymo } from '../data/common/fronius-symo/fronius-symo';
 import { Nibe1155Value } from '../data/common/nibe1155/nibe1155-value';
 import { INibe1155Controller, Nibe1155Controller } from '../data/common/nibe1155/nibe1155-controller';
-// import * as nibe1155 from '../data/common/nibe1155/nibe1155-values';
+
 
 @Injectable({ providedIn: 'root' })
 export class DataService {
 
-    public froniusMeterObservable: Observable<IFroniusMeterValues>;
+    public froniusMeterObservable: Observable<IFroniusMeter>;
     public monitorObservable: Observable<MonitorRecord>;
 
-    private _froniusMeterSubject: Subject<IFroniusMeterValues>;
-    private _froniusMeterObservers: Subscriber<IFroniusMeterValues> [] = [];
+    private _froniusMeterSubject: Subject<IFroniusMeter>;
+    private _froniusMeterObservers: Subscriber<IFroniusMeter> [] = [];
     private _froniusMeterTimer: any;
-    private _froniusMeterValues: IFroniusMeterValues [] = [];
+    private _froniusMeterValues: IFroniusMeter [] = [];
 
     private _monitorSubject: Subject<MonitorRecord>;
     private _monitorObservers: Subscriber<MonitorRecord> [] = [];
@@ -38,7 +38,7 @@ export class DataService {
         this._nibe1155 = null;
     }
 
-    public getFroniusMeterValues (): IFroniusMeterValues [] {
+    public getFroniusMeterValues (): IFroniusMeter [] {
         return this._froniusMeterValues;
     }
 
@@ -55,7 +55,7 @@ export class DataService {
                                     inverterExtension?: boolean,
                                     stringCombiner?:    boolean,
                                     meter?:             boolean
-                                }): Promise<froniusSymo.IFroniusSymoValues> {
+                                }): Promise<IFroniusSymo> {
         let uri = '/data/froniussymo';
         let first = true;
         for (const att in query) {
@@ -95,7 +95,7 @@ export class DataService {
     }
 
 
-    public getMonitorData ( query?: { latest?: boolean }): Promise<IMonitorRecordData []> {
+    public getMonitorData ( query?: { latest?: boolean }): Promise<IMonitorRecord []> {
         let uri = '/data/monitor';
         let first = true;
         for (const att in query) {
@@ -140,7 +140,6 @@ export class DataService {
         this._nibe1155.lastRefreshAt = new Date();
         if (v.controller) {
             try {
-                debugger;
                 this._nibe1155.controller = new Nibe1155Controller(v.controller);
             } catch (err) {
                 console.log('ERROR: cannot create Nibe1155Controller', err);
@@ -166,7 +165,7 @@ export class DataService {
     }
 
 
-    public setHeatPumpMode (mode: IHeatpumpMode): Promise<IHeatpumpMode> {
+    public setHeatPumpMode (mode: INibe1155Controller): Promise<INibe1155Controller> {
         console.log(mode);
         const uri = '/control/heatpumpmode';
         return this._serverService.httpPostAndGetJson(uri, mode);
@@ -179,7 +178,7 @@ export class DataService {
     }
 
 
-    private froniusMeterSubscriber (subscriber: Subscriber<IFroniusMeterValues>): TeardownLogic {
+    private froniusMeterSubscriber (subscriber: Subscriber<IFroniusMeter>): TeardownLogic {
         const thiz = this;
 
         this._froniusMeterObservers.push(subscriber);
@@ -202,7 +201,7 @@ export class DataService {
         if (this._serverService.isModalLoginActive) {
             return;
         }
-        this._serverService.httpGetJson('/data/froniusmeter').then( (v: IFroniusMeterValues) => {
+        this._serverService.httpGetJson('/data/froniusmeter').then( (v: IFroniusMeter) => {
             this._froniusMeterObservers.forEach( (o) => o.next(v));
             this._froniusMeterValues.push(v);
             if (this._froniusMeterValues.length > 60) {
@@ -236,22 +235,23 @@ export class DataService {
         if (this._serverService.isModalLoginActive) {
             return;
         }
-        if (this._nibe1155 === null) {
-            this.getNibe1155Values({ controller: true, completeValues: true }).then( (values) => {
-                this.handleNibe1155Values(values, true);
-            }, (error) => {
-                console.log(error);
-            });
-        }
+        // if (this._nibe1155 === null) {
+        //     this.getNibe1155Values({ controller: true, completeValues: true }).then( (values) => {
+        //         this.handleNibe1155Values(values, true);
+        //     }, (error) => {
+        //         console.log(error);
+        //     });
+        // }
 
-        this._serverService.httpGetJson('/data/monitor').then( (v: IMonitorRecordData) => {
+        this._serverService.httpGetJson('/data/monitor').then( (v: IMonitorRecord []) => {
             if (!Array.isArray(v) || v.length !== 1) {
                 console.log(new Error('unexpected response'));
                 this._monitorObservers.forEach( (o) => o.next(null));
                 return;
             }
-            this.handleNibe1155Values(v[0].heatpump);
-            const r = MonitorRecord.createFromRawData(v[0]);
+            // this.handleNibe1155Values(v[0].nibe1155);
+            console.log(v[0]);
+            const r = new MonitorRecord(v[0]);
             this._monitorObservers.forEach( (o) => o.next(r));
             this._monitorValues.push(r);
             if (this._monitorValues.length > 60) {

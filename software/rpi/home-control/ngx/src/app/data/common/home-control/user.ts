@@ -3,6 +3,7 @@ import { DataRecord } from '../data-record';
 export interface IUserLogin {
     userid: string;
     password: string;
+    passwordType?: 'raw' | 'sha-256';
 }
 
 export interface IUserAuth extends IUser {

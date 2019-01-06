@@ -27,13 +27,13 @@ export class ModbusString extends ModbusValue<string> {
         return super.toObject(preserveDate);
     }
 
-    public get uid (): string {
-        return super.uid;
-    }
+    // public get uid (): string {
+    //     return super.uid;
+    // }
 
-    public get definition (): IRegisterDefinition {
-        return super.definition;
-    }
+    // public get definition (): IRegisterDefinition {
+    //     return super.definition;
+    // }
 
     public get value (): { at: Date, value: string | null } | null {
         return this._value;
@@ -43,9 +43,9 @@ export class ModbusString extends ModbusValue<string> {
         return this._value ? this._value.at : null;
     }
 
-    public get ids (): number [] {
-        return super.ids;
-    }
+    // public get ids (): number [] {
+    //     return super.ids;
+    // }
 
     public get hasChanged (): boolean {
         return this._recentValue !== null;

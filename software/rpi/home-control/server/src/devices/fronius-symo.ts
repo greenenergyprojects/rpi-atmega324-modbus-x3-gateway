@@ -216,6 +216,11 @@ export class FroniusSymo extends ModbusTcpDevice {
         return this._inverterExtension.regs.getPvSouthActivePower();
     }
 
+    public getFroniusSiteDaily (): { at: Date, value: number } | null {
+        if (!this._register || !this._register.regs) { return null; }
+        return this._register.regs.f_site_energy_day;
+    }
+
     public getBatteryActivePower (): { at: Date, value: number } | null {
         if (!this._inverterExtension || !this._inverterExtension.regs) { return null; }
         if (!this._inverter || !this._inverter.regs) { return null; }

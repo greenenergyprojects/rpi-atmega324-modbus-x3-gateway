@@ -144,6 +144,35 @@ export class RegisterValues extends DataRecord<IRegisterValues> {
         return Math.abs(max.getTime() - min.getTime());
     }
 
+    public getMinMaxTimeMillis (r: RegisterValues): { tMin: number, tMax: number } | null {
+        if (!(r instanceof RegisterValues)) { return null; }
+        if (!Array.isArray(this._regBlocks) || this._regBlocks.length < 1) { return null; }
+        if (!Array.isArray(r._regBlocks) || r._regBlocks.length < 1) { return null; }
+        const rv: { tMin: number, tMax: number } = { tMin: null, tMax: null };
+
+        for (const rb of this._regBlocks) {
+            if (!rv.tMin || (rb.at && rb.at.getTime() < rv.tMin) ) {
+                rv.tMin = rb.at.getTime();
+            }
+            if (!rv.tMax || (rb.at && rb.at.getTime() > rv.tMax) ) {
+                rv.tMax = rb.at.getTime();
+            }
+        }
+        for (const rb of r._regBlocks) {
+            if (!rv.tMin || (rb.at && rb.at.getTime() < rv.tMin) ) {
+                rv.tMin = rb.at.getTime();
+            }
+            if (!rv.tMax || (rb.at && rb.at.getTime() > rv.tMax) ) {
+                rv.tMax = rb.at.getTime();
+            }
+        }
+        if (rv.tMin === null || rv.tMax === null) {
+            return null;
+        }
+
+        return rv;
+    }
+
 
 
 }

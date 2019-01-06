@@ -25,17 +25,20 @@ export class ModbusNumber extends ModbusValue<number> {
         return super.toObject(preserveDate);
     }
 
-    public get uid (): string {
-        return super.uid;
-    }
+    // public get uid (): string {
+    //     return this._definition.uid;
+    // }
 
-    public get definition (): IRegisterDefinition {
-        return super.definition;
-    }
+    // public get definition (): IRegisterDefinition {
+    //     return this._definition;
+    // }
 
-    public get ids (): number [] {
-        return super.ids;
-    }
+    // public get ids (): number [] {
+    //     if (!this._cachedIds) {
+    //         this._cachedIds = RegisterDefinition.getIds([this._definition]);
+    //     }
+    //     return this._cachedIds;
+    // }
 
     public get value (): { at: Date, value: number } | null {
         return this._value;

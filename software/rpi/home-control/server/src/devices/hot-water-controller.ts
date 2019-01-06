@@ -7,6 +7,7 @@ import * as http from 'http';
 import { IMonitorRecord, MonitorRecord } from '../data/common/hot-water-controller/monitor-record';
 import { BoilerMode } from '../data/common/hot-water-controller/boiler-mode';
 import { IBoilerController, BoilerController } from '../data/common/hot-water-controller/boiler-controller';
+import { IMonitorRecordBoiler } from '../data/common/home-control/monitor-record-boiler';
 
 
 interface IHotWaterControllerConfig {
@@ -53,6 +54,21 @@ export class HotWaterController {
         if (!config.host || typeof(config.host) !== 'string') { throw new Error('invalid/missing host in config'); }
         if (config.port < 0 || config.port > 65535) { throw new Error('invalid/missing port in config'); }
         if (!config.path || typeof(config.path) !== 'string') { throw new Error('invalid/missing path'); }
+    }
+
+    public toObject (preserveDate = true): IMonitorRecordBoiler {
+        let rv: IMonitorRecordBoiler;
+        if (this._lastValidResponse && this._lastValidResponse.value && this._lastValidResponse.at instanceof Date) {
+            rv = {
+                createdAt:     this._lastValidResponse.at,
+                monitorRecord: this._lastValidResponse.value.toObject(preserveDate)
+            };
+        } else {
+            rv = {
+                createdAt: new Date()
+            };
+        }
+        return rv;
     }
 
     public get lastValidResponse (): { at: Date, value: MonitorRecord } {
@@ -198,7 +214,7 @@ export class HotWaterController {
     private async handleTimer (init?: boolean) {
         try {
             const rv = await this.getData();
-            debug.fine('HotWaterController update done');
+            debug.finer('HotWaterController update done');
         } catch (err) {
             debug.warn('request fails\n%e', err);
         }

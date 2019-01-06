@@ -33,6 +33,7 @@ interface IMonitorConfig {
 
 interface ITempFileRecord {
     createdAt: Date;
+    pvSouthEnergy: IEnergyDaily;
     pvSouthEnergyDaily: IEnergyDaily;
     pvEastWestEnergyDaily: IEnergyDaily;
     eInDaily: IEnergyDaily;
@@ -68,6 +69,7 @@ export class Monitor {
     private _froniusmeter: FroniusMeterTcp;
     private _history: MonitorRecord [] = [];
     private _lastTimerEvent: Date;
+    private _pvSouthEnergy: EnergyDaily;
     private _pvSouthEnergyDaily: EnergyDaily;
     private _pvEastWestEnergyDaily: EnergyDaily;
     private _eInDaily: EnergyDaily;
@@ -112,6 +114,17 @@ export class Monitor {
                     } catch (err) {
                         debug.warn('reading pvEastWestEnergyDaily fails...');
                     }
+                    try {
+                        if (!this._pvSouthEnergy && o.pvSouthEnergy) {
+                            this._pvSouthEnergy = new EnergyDaily(o.pvSouthEnergy);
+                            debug.info('found pvSouthEnergy in temp file %s (%o)', fn, this._pvSouthEnergy);
+                        } else {
+                            debug.warn('missing pvSouthEnergy from temp file %s', fn);
+                        }
+                    } catch (err) {
+                        debug.warn('reading pvSouthEnergy fails...');
+                    }
+
                     try {
                         if (!this._pvSouthEnergyDaily && o.pvSouthEnergyDaily) {
                             this._pvSouthEnergyDaily = new EnergyDaily(o.pvSouthEnergyDaily);
@@ -166,9 +179,14 @@ export class Monitor {
                 } catch (err) {
                     debug.warn('reading temp file fails', err);
                 }
+                if (this._pvEastWestEnergyDaily && this._pvSouthEnergy && this._pvSouthEnergyDaily &&
+                    this._eInDaily && this._eOutDaily && this._batInDaily && this._batOutDaily) {
+                    break;
+                }
             }
         }
         if (!this._pvEastWestEnergyDaily ) { this._pvEastWestEnergyDaily = new EnergyDaily({ totalEnergy: 0 }); }
+        if (!this._pvSouthEnergy) { this._pvSouthEnergy = new EnergyDaily({ totalEnergy: 0 }); }
         if (!this._pvSouthEnergyDaily) { this._pvSouthEnergyDaily = new EnergyDaily({ totalEnergy: 0 }); }
         if (!this._eInDaily) { this._eInDaily = new EnergyDaily({ totalEnergy: 0 }); }
         if (!this._eOutDaily) { this._eOutDaily = new EnergyDaily({ totalEnergy: 0 }); }
@@ -210,12 +228,12 @@ export class Monitor {
         return new Promise<void>( (res, rej) => { setTimeout( () => { res(); }, 200); } );
     }
 
-    public get latest (): MonitorRecord {
+    public getLatestMonitorRecord (): MonitorRecord {
         return this._history.length > 0 ? this._history[this._history.length - 1] : null;
     }
 
     private async handleTimerEvent () {
-        debug.fine('handleTimerEvent now = %d', Date.now());
+        debug.finer('handleTimerEvent now = %d', Date.now());
 
         try {
             const now = new Date();
@@ -226,256 +244,101 @@ export class Monitor {
             const nibe1155 = Nibe1155.getInstance();
             const saiameter = PiTechnik.getInstance().getSaiamater('PV Ost/West');
             const gridmeter = this._froniusmeter ? this._froniusmeter.toEnergyMeter('?') : null;
-            const boilerValues = boiler ? boiler.lastValidResponse : null;
 
             const x: IMonitorRecord = {
-                createdAt: now,
-                calculated: {
-                    pvSouthEnergyDaily:     this._pvSouthEnergyDaily.dailyEnergy,
-                    saiaDe1Offset:          0,
-                    froniusSiteDailyOffset: 0,
-                    eOutDaily:              this._eOutDaily.dailyEnergy,
-                    eInDaily:               this._eInDaily.dailyEnergy,
-                }
+                createdAt: now
             };
             if (this._symo)   { x.froniussymo = this._symo.toObject(); }
             if (gridmeter)    {
                 x.gridmeter = gridmeter.toObject();
             }
-            if (nibe1155)     { x.nibe1155 = nibe1155.toObject(); }
-            if (boilerValues) { x.boiler = boilerValues.value.toObject(); }
+
+            if (nibe1155)     {
+                try {
+                    x.nibe1155 = nibe1155.toObject();
+                    // debug.info('===> NIB1155 controller:\n%o', x.nibe1155.controller);
+                    // debug.info('===> NIB1155 %s f=%dHz, P=%dW, tVorlauf=%d°C  tPuffer=%d°C %s %s', nibe1155.controller.currentMode,
+                    //             nibe1155.getCompressorFrequencyAsNumber(), nibe1155.getCompressorInPowerAsNumber(),
+                    //             nibe1155.getSupplyS1TempAsNumber(), nibe1155.getSupplyTempAsNumber(),
+                    //             nibe1155.getOutdoorTemp().valueAsString(true), nibe1155.getDegreeMinutesAsNumber());
+                } catch (err) {
+                    debug.warn('%e', err);
+                }
+            }
+
+            if (boiler) {
+                x.boiler = boiler.toObject();
+            }
 
             if (saiameter)    {
-                x.extPvMeter = { saiameter: saiameter.toEnergyMeter()};
+                x.extPvMeter = { pveastwest: saiameter.toEnergyMeter()};
                 this._pvEastWestEnergyDaily.setTotalEnergy(saiameter.e1, saiameter.createdAt);
-                debug.info('  pvE/W ---> %dW ==> %dWh', saiameter.p, this._pvEastWestEnergyDaily.dailyEnergy);
+                // debug.info('  pvE/W ---> %dW ==> %dWh', saiameter.p, this._pvEastWestEnergyDaily.dailyEnergy);
             }
 
             if (gridmeter) {
                 if (gridmeter.energyTotalImported >= 0) {
                     this._eInDaily.setTotalEnergy(gridmeter.energyTotalImported, gridmeter.createdAt);
-                    debug.info('  eIn  ---> %dW ==> %dWh', gridmeter.energyTotalImported, this._eInDaily.dailyEnergy);
+                    // debug.info('  eIn  ---> %dW ==> %dWh', gridmeter.energyTotalImported, this._eInDaily.dailyEnergy);
                 } else if (gridmeter.energyTotal >= 0) {
                     this._eInDaily.setTotalEnergy(gridmeter.activePower, gridmeter.createdAt);
                 }
                 if (gridmeter.energyTotalExported >= 0) {
                     this._eOutDaily.setTotalEnergy(gridmeter.energyTotalExported, gridmeter.createdAt);
-                    debug.info('  eOut ---> %dW ==> %dWh', gridmeter.activePower, this._eOutDaily.dailyEnergy);
+                    // debug.info('  eOut ---> %dW ==> %dWh', gridmeter.activePower, this._eOutDaily.dailyEnergy);
                 }
             }
 
             if (this._symo) {
                 const pPvS = this._symo.getPvSouthActivePower();
                 if (pPvS && pPvS.value >= 0) {
-                    this._pvSouthEnergyDaily.accumulateEnergy(pPvS.value, pPvS.at);
-                    debug.info('  pvSouth ---> %dW ==> %dWh', pPvS.value, this._pvSouthEnergyDaily.dailyEnergy);
+                    this._pvSouthEnergy.accumulateTotalEnergy(pPvS.value, pPvS.at);
+                    const before = this._pvSouthEnergyDaily.dailyEnergy;
+                    this._pvSouthEnergyDaily.accumulateDailyEnergy(pPvS.value, pPvS.at);
+                    // debug.info(sprintf('---> pvSouth=%7.2f pvSouthEnergyDaily %7.2f ==> %7.2f', pPvS.value, before, this._pvSouthEnergyDaily.dailyEnergy));
+                    // debug.info('  pvSouth ---> %dW ==> %dWh', pPvS.value, this._pvSouthEnergyDaily.dailyEnergy);
                 } else {
-                    debug.info('  pvSouth ---> ??W ==> %dWh', this._pvSouthEnergyDaily.dailyEnergy);
+                    // debug.info('  pvSouth ---> ??W ==> %dWh', this._pvSouthEnergyDaily.dailyEnergy);
                 }
                 const pBatt = this._symo.getBatteryActivePower();
                 if (pBatt) {
                     if (pBatt.value === 0) {
-                        this._batInDaily.accumulateEnergy(0, pBatt.at);
-                        this._batOutDaily.accumulateEnergy(0, pBatt.at);
+                        this._batInDaily.accumulateDailyEnergy(0, pBatt.at);
+                        this._batOutDaily.accumulateDailyEnergy(0, pBatt.at);
                     } else if (pBatt.value < 0) {
-                        this._batInDaily.accumulateEnergy(-pBatt.value, pBatt.at);
-                        this._batOutDaily.accumulateEnergy(0, pBatt.at);
+                        this._batInDaily.accumulateDailyEnergy(-pBatt.value, pBatt.at);
+                        this._batOutDaily.accumulateDailyEnergy(0, pBatt.at);
                     } else if (pBatt.value > 0) {
-                        this._batInDaily.accumulateEnergy(0, pBatt.at);
-                        this._batOutDaily.accumulateEnergy(pBatt.value, pBatt.at);
+                        this._batInDaily.accumulateDailyEnergy(0, pBatt.at);
+                        this._batOutDaily.accumulateDailyEnergy(pBatt.value, pBatt.at);
                     }
-                    debug.info('  pBatt ---> %dW ==> in=%dWh / out=%dWh', pBatt.value, this._batInDaily.dailyEnergy, this._batOutDaily.dailyEnergy );
+                    // debug.info(sprintf('  pBatt ---> %.2fW ==> in=%.2fWh / out=%.2fWh',
+                    //           pBatt.value, this._batInDaily.dailyEnergy, this._batOutDaily.dailyEnergy ));
                 }
-
-
             }
+
+            const froniusSiteDaily = this._symo ? this._symo.getFroniusSiteDaily() : null;
+            x.calculated = {
+                createdAt:             new Date(),
+                eOutDaily:             this._eOutDaily.dailyEnergy,
+                eInDaily:              this._eInDaily.dailyEnergy,
+                batOutDaily:           this._batOutDaily.dailyEnergy,
+                batInDaily:            this._batInDaily.dailyEnergy,
+                pvSouthEnergy:         this._pvSouthEnergy.totalEnergy,
+                pvSouthEnergyDaily:    this._pvSouthEnergyDaily.dailyEnergy,
+                pvEastWestEnergyDaily: this._pvEastWestEnergyDaily.dailyEnergy,
+                froniusSiteDaily:      froniusSiteDaily ? froniusSiteDaily.value : null
+            };
 
             const mr = new MonitorRecord(x);
             this.saveTemp(mr);
             // debug.info('%o', mr.toObject());
+            this._history.push(mr);
+            if (this._history.length > 60) {
+                this._history.splice(0, 1);
+            }
 
-            // if (dayHasChanged) {
-            //     x.calculated.saiaDe1Offset = saiaMeter.de1;
-            //     x.calculated.froniusSiteDailyOffset = x.froniusRegister.siteEnergyDay;
-            // }
-            // if (x.calculated.saiaDe1Offset > saiaMeter.de1) {
-            //     x.calculated.saiaDe1Offset = 0;
-            // }
-            // if (x.calculated.froniusSiteDailyOffset > x.froniusRegister.siteEnergyDay) {
-            //     x.calculated.froniusSiteDailyOffset = 0;
-            // }
-            // this._lastCaclulated = x.calculated;
-
-
-
-        // try {
-        //     if ( (now.getTime() - this._lastFroniusPoll.getTime()) > this._config.froniusPeriodMillis) {
-        //         this._lastFroniusPoll = now;
-        //         debug.fine('polling FroniusSymo');
-        //         const oldInv = this._symo.inverter;
-        //         const oldInvExt = this._symo.inverterExtension;
-        //         const oldSto = this._symo.storage;
-        //         await Promise.all([
-        //             this._symo.readFroniusRegister(),
-        //             this._symo.readInverter(),
-        //             this._symo.readInverterExtension(),
-        //             this._symo.readStorage()]
-        //         );
-        //         const froReg = this._symo.froniusRegister;
-        //         const inv = this._symo.inverter;
-        //         const invExt = this._symo.inverterExtension;
-        //         const sto = this._symo.storage;
-
-        //         if (oldInvExt && invExt) {
-        //             const dt = (invExt.createdAt.getTime() - oldInvExt.createdAt.getTime());
-        //             if (dt > 0) {
-        //                 const de = invExt.string1_Power * dt  / 1000 / 3600;
-        //                 this._pvSouthEnergyDaily =
-        //                     invExt.createdAt.getDay() !== oldInvExt.createdAt.getDay() ? de : this._pvSouthEnergyDaily + de;
-        //                 if (debug.fine.enabled) {
-        //                     debug.fine('String 1 (PV-South): P=%sW, dt=%sms, dE=%sWh, E-day=%sWh  E-site-day=%sWh',
-        //                                  sprintf('%7.02f',  invExt.string1_Power), dt,
-        //                                  sprintf('%7.03f', de),
-        //                                  sprintf('%9.03f', this._pvSouthEnergyDaily),
-        //                                  sprintf('%8.01f',  froReg.siteEnergyDay)
-        //                               );
-        //                 }
-        //             }
-        //         }
-        //         let hasChanged = false;
-
-        //         for (const a in froReg.regs) {
-        //             if (!froReg.regs.hasOwnProperty(a)) { continue; }
-        //             const addr = +a.substr(1, 3);
-        //             if (addr < 500 || addr > 510) { continue; }
-        //             const v2 = (<any>inv.regs)[a];
-        //             const v1 = (<any>oldInv.regs)[a];
-        //             if ( v1 !== v2) {
-        //                 debug.finer('froniusRegister changed %s: %s -> %s', a, v1, v2);
-        //                 hasChanged = true;
-        //             }
-        //         }
-        //         for (const a in inv.regs) {
-        //             if (!inv.regs.hasOwnProperty(a)) { continue; }
-        //             const addr = +a.substr(1, 5);
-        //             if (addr < 40072 || addr === 40100 || addr === 40102 || addr >= 40110) { continue; }
-        //             const v2 = (<any>inv.regs)[a];
-        //             const v1 = (<any>oldInv.regs)[a];
-        //             if ( v1 !== v2) {
-        //                 debug.finer('inverter changed %s: %s -> %s', a, v1, v2);
-        //                 hasChanged = true;
-        //             }
-        //         }
-        //         for (const a in invExt.regs) {
-        //             if (!invExt.regs.hasOwnProperty(a)) { continue; }
-        //             const addr = +a.substr(1, 2);
-        //             if (addr < 11 || addr === 25 || addr > 48) { continue; }
-        //             const v2 = (<any>invExt.regs)[a];
-        //             const v1 = (<any>oldInvExt.regs)[a];
-        //             if ( v1 !== v2) {
-        //                 debug.finer('InverterExtension changed %s: %s -> %s', a, v1, v2);
-        //                 hasChanged = true;
-        //             }
-        //         }
-        //         for (const a in sto.regs) {
-        //             if (!sto.regs.hasOwnProperty(a)) { continue; }
-        //             const addr = +a.substr(1, 2);
-        //             if (addr !== 9 && addr === 12) { continue; }
-        //             const v2 = (<any>sto.regs)[a];
-        //             const v1 = (<any>oldSto.regs)[a];
-        //             if ( v1 !== v2) {
-        //                 debug.finer('Storage changed %s: %s -> %s', a, v1, v2);
-        //                 hasChanged = true;
-        //             }
-        //         }
-        //     }
-
-        //     // const d = FroniusMeter.getInstance(1);
-        //     const d: FroniusMeter = null;
-        //     const fm = d instanceof FroniusMeter ? d.toValuesObject() : null;
-        //     let saiaMeter: ISaiaAle3Meter;
-        //     if (fm) {
-        //         const rv = await Promise.all([ PiTechnik.instance.getData() ]);
-        //         saiaMeter = rv[0];
-        //     } else {
-        //         const oldMeter = this._symo.meter;
-        //         const rv = await Promise.all([ PiTechnik.instance.getData(), this._symo.readMeter() ]);
-        //         saiaMeter = rv[0];
-        //         const newMeter = rv[1];
-        //         if (newMeter.createdAt.getDay() !== oldMeter.createdAt.getDay()) {
-        //             this._eDaily.eInOffset = newMeter.totalImportedEnergy;
-        //             this._eDaily.eOutOffset =  newMeter.totalExportedEnergy;
-        //         }
-        //         this._eDaily.eIn = newMeter.totalImportedEnergy - this._eDaily.eInOffset;
-        //         this._eDaily.eOut = newMeter.totalExportedEnergy - this._eDaily.eOutOffset;
-        //     }
-
-
-        //     const x: IMonitorRecordData = {
-        //         froniusRegister: this._symo.froniusRegister,
-        //         inverter: this._symo.inverter,
-        //         nameplate: this._symo.nameplate,
-        //         inverterExtension: this._symo.inverterExtension,
-        //         storage: this._symo.storage,
-        //         extPvMeter: [],
-        //         calculated: {
-        //             pvSouthEnergyDaily: this._pvSouthEnergyDaily,
-        //             saiaDe1Offset: this._lastCaclulated.saiaDe1Offset,
-        //             froniusSiteDailyOffset: this._lastCaclulated.froniusSiteDailyOffset,
-        //             eInDaily: this._eDaily.eIn,
-        //             eOutDaily: this._eDaily.eOut
-        //         }
-        //     };
-        //     if (dayHasChanged) {
-        //         x.calculated.saiaDe1Offset = saiaMeter.de1;
-        //         x.calculated.froniusSiteDailyOffset = x.froniusRegister.siteEnergyDay;
-        //     }
-        //     if (x.calculated.saiaDe1Offset > saiaMeter.de1) {
-        //         x.calculated.saiaDe1Offset = 0;
-        //     }
-        //     if (x.calculated.froniusSiteDailyOffset > x.froniusRegister.siteEnergyDay) {
-        //         x.calculated.froniusSiteDailyOffset = 0;
-        //     }
-        //     this._lastCaclulated = x.calculated;
-
-        //     if (fm) {
-        //         x.gridmeter = fm;
-        //     } else {
-        //         x.meter = this._symo.meter;
-        //     }
-        //     if (saiaMeter) {
-        //         x.extPvMeter.push(saiaMeter);
-        //     }
-
-        //     const nibe = Nibe1155.getInstance();
-        //     if (nibe) {
-        //         x.heatpump = {
-        //             createdAt: new Date(),
-        //             controller: nibe.controller.toObject(),
-        //             values: {}
-        //         };
-        //     }
-        //     const strIds = Object.getOwnPropertyNames(Nibe1155ModbusRegisters.regDefById);
-        //     for (const strId of strIds) {
-        //         const id = +strId;
-        //         const v = nibe.values[id];
-        //         x.heatpump.values[<Nibe1155ModbusIds>id] = v instanceof Nibe1155Value ? v.toObject() : null;
-        //     }
-
-        //     const hwc = HotWaterController.Instance;
-        //     if (hwc) {
-        //         x.hwcMonitorRecord = hwc.lastValidResponse.value.toObject();
-        //     }
-        //     this.saveDebugFile(x);
-        //     const r = MonitorRecord.create(x);
-        //     debug.info('%O', r);
-        //     this._history.push(r);
-        //     if (this._history.length > 60) {
-        //         this._history.splice(0, 1);
-        //     }
-        //     Statistics.getInstance().handleMonitorRecord(r);
-        //     debug.fine('%O', r.toHumanReadableObject());
-        //     this.saveTemp(r);
+            Statistics.getInstance().handleMonitorRecord(mr);
 
         } catch (err) {
             debug.warn('%e', err);
@@ -489,6 +352,7 @@ export class Monitor {
         try {
             const t: ITempFileRecord = {
                 createdAt: new Date(),
+                pvSouthEnergy: this._pvSouthEnergy.toObject(),
                 pvSouthEnergyDaily:    this._pvSouthEnergyDaily.toObject(),
                 pvEastWestEnergyDaily: this._pvEastWestEnergyDaily.toObject(),
                 eInDaily: this._eInDaily.toObject(),
@@ -504,8 +368,8 @@ export class Monitor {
             fs.writeFile(fn, tOut, { encoding: 'utf-8' }, (err) => {
                 if (err) {
                     debug.warn('tempFile error\n%e', err);
-                } else if (debug.fine.enabled) {
-                    debug.fine('temp file ' + fn + 'written');
+                } else if (debug.finer.enabled) {
+                    debug.finer('temp file ' + fn + ' written');
                 }
             } );
 

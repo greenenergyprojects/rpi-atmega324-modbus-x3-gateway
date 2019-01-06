@@ -218,7 +218,7 @@ export class ModbusTcpTransactionFactory extends ModbusTransaction {
         this._response = response;
         if (this._response.transactionId === this._request.transactionId) {
             if (!this._resolve) {
-                debug.warn('cannot finalize transaction, missing resolve function');
+                debug.warn('cannot finalize transaction, missing resolve function, request=%o', this.request.pdu );
             } else {
                 const res = this._resolve;
                 this._resolve = null;

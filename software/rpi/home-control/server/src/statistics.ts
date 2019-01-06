@@ -23,9 +23,9 @@ interface IStatisticsConfig {
 export class Statistics {
 
     public static CSVHEADER: IHeaderItem [] = [
-        { id: 'cnt', label: 'Messwertanzahl', isRecordItem: true },
-        { id: 'first-time', label: 'von', isRecordItem: true },
-        { id: 'last-time', label: 'bis', isRecordItem: true },
+        { id: 'cnt', label: 'Homecontrol - Anzahl', isRecordItem: true },
+        { id: 'first-time', label: 'von (%Y-%M-%D)', isRecordItem: true },
+        { id: 'last-time', label: 'bis (%Y-%M-%D)', isRecordItem: true },
         { id: 'p-grid', unit: 'W', label: 'P-Netz/W' },
         { id: 'p-load', unit: 'W', label: 'P-Verbraucher/W' },
         { id: 'storage-percent', unit: '%', label: 'Speicher/%' },
@@ -193,8 +193,11 @@ export interface IStatisticsRecord {
     valueCount: number;
     firstAt: Date | number;
     lastAt: Date | number;
-    values: IValue [];
+    minMaxValues: IMinMaxValue [];
+    singleValues: { [id: string]: ISingleValue };
 }
+
+
 
 export interface IHeaderItem {
     id: string;
@@ -203,10 +206,17 @@ export interface IHeaderItem {
     hideMin?: boolean;
     hideAvg?: boolean;
     hideMax?: boolean;
+    isSingleValue?: boolean;
     label?: string;
 }
 
-export interface IValue {
+export interface ISingleValue {
+    id: string;
+    at: Date | number;
+    value: number;
+}
+
+export interface IMinMaxValue {
     id: string;
     min: number;
     avg: number;
@@ -217,21 +227,33 @@ export class StatisticsRecord implements IStatisticsRecord  {
     protected _valueCount: number;
     protected _firstAt: Date;
     protected _lastAt: Date;
-    protected _values: IValue [];
+    protected _minMaxValues: IMinMaxValue [];
+    protected _singleValues: { [id: string]: ISingleValue };
 
-    public constructor (init?: IStatisticsRecord) {
+    public constructor (init?: IStatisticsRecord, singleValues?: { [id: string]: ISingleValue }) {
         if (!init) {
             this._valueCount = 0;
             this._firstAt = null;
             this._lastAt = null;
-            this._values = [];
+            this._minMaxValues = [];
+            this._singleValues = singleValues ? singleValues : {};
         } else {
             this._valueCount = init.valueCount;
             const fat = init.firstAt;
             this._firstAt = fat instanceof Date ? fat : new Date(fat);
             const lat = init.lastAt;
             this._lastAt = lat instanceof Date ? lat : new Date(lat);
-            this._values = init.values;
+            this._minMaxValues = init.minMaxValues;
+            this._singleValues = {};
+            for (const id in init.singleValues) {
+                if (!init.singleValues.hasOwnProperty(id)) { continue; }
+                const v = init.singleValues[id];
+                this._singleValues[id] = {
+                    id:   v.id,
+                    at: v.at instanceof Date ? v.at : new Date(v.at),
+                    value: v.value
+                };
+            }
         }
     }
 
@@ -247,33 +269,49 @@ export class StatisticsRecord implements IStatisticsRecord  {
         return this._lastAt;
     }
 
-    public get values (): IValue [] {
-        return this._values;
+    public get minMaxValues (): IMinMaxValue [] {
+        return this._minMaxValues;
+    }
+
+    public get singleValues (): { [ id: string ]: ISingleValue } {
+        return this._singleValues;
     }
 
     public toObject (preserveDate?: boolean): IStatisticsRecord {
         const rv: IStatisticsRecord = {
-            valueCount: this._valueCount,
-            firstAt:    preserveDate ? this._firstAt : this._firstAt.getTime(),
-            lastAt:     preserveDate ? this._lastAt : this._lastAt.getTime(),
-            values:     this._values
+            valueCount:    this._valueCount,
+            firstAt:       preserveDate ? this._firstAt : this._firstAt.getTime(),
+            lastAt:        preserveDate ? this._lastAt : this._lastAt.getTime(),
+            minMaxValues:  this._minMaxValues,
+            singleValues:  {}
         };
+        for (const id in this._singleValues) {
+            if (!this._singleValues.hasOwnProperty(id)) { continue; }
+            const v = this._singleValues[id];
+            const at = v.at instanceof Date ? v.at.getTime() : v.at;
+            rv.singleValues[id] = {
+                id:   v.id,
+                at: preserveDate ? new Date(at) : at,
+                value: v.value
+            };
+        }
         return rv;
     }
 
 }
 
+
 class StatisticsRecordFactory extends StatisticsRecord {
 
     private _header: IHeaderItem [];
 
-    constructor (header: IHeaderItem []) {
-        super();
+    constructor (header: IHeaderItem [], singleValues?: { [id: string]: ISingleValue }) {
+        super(null, singleValues);
         this._header = header;
         for (let i = 0; i < header.length; i++) {
             const h = header[i];
             if (h.isRecordItem) { continue; }
-            this._values.push({ id: h.id, min: Number.NaN, avg: Number.NaN, max: Number.NaN });
+            this._minMaxValues.push({ id: h.id, min: null, avg: null, max: null });
         }
     }
 
@@ -289,30 +327,33 @@ class StatisticsRecordFactory extends StatisticsRecord {
                 offset--;
                 continue;
             }
-            const v = this._values[i + offset];
+            if (h.isSingleValue) {
+                continue;
+            }
+            const v = this._minMaxValues[i + offset];
             if (v.id !== h.id) {
                 debug.warn('error on header-id %s / value-id %s / index %d / offset %d', h.id, v.id, i, offset);
                 continue;
             }
             switch (h.id) {
-                // case 'p-grid':          this.handleValue(v, this._valueCount, r.gridActivePower); break;
-                // case 'p-load':          this.handleValue(v, this._valueCount, r.loadActivePower); break;
-                // case 'p-storage':       this.handleValue(v, this._valueCount, r.storagePower); break;
-                // case 'storage-percent': this.handleValue(v, this._valueCount, r.storageEnergyInPercent); break;
-                // case 'p-pv':            this.handleValue(v, this._valueCount, r.pvActivePower); break;
-                // case 'p-pv-s':          this.handleValue(v, this._valueCount, r.pvSouthActivePower); break;
-                // case 'p-pv-ew':         this.handleValue(v, this._valueCount, r.pvEastWestActivePower); break;
-                // case 'e-pv-daily':      this.handleValue(v, this._valueCount, r.pvEnergyDaily); break;
-                // case 'e-pv-s-daily':    this.handleValue(v, this._valueCount, r.pvSouthEnergyDaily); break;
-                // case 'e-pv-ew-daily':   this.handleValue(v, this._valueCount, r.pvEastWestEnergyDaily); break;
-                // case 'e-pv-s':          this.handleValue(v, this._valueCount, r.froniusEnergy); break;
-                // case 'e-out':           this.handleValue(v, this._valueCount, r.eOut); break;
-                // case 'e-in':            this.handleValue(v, this._valueCount, r.eIn); break;
-                // case 'e-pv-ew':         this.handleValue(v, this._valueCount, r.pvEastWestEnergy); break;
-                // case 'e-site':          this.handleValue(v, this._valueCount, r.froniusEnergy); break;
-                // case 'e-site-daily':    this.handleValue(v, this._valueCount, r.froniusEnergyDaily); break;
-                // case 'e-in-daily':      this.handleValue(v, this._valueCount, r.eInDaily); break;
-                // case 'e-out-daily':     this.handleValue(v, this._valueCount, r.eOutDaily); break;
+                case 'p-grid':          this.handleValue(v, this._valueCount, r.getGridActivePower()); break;
+                case 'p-load':          this.handleValue(v, this._valueCount, r.getLoadActivePower()); break;
+                case 'p-storage':       this.handleValue(v, this._valueCount, r.getBatteryPower()); break;
+                case 'storage-percent': this.handleValue(v, this._valueCount, r.getBatteryEnergyInPercent()); break;
+                case 'p-pv':            this.handleValue(v, this._valueCount, r.getPvActivePower()); break;
+                case 'p-pv-s':          this.handleValue(v, this._valueCount, r.getPvSouthActivePower()); break;
+                case 'p-pv-ew':         this.handleValue(v, this._valueCount, r.getPvEastWestActivePower()); break;
+                case 'e-pv-daily':      this.handleValue(v, this._valueCount, r.getPvEnergyDaily()); break;
+                case 'e-pv-s-daily':    this.handleValue(v, this._valueCount, r.getPvSouthEnergyDaily()); break;
+                case 'e-pv-ew-daily':   this.handleValue(v, this._valueCount, r.getPvEastWestEnergyDaily()); break;
+                case 'e-pv-s':          this.handleValue(v, this._valueCount, r.getPvSouthEnergy()); break;
+                case 'e-out':           this.handleValue(v, this._valueCount, r.getEOut()); break;
+                case 'e-in':            this.handleValue(v, this._valueCount, r.getEIn()); break;
+                case 'e-pv-ew':         this.handleValue(v, this._valueCount, r.getPvEastWestEnergy()); break;
+                case 'e-site':          this.handleValue(v, this._valueCount, r.getFroniusSiteEnergy()); break;
+                case 'e-site-daily':    this.handleValue(v, this._valueCount, r.getFroniusSiteDailyEnergy()); break;
+                case 'e-in-daily':      this.handleValue(v, this._valueCount, r.getEInDaily()); break;
+                case 'e-out-daily':     this.handleValue(v, this._valueCount, r.getEOutDaily()); break;
                 default: debug.warn('unsupported id %s', h.id); break;
             }
         }
@@ -326,6 +367,14 @@ class StatisticsRecordFactory extends StatisticsRecord {
             if (h.isRecordItem) {
                 s = s + (first ? '' : ',');
                 s += '"' + h.label + '"'; first = false;
+                const now = new Date();
+                s = s.replace(/%Y/g, sprintf('%04d', now.getFullYear()));
+                s = s.replace(/%M/g, sprintf('%02d', now.getMonth() + 1));
+                s = s.replace(/%D/g, sprintf('%02d', now.getDate()));
+            } else if (h.isSingleValue) {
+                s = s + (first ? '' : ',');
+                s += '"SVAL(' + h.label + ')","SDAT(' + h.label + ')"';
+                first = false;
             } else {
                 if (!h.hideMin) {
                     s = s + (first ? '' : ',');
@@ -351,18 +400,28 @@ class StatisticsRecordFactory extends StatisticsRecord {
         let s = '', offset = 0;
         for (let i = 0, first = true; i < this._header.length; i++, first = false) {
             const h = this._header[i];
-            let v: IValue;
-            if (h.isRecordItem) {
-                offset--;
-            } else {
-                v = this.values[i + offset];
-            }
-            s = s + (first ? '' : ',');
+            s += s.length > 0 ? ',' : '';
 
-            if (v && v.id !== h.id) {
-                debug.warn('error on header-id %s / value-id %s / index %d / offset %d', h.id, v.id, i, offset);
-                s += '"ERR","ERR","ERR"';
-            } else {
+            if (h.isSingleValue) {
+                offset -= 2;
+                const v = this._singleValues[h.id];
+                if (!v) {
+                    s += sprintf('"0",""'); // no value available
+                } else {
+                    const at = v.at instanceof Date ? v.at : new Date(v.at);
+                    const d: { format: string, value: number} = null;
+                    let sv: string;
+                    if (d) {
+                        sv = sprintf(d.format, v.value).trim();
+                    } else {
+                        sv = sprintf('%.3f', v.value);
+                    }
+
+                    s += sprintf('"%s","%02d:%02d:%02d"', sv.replace(/\./g, ','), at.getHours(), at.getMinutes(), at.getSeconds());
+                }
+
+            } else if (h.isRecordItem) {
+                offset--;
                 switch (h.id) {
                     case 'cnt': {
                         s += this.valueCount.toString();
@@ -384,43 +443,74 @@ class StatisticsRecordFactory extends StatisticsRecord {
                         s += sprintf('"%02d:%02d:%02d"', this.lastAt.getHours(), this.lastAt.getMinutes(), this.lastAt.getSeconds());
                         break;
                     }
-                    case 'p-grid': case 'p-storage': case 'p-load': {
-                        s += this.formatLineFragment(h, 0, v);
-                        break;
+                    default: debug.warn('unsupported record Item id %s', h.id); break;
+                }
+
+            } else {
+                const v = this.minMaxValues[i + offset];
+                if (v && v.id !== h.id) {
+                    debug.warn('error on header-id %s / value-id %s / index %d / offset %d', h.id, v.id, i, offset);
+                    s += '"ERR","ERR","ERR"';
+                } else {
+                    switch (h.id) {
+                        case 'cnt': {
+                            s += this.valueCount.toString();
+                            break;
+                        }
+                        case 'first-date': {
+                            s += sprintf('"%04d-%02d-%02d"', this.firstAt.getFullYear(), this.firstAt.getMonth() + 1, this.firstAt.getDay());
+                            break;
+                        }
+                        case 'last-date': {
+                            s += sprintf('"%04d-%02d-%02d"', this.lastAt.getFullYear(), this.lastAt.getMonth() + 1, this.lastAt.getDay());
+                            break;
+                        }
+                        case 'first-time': {
+                            s += sprintf('"%02d:%02d:%02d"', this.firstAt.getHours(), this.firstAt.getMinutes(), this.firstAt.getSeconds());
+                            break;
+                        }
+                        case 'last-time': {
+                            s += sprintf('"%02d:%02d:%02d"', this.lastAt.getHours(), this.lastAt.getMinutes(), this.lastAt.getSeconds());
+                            break;
+                        }
+                        case 'p-grid': case 'p-storage': case 'p-load': {
+                            s += this.formatLineFragment(h, 0, v);
+                            break;
+                        }
+                        case 'storage-percent': {
+                            s += this.formatLineFragment(h, 0, v);
+                            break;
+                        }
+                        case 'p-pv': case 'p-pv-s': case 'p-pv-ew': {
+                            s += this.formatLineFragment(h, 0, v);
+                            break;
+                        }
+                        case 'e-pv-daily': case 'e-pv-s-daily': case 'e-pv-ew-daily': {
+                            s += this.formatLineFragment(h, 1, v);
+                            break;
+                        }
+                        case 'e-pv': case 'e-pv-s': case 'e-pv-ew': case 'e-site': case 'e-site-daily': {
+                            s += this.formatLineFragment(h, 0, v);
+                            break;
+                        }
+                        case 'e-out': case 'e-in': {
+                            s += this.formatLineFragment(h, 1, v);
+                            break;
+                        }
+                        case 'e-in-daily': case 'e-out-daily': {
+                            s += this.formatLineFragment(h, 0, v);
+                            break;
+                        }
+                        default: debug.warn('unsupported id %s', h.id); break;
                     }
-                    case 'storage-percent': {
-                        s += this.formatLineFragment(h, 0, v);
-                        break;
-                    }
-                    case 'p-pv': case 'p-pv-s': case 'p-pv-ew': {
-                        s += this.formatLineFragment(h, 0, v);
-                        break;
-                    }
-                    case 'e-pv-daily': case 'e-pv-s-daily': case 'e-pv-ew-daily': {
-                        s += this.formatLineFragment(h, 1, v);
-                        break;
-                    }
-                    case 'e-pv': case 'e-pv-s': case 'e-pv-ew': case 'e-site': case 'e-site-daily': {
-                        s += this.formatLineFragment(h, 0, v);
-                        break;
-                    }
-                    case 'e-out': case 'e-in': {
-                        s += this.formatLineFragment(h, 1, v);
-                        break;
-                    }
-                    case 'e-in-daily': case 'e-out-daily': {
-                        s += this.formatLineFragment(h, 0, v);
-                        break;
-                    }
-                    default: debug.warn('unsupported id %s', h.id); break;
                 }
             }
-
         }
         return s;
     }
 
-    private formatLineFragment (h: IHeaderItem, digits: number, values: IValue): string {
+
+    private formatLineFragment (h: IHeaderItem, digits: number, values: IMinMaxValue): string {
         let s = '';
         let k = 1;
         while (digits-- > 0) {
@@ -440,30 +530,33 @@ class StatisticsRecordFactory extends StatisticsRecord {
         return s.replace(/\./g, ',');
     }
 
-    private handleValue (v: IValue, cnt: number, x: number) {
+    private handleValue (v: IMinMaxValue, cnt: number, x: number) {
         this.calcMinimum(v, x);
         this.calcMaximum(v, x);
         this.calcAverage(v, cnt, x);
     }
 
-    private calcMinimum (v: IValue, x: number) {
-        if (Number.isNaN(v.min)) {
+    private calcMinimum (v: IMinMaxValue, x: number) {
+        if (typeof x !== 'number') { return; }
+        if (v.min === null) {
             v.min = x;
         } else {
             v.min = x < v.min ? x : v.min;
         }
     }
 
-    private calcMaximum (v: IValue, x: number) {
-        if (Number.isNaN(v.max)) {
+    private calcMaximum (v: IMinMaxValue, x: number) {
+        if (typeof x !== 'number') { return; }
+        if (v.max === null) {
             v.max = x;
         } else {
             v.max = x > v.max ? x : v.max;
         }
     }
 
-    private calcAverage (v: IValue, oldCnt: number, x: number) {
-        if (Number.isNaN(v.avg)) {
+    private calcAverage (v: IMinMaxValue, oldCnt: number, x: number) {
+        if (typeof x !== 'number') { return; }
+        if (v.avg  === null) {
             v.avg = x;
         } else {
             v.avg = (v.avg * oldCnt + x) / (oldCnt + 1);

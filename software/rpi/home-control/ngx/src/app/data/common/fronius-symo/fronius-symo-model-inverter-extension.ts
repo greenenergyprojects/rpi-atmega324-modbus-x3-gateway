@@ -168,6 +168,9 @@ export class FroniusSymoModelInverterExtension extends FroniusSymoModel<IFronius
     }
 
     public getPvSouthActivePower (): { at: Date, value: number } | null {
+        if (this.dcst_1 && this.dcst_1.value !== 4 ) {
+            return { at: this.dcw_1.at, value: 0 };
+        }
         return this.dcw_1;
     }
 

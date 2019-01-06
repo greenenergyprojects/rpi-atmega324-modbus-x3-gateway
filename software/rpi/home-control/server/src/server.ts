@@ -161,7 +161,7 @@ export class Server {
 
 
     private handleGet (req: express.Request, res: express.Response, next: express.NextFunction) {
-        debug.info(req.url);
+        // debug.info(req.url);
 
         if (req.url === '/' || req.url === '/index.html' || req.url.startsWith('/app') ) {
             const indexFileName = path.join(__dirname, '../../ngx/dist/ngx/index.html');

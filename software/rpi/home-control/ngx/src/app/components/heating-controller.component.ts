@@ -3,6 +3,7 @@ import { DataService } from '../services/data.service';
 import { Subscription } from 'rxjs';
 import { MonitorRecord } from '../data/common/home-control/monitor-record';
 import { ValidatorElement } from '../directives/validator.directive';
+import { HeatpumpControllerMode } from '../data/common/nibe1155/nibe1155-controller';
 
 @Component({
     selector: 'app-heating-controller',
@@ -203,9 +204,20 @@ export class HeatingControllerComponent implements OnInit, OnDestroy {
     }
 
     public onSubmit() {
+        let mode: HeatpumpControllerMode;
+        switch (this.validatorMode.value) {
+            case 'off': mode = HeatpumpControllerMode.off; break;
+            case 'frequency': mode = HeatpumpControllerMode.frequency; break;
+            case 'test': mode = HeatpumpControllerMode.test; break;
+            default: {
+                console.log('ERROR: unknown mode ' + this.validatorMode.value);
+                mode = HeatpumpControllerMode.off;
+                break;
+            }
+        }
         this.dataService.setHeatPumpMode({
             createdAt:        new Date(),
-            desiredMode:      this.validatorMode.value,
+            desiredMode:      mode,
             pin:              this._inputPin.validator.value,
             fSetpoint:        this._inputFrequency.validator.value,
             fMin:             this._inputFrequencyMin.validator.value,
