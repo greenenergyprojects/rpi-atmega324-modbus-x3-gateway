@@ -105,23 +105,37 @@ export class TestComponent implements OnInit, OnDestroy {
             }
             pv.values.push({ key: 'PV-E/W', values: [ v1, v2 ] });
 
-            x1 = v.getBatteryPower ();
+            x1 = v.getBatteryPower();
             if (x1 === null) {
-                console.log('getBatteryPowerx1');
+                console.log('getBatteryPower', x1);
                 v1 = { value: '?' };
-                v3 = { value: '?' };
-            } else {
-                v1 = { value: Math.round(x1) + 'W', classes: { bgred: x1 > 0, bggreen: x1 < 0 }  };
-                v3 = { value: x1 >= 0 ? 'Entladet' : 'Ladet' };
-            }
-            x2 = v.getBatteryEnergyInPercent ();
-            if (x2 === null) {
-                console.log('getBatteryEnergyInPercent', x2);
                 v2 = { value: '?' };
             } else {
-                v2 = { value: x2 + '%' };
+                v1 = { value: Math.round(x1) + 'W', classes: { bgred: x1 > 0, bggreen: x1 < 0 }  };
+                v2 = { value: x1 > 0 ? 'Entladet' : (x1 < 0 ? 'Ladet' : 'Hold') };
             }
-            pv.values.push({ key: 'Batterie', values: [ v1, v2, v3 ]});
+            // const s = v.getBatteryStateAsString();
+            // if (s === 'CALIBRATING's)
+            pv.values.push({ key: 'Bat-P', values: [ v1, v2 ]});
+
+            x1 = v.getBatteryEnergyInPercent ();
+            if (x1 === null) {
+                console.log('getBatteryEnergyInPercent', x1);
+                v1 = { value: '?' };
+            } else {
+                v1 = { value: x1 + '%' };
+            }
+            x2 = v.getBatteryNominalEnergy();
+            if (x2 === null) {
+                console.log('getBatteryNominalEnergy', x2);
+                v2 = { value: '?' };
+            } else {
+                v2 = { value: x2 / 1000 + 'kWh' };
+            }
+
+            v3 = { value: v.getBatteryStateAsString() };
+            // if (s === 'CALIBRATING's)
+            pv.values.push({ key: 'Bat-E', values: [ v1, v2, v3 ]});
 
             x1 = v.getGridActivePower ();
             if (x1 === null) {

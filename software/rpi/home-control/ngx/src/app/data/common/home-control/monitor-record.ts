@@ -217,6 +217,13 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
         return x.value;
     }
 
+    public getBatteryStateAsString (maxAgeSeconds = 10000): string | null {
+        if (!this._froniussymo) { return null; }
+        const fronStor = this._froniussymo.storage;
+        if (!fronStor || !fronStor.registerValues) { return null; }
+        return fronStor.getBatteryStateAsString(maxAgeSeconds);
+    }
+
     public getPvActivePower (maxAgeSeconds = 10000): number | null {
         const p1 = this.getPvSouthActivePower(maxAgeSeconds);
         const p2 = this.getPvEastWestActivePower(maxAgeSeconds);

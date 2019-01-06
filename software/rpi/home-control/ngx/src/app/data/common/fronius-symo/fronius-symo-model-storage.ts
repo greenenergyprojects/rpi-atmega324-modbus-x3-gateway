@@ -115,6 +115,26 @@ export class FroniusSymoModelStorage extends FroniusSymoModel<IFroniusSymoModelS
         return  x instanceof ModbusNumber ? x.value : null;
     }
 
+    // ************************************************
+
+    public getBatteryStateAsString (maxAgeSeconds = 10000): string | null {
+        const x = <ModbusNumber>this._values.chast;
+        if (!(x instanceof ModbusNumber)) { return null; }
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = x.valueAt;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        switch (x.value.value) {
+            case 1: return 'OFF';
+            case 2: return 'EMPTY';
+            case 3: return 'DISCHARGING';
+            case 4: return 'CHARGING';
+            case 5: return 'FULL';
+            case 6: return 'HOLDING';
+            case 7: return 'CALIBRATING';
+            default: return '? (' + x.value.value + ')';
+        }
+    }
+
 }
 
 export class FroniusSymoModelStorageError extends Error {
