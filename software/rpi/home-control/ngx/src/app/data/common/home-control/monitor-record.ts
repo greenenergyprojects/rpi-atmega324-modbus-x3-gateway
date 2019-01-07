@@ -164,7 +164,10 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
             return null;
         }
 
-        const rv = pGrid - pInv - pPvEastWest;
+        // pGrid      > 0 --> get energy from net
+        // pInv       > 0 --> inverter feeds power to net (from battery or pv-south)
+        // pvEastWest > 0 --> pv feeds power ot net
+        const rv = pGrid + pInv + pPvEastWest;
         // CommonLogger.info(sprintf('--> load: Grid = %7.1fW  Inv=%7.1f  PV-E/W=%7.1fW   ==>  Load = %.1fW', pGrid, pInv, pPvEastWest, rv));
         return rv; // >= 0W
     }
