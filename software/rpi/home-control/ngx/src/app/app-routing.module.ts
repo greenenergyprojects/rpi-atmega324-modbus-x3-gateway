@@ -7,16 +7,16 @@ import { Nibe1155Component } from './components/nibe1155.component';
 import { TestComponent } from './components/test.component';
 
 const routes: Routes = [
-    { path: '', redirectTo: '/app/test', pathMatch: 'full' },
+    { path: '', redirectTo: '/app/overview', pathMatch: 'full' },
     // { path: 'app/overview', component: OverviewComponent },
     // { path: 'app/froniussymo', component: FroniusSymoComponent },
     // { path: 'app/boiler', component: BoilerComponent },
     // { path: 'app/nibe1155', component: Nibe1155Component },
     { path: 'app/overview', component: TestComponent },
     { path: 'app/test', component: TestComponent },
-    { path: 'app/froniussymo', component: Nibe1155Component },
-    { path: 'app/boiler', component: Nibe1155Component },
-    { path: 'app/nibe1155', component: Nibe1155Component }
+    { path: 'app/froniussymo', component: TestComponent },
+    { path: 'app/boiler', component: BoilerComponent },
+    { path: 'app/nibe1155', component: TestComponent }
 
 ];
 

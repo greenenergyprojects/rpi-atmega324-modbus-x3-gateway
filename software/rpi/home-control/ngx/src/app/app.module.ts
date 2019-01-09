@@ -25,6 +25,7 @@ import { ServerService } from './services/server.service';
 import { AuthService } from './services/auth.service';
 import { AddAuthHeaderInterceptor } from './services/add-auth-header.interceptor';
 import { ValidatorDirective } from './directives/validator.directive';
+import { FilterPipe } from './pipes/filter-pipe';
 
 import { ChartsModule } from 'ng4-charts/ng4-charts';
 import { library } from '@fortawesome/fontawesome-svg-core';
@@ -33,7 +34,7 @@ library.add(faEye, faEyeSlash, faSpinner, faSync);
 
 @NgModule({
     declarations: [
-        ValidatorDirective,
+        ValidatorDirective, FilterPipe,
         NavbarComponent, AppComponent, ModalLoginComponent, SyncButtonComponent,
         OverviewComponent, OverviewChartComponent,
         BoilerComponent, BoilerControllerComponent, HeatingControllerComponent,

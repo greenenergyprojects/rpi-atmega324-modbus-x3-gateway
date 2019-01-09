@@ -250,7 +250,7 @@ export class DataService {
                 return;
             }
             // this.handleNibe1155Values(v[0].nibe1155);
-            console.log(v[0]);
+            // console.log(v[0]);
             const r = new MonitorRecord(v[0]);
             this._monitorObservers.forEach( (o) => o.next(r));
             this._monitorValues.push(r);

@@ -151,6 +151,9 @@ export class Auth {
             const userLogin = <IUserLogin>req.body;
             let authorizedByUserId: string;
             try {
+                if (userLogin && userLogin.userid)  {
+                    userLogin.userid = userLogin.userid.toLowerCase();
+                }
                 DbUser.getInstance().verifyPassword(userLogin.userid, userLogin.password, userLogin.passwordType);
                 authorizedByUserId = userLogin.userid;
             } catch (err) {

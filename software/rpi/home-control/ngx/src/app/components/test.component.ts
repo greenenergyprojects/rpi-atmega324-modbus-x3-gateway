@@ -182,9 +182,9 @@ export class TestComponent implements OnInit, OnDestroy {
             }
             nibe.values.push({ key: 't-Außen', values: [ v1 ] });
 
-            x1 = n && n.controller ? n.controller.fSetpoint : null;
+            x1 = n ? n.getFSetpointAsNumber() : null;
             if (x1 === null) {
-                console.log('getOutdoorTempAsNumber', x1);
+                console.log('nibe1155.controller.fSetpoint', n.controller);
                 v1 = { value: '?' };
             } else {
                 v1 = { value: (Math.round(x1 * 10) / 10) + 'Hz' };
@@ -277,6 +277,7 @@ export class TestComponent implements OnInit, OnDestroy {
 
         }
 
+        
         {
             const boiler: IDataBlock = {
                 values: []
@@ -284,15 +285,31 @@ export class TestComponent implements OnInit, OnDestroy {
             const b = v.boiler;
 
             const m = b && b.monitorRecord ? b.monitorRecord : null;
-            if (m === null) {
-                console.log('boiler.monitorRecord', b);
+            x1 = b ? b.getActivePowerAsNumber() : null;
+            if (x1 === null) {
+                console.log('getActivePowerAsNumber', b);
                 v1 = { value: '?' };
+            } else {
+                v1 = { value: Math.round(x1) + 'W' };
+            }
+            const s1 = b ? b.getModeAsString() : null;
+            if (s1 === null) {
+                console.log('getModeAsString', b);
                 v2 = { value: '?' };
             } else {
-                v1 = { value: Math.round(m.activePower.value) + m.activePower.unit };
-                v2 = { value: m.mode };
+                v2 = { value: s1 };
             }
             boiler.values.push({ key: 'Boiler', values: [ v1, v2 ]});
+
+            // if (m === null) {
+            //     console.log('boiler.monitorRecord', b);
+            //     v1 = { value: '?' };
+            //     v2 = { value: '?' };
+            // } else {
+            //     v1 = { value: Math.round(m.activePower.value) + m.activePower.unit };
+            //     v2 = { value: m.mode };
+            // }
+
 
             this.show.push(boiler);
         }

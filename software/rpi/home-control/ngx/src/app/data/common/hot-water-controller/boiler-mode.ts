@@ -9,7 +9,7 @@ export interface IBoilerMode {
     desiredMode: ControllerMode;
     currentMode?: ControllerMode;
     pin?: string;
-    setpointPower: number;
+    setpointPower: number | string;
 }
 
 export class BoilerMode extends DataRecord<IBoilerMode> implements IBoilerMode {
@@ -27,7 +27,7 @@ export class BoilerMode extends DataRecord<IBoilerMode> implements IBoilerMode {
                 if ( [ 'createdAt' ].indexOf(a) >= 0 ) {
                     (<any>this)['_' + a] = DataRecord.parseDate(data, { attribute: a, validate: true } );
                 } else if ( [ 'setpointPower' ].indexOf(a) >= 0 ) {
-                    (<any>this)['_' + a] = DataRecord.parseNumber(data, { attribute: a, validate: true, min: 0 } );
+                    (<any>this)['_' + a] = DataRecord.parseNumber(data, { attribute: a, allowString: true, validate: true, min: 0 } );
                 } else if ( [ 'desiredMode' ].indexOf(a) >= 0 ) {
                     (<any>this)['_' + a] = DataRecord.parseEnum<ControllerMode>(
                         data, {attribute: a, validate: true, validValues: DataRecord.enumToStringValues(ControllerMode) }

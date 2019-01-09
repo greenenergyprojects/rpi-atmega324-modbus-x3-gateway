@@ -5,6 +5,9 @@ import { MonitorRecord } from '../data/common/home-control/monitor-record';
 import { MonitorRecord as HwcMonitorRecord } from '../data/common/hot-water-controller/monitor-record';
 import { ValidatorElement } from '../directives/validator.directive';
 import { ControllerMode } from '../data/common/hot-water-controller/boiler-mode';
+import { ageToString } from '../utils/util';
+import { MonitorRecordBoiler } from '../data/common/home-control/monitor-record-boiler';
+import { ISyncButtonConfig } from './sync-button.component';
 
 @Component({
     selector: 'app-boiler-controller',
@@ -28,14 +31,24 @@ export class BoilerControllerComponent implements OnInit, OnDestroy {
     public validatorPin: ValidatorElement<string>;
     public currentMode: string;
     public inputs: IInput [] = [];
+    public buttonConfig: ISyncButtonConfig;
 
     private _monitorValuesSubsciption: Subscription;
     private _inputPower: IInput;
-    private _inputPin: IInput;
-    private _lastMonitorRecord: HwcMonitorRecord;
+    // private _inputPin: IInput;
+    private _lastMonitorRecord: MonitorRecordBoiler;
 
     constructor (private dataService: DataService) {
         this.currentMode = '?';
+
+        this.buttonConfig = {
+            text: 'Senden',
+            classes: { default: 'btn btn-primary', onSuccess: 'btn btn-success', onError: 'btn btn-danger' },
+            handler: {
+                onClick: (cfg) => this.onSubmit(cfg),
+                onCancel: (cfg) => this.onCancel(cfg)
+            }
+        };
 
         this.validatorMode = new ValidatorElement<string>(
             'off', (e, n, v) => {
@@ -47,7 +60,7 @@ export class BoilerControllerComponent implements OnInit, OnDestroy {
 
                     case 'power': {
                         if (this._lastMonitorRecord) {
-                            this._inputPower.validator.value = this._lastMonitorRecord.setpointPower.value;
+                            this._inputPower.validator.value = this._lastMonitorRecord.getActivePowerAsNumber();
                         }
                         this._inputPower.hidden = false;
                         break;
@@ -55,7 +68,7 @@ export class BoilerControllerComponent implements OnInit, OnDestroy {
 
                     case 'test': {
                         if (this._lastMonitorRecord) {
-                            this._inputPower.validator.value = this._lastMonitorRecord.setpointPower.value;
+                            this._inputPower.validator.value = 2000;
                         }
                         this._inputPower.hidden = false;
                         break;
@@ -76,18 +89,18 @@ export class BoilerControllerComponent implements OnInit, OnDestroy {
             return true;
         });
 
-        this._inputPin = {
-            id: 'idPin', type: 'password', key: 'PIN', name: 'pin',
-            min: '', max: '', hidden: false, validator: null, pattern: '[0-9]*', mode: 'numeric'
-        };
-        this._inputPin.validator = new ValidatorElement<string>('', null, (e, n, v) => {
-            if (Number.isNaN(+v)) { return false; }
-            const rv = !(+v < 0  || +v > 9999 || (typeof v === 'string' && v.length !== 4));
-            return rv;
-        });
+        // this._inputPin = {
+        //     id: 'idPin', type: 'password', key: 'PIN', name: 'pin',
+        //     min: '', max: '', hidden: false, validator: null, pattern: '[0-9]*', mode: 'numeric'
+        // };
+        // this._inputPin.validator = new ValidatorElement<string>('', null, (e, n, v) => {
+        //     if (Number.isNaN(+v)) { return false; }
+        //     const rv = !(+v < 0  || +v > 9999 || (typeof v === 'string' && v.length !== 4));
+        //     return rv;
+        // });
 
         this.inputs = [
-            this._inputPower, this._inputPin
+            this._inputPower // , this._inputPin
         ];
 
     }
@@ -102,35 +115,43 @@ export class BoilerControllerComponent implements OnInit, OnDestroy {
         this._monitorValuesSubsciption = null;
     }
 
-    public async onSubmit() {
+    public async onCancel (cfg: ISyncButtonConfig) {
+        console.log('cancel', cfg);
+    }
+
+    public async onSubmit(cfg: ISyncButtonConfig): Promise<void> {
         try {
+            console.log('--> onSubmit --> setBoilerMode');
             const rv = await this.dataService.setBoilerMode({
                 createdAt:        new Date(),
                 desiredMode:      <ControllerMode>this.validatorMode.value,
-                pin:              this._inputPin.validator.value,
+                // pin:              this._inputPin.validator.value,
                 setpointPower:    this._inputPower.validator.value
             });
             console.log(rv);
         } catch (err) {
             console.log(err);
+            throw err;
         }
     }
 
     private handleMonitorValues (v: MonitorRecord) {
         const m = v.boiler;
-        // if (!m || (Date.now() - m.createdAt.getTime() > 10000)) {
-        //     this.currentMode = '?';
-        //     if (m) {
-        //         this.currentMode += ' (' + m.createdAt.toLocaleDateString() + ')';
-        //     }
-        // } else {
-        //     this.currentMode = m.controller.mode;
-        //     if (!this._lastMonitorRecord) {
-        //         this._inputPower.validator.value = m.setpointPower.value;
-        //     }
-        //     this._lastMonitorRecord = m;
-        // }
-        // console.log(v.hwcMonitorRecord);
+        const mode = m ? m.getModeAsString(10000) : null;
+        // console.log(mode);
+        if (!m) {
+            this.currentMode = '?';
+        } else {
+            this.currentMode = mode;
+            // if (m) {
+            //     this.currentMode += ' (' + ageToString(m.createdAt) + ')';
+            // }
+
+            // if (!this._lastMonitorRecord) {
+            //     this._inputPower.validator.value = m.setpointPower.value;
+            // }
+            this._lastMonitorRecord = m;
+        }
     }
 
 }
@@ -147,3 +168,4 @@ interface IInput {
     mode: string;
     validator: ValidatorElement<any>;
 }
+

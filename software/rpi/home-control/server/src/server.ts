@@ -15,12 +15,13 @@ import * as bodyParser from 'body-parser';
 
 import { VERSION } from './main';
 import { handleError, RouterError, BadRequestError, AuthenticationError, NotFoundError } from './routers/router-error';
-import { RouterData } from './routers/router-data';
 import { Auth, AuthError } from './auth';
 import { IUserAuth } from './data/common/home-control/user';
 import { IServerVersion } from './data/common/home-control/server-version';
 import { DbUser } from './db-user';
 import { Router } from './routers/router';
+import { RouterData } from './routers/router-data';
+import { RouterControl } from './routers/router-control';
 
 
 interface IServerConfig {
@@ -86,6 +87,7 @@ export class Server {
         this._express.use((req, res, next) => Auth.getInstance().authorizeRequest(req, res, next));
         this._express.get('/auth', (req, res, next) => Auth.getInstance().handleGetAuth(<any>req, res, next));
         this._express.use('/data', RouterData.getInstance());
+        this._express.use('/control', RouterControl.getInstance());
         this._express.use('/', Router.getInstance());
 
         this._express.all('*', (req, res, next) => this.handleNotFound(req, res, next));

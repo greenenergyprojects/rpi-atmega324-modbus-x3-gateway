@@ -16,8 +16,10 @@ interface IHotWaterControllerConfig {
     port: number;
     path: string;
     pathController: string;
+    pin: string;
     timeoutMillis?: number;
     pollingPeriodMillis?: number;
+
 }
 
 export class HotWaterController {
@@ -54,6 +56,7 @@ export class HotWaterController {
         if (!config.host || typeof(config.host) !== 'string') { throw new Error('invalid/missing host in config'); }
         if (config.port < 0 || config.port > 65535) { throw new Error('invalid/missing port in config'); }
         if (!config.path || typeof(config.path) !== 'string') { throw new Error('invalid/missing path'); }
+        if (!config.pin || typeof(config.pin) !== 'string') { throw new Error('invalid/missing pin'); }
     }
 
     public toObject (preserveDate = true): IMonitorRecordBoiler {
@@ -152,7 +155,11 @@ export class HotWaterController {
             throw new Error('HotWaterController disabled');
         }
         const rv = new Promise<BoilerController>( (resolve, reject) => {
-            const body = JSON.stringify(mode.toObject());
+            const x = mode.toObject();
+            if (!x.pin) {
+                x.pin = this._config.pin;
+            }
+            const body = JSON.stringify(x);
             const options = Object.assign({}, this._options);
             options.method = 'POST';
             options.path = this._config.pathController;

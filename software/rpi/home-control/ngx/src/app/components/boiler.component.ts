@@ -1,4 +1,8 @@
+// https://ng-bootstrap.github.io/#/components/accordion/api
+// https://ng-bootstrap.github.io/#/components/accordion/examples
+
 import { Component, OnInit, OnDestroy } from '@angular/core';
+import { NgbPanelChangeEvent } from '@ng-bootstrap/ng-bootstrap';
 import { DataService } from '../services/data.service';
 import { ConfigService } from '../services/config.service';
 import { Subscription } from 'rxjs';
@@ -30,15 +34,15 @@ import { MonitorRecord } from '../data/common/home-control/monitor-record';
 export class BoilerComponent implements OnInit, OnDestroy {
 
     private _accordionData: {
-        panel: IAccordion;
-        overview:   IAccordion;
+        panel: IAccordionPanel;
+        overview:   IAccordionPanel;
     };
 
     private _timer: any;
     private _subsciption: Subscription;
     private _monitorValuesSubsciption: Subscription;
 
-    public accordions: IAccordion [];
+    public accordion: IAccordion;
 
 
     public constructor (private _dataService: DataService, private _configService: ConfigService) {
@@ -48,22 +52,28 @@ export class BoilerComponent implements OnInit, OnDestroy {
             this._accordionData = x;
         } else {
             this._accordionData = {
-                panel:      {
-                    infos: [], isOpen: true, header: 'Boiler Steuerung',
+                panel: {
+                    id: 'controller',
+                    title: 'Boiler Steuerung',
+                    type: 'success',
+                    infos: [],
                     showComponent: [ { name: 'BoilerControllerComponent', config: null, data: null } ]
                 },
-                overview:   { infos: [], isOpen: false, header: 'Boiler Überblick' }
+                overview: {
+                    id: 'overview',
+                    title: 'Boiler Überblick',
+                    infos: []
+                }
             };
         }
     }
 
     public ngOnInit () {
         // console.log('onInit');
-        this.accordions = [];
-        for (const a in this._accordionData) {
-            if (!this._accordionData.hasOwnProperty(a)) { continue; }
-            this.accordions.push(this._accordionData[a]);
-        }
+        this.accordion = {
+            activeIds: [ 'overview' ],
+            panels:    [ this._accordionData.panel, this._accordionData.overview ]
+        };
         this._monitorValuesSubsciption =
             this._dataService.monitorObservable.subscribe((value) => this.handleMonitorValues(value));
 
@@ -84,41 +94,52 @@ export class BoilerComponent implements OnInit, OnDestroy {
         this._monitorValuesSubsciption = null;
     }
 
+    public onAccordionChange (event: NgbPanelChangeEvent) {
+        console.log(event);
+        if (event.panelId === 'preventchange-2') {
+          event.preventDefault();
+        }
+
+        if (event.panelId === 'preventchange-3' && event.nextState === false) {
+          event.preventDefault();
+        }
+    }
+
     public onAccordionOpenChanged (acc: IAccordion, open: boolean) {
         console.log(acc, open);
     }
 
-    public async onButtonRefresh (a: IAccordion) {
-        if (a === this._accordionData.overview) {
-        }
-    }
+    // public async onButtonRefresh (a: IAccordion) {
+    //     if (a === this._accordionData.overview) {
+    //     }
+    // }
 
-    public changeFilter (event, a: IAccordion) {
-        a.filter.value = event;
-    }
+    // public changeFilter (event, a: IAccordion) {
+    //     a.filter.value = event;
+    // }
 
-    public onButtonFilter (a: IAccordion) {
-        console.log('onButtonFilter', a);
-        if (a && a.filter) {
-            a.filter.isDisabled = !a.filter.isDisabled;
-        }
-    }
+    // public onButtonFilter (a: IAccordion) {
+    //     console.log('onButtonFilter', a);
+    //     if (a && a.filter) {
+    //         a.filter.isDisabled = !a.filter.isDisabled;
+    //     }
+    // }
 
-    private filter (a: IAccordion, items: IInfo []): any [] {
-        let rv: any [];
-        if (a.filter.isDisabled || !a.filter.value) {
-            rv = items;
-        } else {
-            rv = [];
-            for (const i of items) {
-                if (typeof i.key !== 'string') { continue; }
-                if (i.key === 'createdAt' || i.key.indexOf(a.filter.value) !== -1) {
-                    rv.push(i);
-                }
-            }
-        }
-        return rv;
-    }
+    // private filter (a: IAccordion, items: IInfo []): any [] {
+    //     let rv: any [];
+    //     if (a.filter.isDisabled || !a.filter.value) {
+    //         rv = items;
+    //     } else {
+    //         rv = [];
+    //         for (const i of items) {
+    //             if (typeof i.key !== 'string') { continue; }
+    //             if (i.key === 'createdAt' || i.key.indexOf(a.filter.value) !== -1) {
+    //                 rv.push(i);
+    //             }
+    //         }
+    //     }
+    //     return rv;
+    // }
 
     private isExpired (d: Date | string | number, milliSeconds, defaultValue = true): boolean {
         try {
@@ -182,9 +203,12 @@ export class BoilerComponent implements OnInit, OnDestroy {
         const a = this._accordionData.overview;
         const x: { [ key: string ]: string } = {};
         x['Leistung'] = '?';
+        x['Modus'] = '?';
         x['Energie(Tag)'] = '?';
-        x['4..20mA Sollwert'] = '?';
-        x['4..20mA Istwert'] = '?';
+        x['4..20mA Soll'] = '?';
+        x['4..20mA Ist'] = '?';
+
+        // console.log(v.boiler);
 
         for (const att of Object.getOwnPropertyNames(x)) {
             let val = '?';
@@ -202,17 +226,23 @@ export class BoilerComponent implements OnInit, OnDestroy {
                         val = '?';
                         break;
                     }
+                    case 'Modus': {
+                        const m = v.boiler.monitorRecord;
+                        val = m.mode + ' (' + this.ageToString(m.createdAt) + ')';
+                        break;
+                        break;
+                    }
                     case 'Energie(Tag)': {
                         const o = v.boiler.monitorRecord.energyDaily;
                         val = '' + Math.round(o.value) + o.unit + ' (' + this.ageToString(o.createdAt) + ')';
                         break;
                     }
-                    case '4..20mA Sollwert': {
+                    case '4..20mA Soll': {
                         const o = v.boiler.monitorRecord.current4to20mA;
                         val = '' + o.setpoint.value + o.setpoint.unit + ' (' + this.ageToString(o.setpoint.createdAt) + ')';
                         break;
                     }
-                    case '4..20mA Istwert': {
+                    case '4..20mA Ist': {
                         const o = v.boiler.monitorRecord.current4to20mA;
                         val = '' + o.current.value + o.current.unit + ' (' + this.ageToString(o.current.createdAt) + ')';
                         break;
@@ -288,8 +318,14 @@ interface IInfo {
 }
 
 interface IAccordion {
-    isOpen: boolean;
-    header: string;
+    activeIds: string [];
+    panels: IAccordionPanel [];
+}
+
+interface IAccordionPanel {
+    id: string;
+    title: string;
+    type?: 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'danger' | 'light' | 'dark';
     infos: IInfo [];
     table?: { headers: string [], rows: ITableRow [] };
     filter?: IFilter;

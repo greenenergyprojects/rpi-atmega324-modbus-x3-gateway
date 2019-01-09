@@ -15,12 +15,15 @@ export abstract class DataRecord<T> {
     static parseNumber (data: any, options: IParseNumberOptions): number {
         if (!options || !options.attribute) { throw new ParseNumberError('missing options/attribute name'); }
         if (!data || data[options.attribute] === 'undefined') { throw new ParseNumberError('missing data/attribute name'); }
-        if (typeof(data[options.attribute]) !== 'number') {
+        if (!options.allowString && typeof(data[options.attribute]) !== 'number') {
             if (!options.validate) { return null; }
             throw new ParseNumberError('validation error (attribute not a number)');
         }
         try {
             let value = data[options.attribute];
+            if (options.allowString && typeof(value) === 'string') {
+                value = +value;
+            }
             if (typeof value !== 'number') {
                 throw new Error('value has invalid type (' + typeof value + ')');
             }
@@ -204,6 +207,7 @@ export interface IParseNumberOptions {
     attribute: string;
     validate?: boolean;
     allowNaN?: boolean;
+    allowString?: boolean;
     min?: number;
     max?: number;
     upperLimit?: number;

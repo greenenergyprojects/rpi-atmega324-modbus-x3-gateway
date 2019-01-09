@@ -3,6 +3,7 @@
 
 import { Component, OnInit, Input, ViewChild, ApplicationRef } from '@angular/core';
 import { NgbTooltip } from '@ng-bootstrap/ng-bootstrap';
+import { HttpErrorResponse } from '@angular/common/http';
 
 export interface ISyncButtonConfig {
     text: string;
@@ -70,9 +71,13 @@ export class SyncButtonComponent implements OnInit {
                         this.classes = this.config.classes.default;
                     }
                 } catch (err) {
+                    console.log(err);
                     if (err instanceof Error && err.message) {
-                        console.log(err);
                         this.tooltip.ngbTooltip = err.message;
+                        this.tooltip.open();
+                        setTimeout( () => { this.tooltip.close(); }, 2000);
+                    } else if (err instanceof HttpErrorResponse) {
+                        this.tooltip.ngbTooltip = err.statusText;
                         this.tooltip.open();
                         setTimeout( () => { this.tooltip.close(); }, 2000);
                     }

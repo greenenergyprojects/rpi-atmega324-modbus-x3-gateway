@@ -26,7 +26,7 @@ export class MonitorRecordBoiler extends DataRecord<IMonitorRecordBoiler> implem
             let attCnt = 0;
             for (const a of Object.getOwnPropertyNames(data)) {
                 switch (a) {
-                    case 'createdAt':     this._createdAt = DataRecord.parseDate(data, { attribute: a, validate: true } ); break;
+                     case 'createdAt':     this._createdAt = DataRecord.parseDate(data, { attribute: a, validate: true } ); break;
                     case 'controller':    this._controller = new BoilerController(data[a]); break;
                     case 'monitorRecord':  this._monitorRecord = new MonitorRecord(data[a]); break;
                     default: throw new Error('attribute ' + a + ' not found in data:IMonitorRecordBoiler');
@@ -60,6 +60,29 @@ export class MonitorRecordBoiler extends DataRecord<IMonitorRecordBoiler> implem
 
     public get monitorRecord (): MonitorRecord {
         return this._monitorRecord;
+    }
+
+    // ********************************************************
+
+    public getModeAsString (maxAgeSeconds = 5000): string | null {
+        if (!this._monitorRecord) { return null; }
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = this._monitorRecord.createdAt;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        const rv = this._monitorRecord.mode;
+        if (!rv) { return null; }
+        return rv;
+    }
+
+    public getActivePowerAsNumber (maxAgeSeconds = 5000): number | null {
+        if (!this._monitorRecord) { return null; }
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = this._monitorRecord.createdAt;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        const rv = this._monitorRecord.activePower.value;
+        if (!(rv >= 0)) { return null; }
+        return rv;
+
     }
 
 }

@@ -84,6 +84,7 @@ export class DbUser {
                     const x = Object.assign({}, u);
                     delete x.password;
                     delete x.passwordType;
+                    delete x.disabled;
                     const m = new User(x);
                     if (!u.passwordType) { u.passwordType = 'raw'; }
                     this._users[m.userid] = { model: m, password: u.password, passwordType: u.passwordType };

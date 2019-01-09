@@ -592,16 +592,27 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
 
     // **************************************************
 
-    public getBrinePumpPowerAsNumber (): number | null {
-        const v = this.getBrinePumpSpeedAsNumber();
+    public getBrinePumpPowerAsNumber (maxAgeSeconds = 10000): number | null {
+        const v = this.getBrinePumpSpeedAsNumber(maxAgeSeconds);
         if (v === null) { return null; }
         return 30 / 100 * v;
     }
 
-    public getSupplyPumpPowerAsNumber (): number | null {
-        const v = this.getSupplyPumpSpeedAsNumber();
+    public getSupplyPumpPowerAsNumber (maxAgeSeconds = 10000): number | null {
+        const v = this.getSupplyPumpSpeedAsNumber(maxAgeSeconds);
         if (v === null) { return null; }
         return 30 / 100 * v;
+
+    }
+
+    public getFSetpointAsNumber(maxAgeSeconds = 10000): number | null {
+        if (!this._controller) { return null; }
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = this._controller.createdAt;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        const rv = this._controller.fSetpoint;
+        if (!(rv >= 0)) { return null; }
+        return rv;
 
     }
 

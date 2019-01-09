@@ -15,7 +15,7 @@ export class ServerService {
     private _authServerUri: string;
     private _authUri: string;
     private _remoteToken: string;
-    private _autoLogin: IUserLogin; // = { userid: 'test', password: 'geheim' };
+    private _autoLogin: IUserLogin = { userid: 'test', passwordType: 'raw', password: 'geheim' };
 
     constructor (private httpClient: HttpClient, private _authService: AuthService, private _componentFactoryResolver: ComponentFactoryResolver) {
         // ng serve      --> development mode, server running on same host
@@ -263,7 +263,7 @@ export class ServerService {
 
     private async performHttpPostAndGetJson (resource: string, body: any,
                                              options?: { headers?: HttpHeaders }, token?: string): Promise<Object> {
-        if (!resource || !body) {
+                                                if (!resource || !body) {
             return Promise.reject(new Error('invalid arguments'));
         }
         let headers = options && options.headers ? options.headers : new HttpHeaders({
