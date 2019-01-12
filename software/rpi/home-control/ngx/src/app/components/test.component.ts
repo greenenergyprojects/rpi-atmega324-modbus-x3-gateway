@@ -48,7 +48,7 @@ export class TestComponent implements OnInit, OnDestroy {
                 values: []
             };
 
-            x1 = v.getLoadActivePower();
+            x1 = v.getLoadActivePowerAsNumber();
             if (x1 === null || x2 === null) {
                 console.log('getLoadActivePower', x1);
                 v1 = { value: '?' };
@@ -57,14 +57,14 @@ export class TestComponent implements OnInit, OnDestroy {
             }
             pv.values.push({ key: 'Verbrauch', values: [ v1 ] });
 
-            x1 = v.getPvActivePower();
+            x1 = v.getPvActivePowerAsNumber();
             if (x1 === null) {
                 console.log('getPvSouthActivePower', x1);
                 v1 = { value: '?' };
             } else {
                 v1 = { value: Math.round(x1) + 'W' };
             }
-            x2 = v.getPvEnergyDaily ();
+            x2 = v.getPvEnergyDailyAsNumber();
             if (x2 === null) {
                 console.log('getPvSouthEnergyDaily', x2);
                 v2 = { value: '?' };
@@ -73,14 +73,14 @@ export class TestComponent implements OnInit, OnDestroy {
             }
             pv.values.push({ key: 'PV', values: [ v1, v2 ]});
 
-            x1 = v.getPvSouthActivePower();
+            x1 = v.getPvSouthActivePowerAsNumber();
             if (x1 === null) {
                 console.log('getPvSouthActivePower', x1);
                 v1 = { value: '?' };
             } else {
                 v1 = { value: Math.round(x1) + 'W' };
             }
-            x2 = v.getPvSouthEnergyDaily ();
+            x2 = v.getPvSouthEnergyDailyAsNumber();
             if (x2 === null) {
                 console.log('getPvSouthEnergyDaily', x2);
                 v2 = { value: '?' };
@@ -89,14 +89,14 @@ export class TestComponent implements OnInit, OnDestroy {
             }
             pv.values.push({ key: 'PV-S', values: [ v1, v2 ] });
 
-            x1 = v.getPvEastWestActivePower();
+            x1 = v.getPvEastWestActivePowerAsNumber();
             if (x1 === null) {
                 console.log('getPvEastWestActivePower', x1);
                 v1 = { value: '?' };
             } else {
                 v1 = { value: Math.round(x1) + 'W' };
             }
-            x2 = v.getPvEastWestEnergyDaily ();
+            x2 = v.getPvEastWestEnergyDailyAsNumber();
             if (x2 === null) {
                 console.log('getPvEastWestEnergyDaily', x2);
                 v2 = { value: '?' };
@@ -105,7 +105,7 @@ export class TestComponent implements OnInit, OnDestroy {
             }
             pv.values.push({ key: 'PV-E/W', values: [ v1, v2 ] });
 
-            x1 = v.getBatteryPower();
+            x1 = v.getBatteryPowerAsNumber();
             if (x1 === null) {
                 console.log('getBatteryPower', x1);
                 v1 = { value: '?' };
@@ -118,14 +118,14 @@ export class TestComponent implements OnInit, OnDestroy {
             // if (s === 'CALIBRATING's)
             pv.values.push({ key: 'Bat-P', values: [ v1, v2 ]});
 
-            x1 = v.getBatteryEnergyInPercent ();
+            x1 = v.getBatteryEnergyInPercentAsNumber();
             if (x1 === null) {
                 console.log('getBatteryEnergyInPercent', x1);
                 v1 = { value: '?' };
             } else {
                 v1 = { value: x1 + '%' };
             }
-            x2 = v.getBatteryNominalEnergy();
+            x2 = v.getBatteryNominalEnergyAsNumber();
             if (x2 === null) {
                 console.log('getBatteryNominalEnergy', x2);
                 v2 = { value: '?' };
@@ -137,7 +137,7 @@ export class TestComponent implements OnInit, OnDestroy {
             // if (s === 'CALIBRATING's)
             pv.values.push({ key: 'Bat-E', values: [ v1, v2, v3 ]});
 
-            x1 = v.getGridActivePower ();
+            x1 = v.getGridActivePowerAsNumber();
             if (x1 === null) {
                 console.log('getGridActivePower', x1);
                 v1 = { value: '?' };
@@ -148,14 +148,14 @@ export class TestComponent implements OnInit, OnDestroy {
             }
             pv.values.push({ key: 'Netz', values: [ v1, v2 ]});
 
-            x2 = v.getEInDaily();
+            x2 = v.getEInDailyAsNumber();
             if (x2 === null) {
                 console.log('getEInDaily', x2);
                 v2 = { value: '?' };
             } else {
                 v2 = { value: (Math.round(x2 / 10) / 100) + 'kWh' };
             }
-            x3 = v.getEOutDaily();
+            x3 = v.getEOutDailyAsNumber();
             if (x3 === null) {
                 console.log('getEOutDaily', x3);
                 v3 = { value: '?' };
@@ -277,7 +277,7 @@ export class TestComponent implements OnInit, OnDestroy {
 
         }
 
-        
+
         {
             const boiler: IDataBlock = {
                 values: []
@@ -285,7 +285,7 @@ export class TestComponent implements OnInit, OnDestroy {
             const b = v.boiler;
 
             const m = b && b.monitorRecord ? b.monitorRecord : null;
-            x1 = b ? b.getActivePowerAsNumber() : null;
+            x1 = b ? b.getActivePowerAsNumber(15) : null;
             if (x1 === null) {
                 console.log('getActivePowerAsNumber', b);
                 v1 = { value: '?' };
@@ -294,7 +294,6 @@ export class TestComponent implements OnInit, OnDestroy {
             }
             const s1 = b ? b.getModeAsString() : null;
             if (s1 === null) {
-                console.log('getModeAsString', b);
                 v2 = { value: '?' };
             } else {
                 v2 = { value: s1 };

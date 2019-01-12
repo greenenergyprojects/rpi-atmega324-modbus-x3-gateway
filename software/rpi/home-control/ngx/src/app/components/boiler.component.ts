@@ -53,14 +53,14 @@ export class BoilerComponent implements OnInit, OnDestroy {
         } else {
             this._accordionData = {
                 panel: {
-                    id: 'controller',
+                    id: 'boiler-controller',
                     title: 'Boiler Steuerung',
-                    type: 'success',
+                    // type: 'success',
                     infos: [],
                     showComponent: [ { name: 'BoilerControllerComponent', config: null, data: null } ]
                 },
                 overview: {
-                    id: 'overview',
+                    id: 'boiler-overview',
                     title: 'Boiler Überblick',
                     infos: []
                 }
@@ -69,9 +69,9 @@ export class BoilerComponent implements OnInit, OnDestroy {
     }
 
     public ngOnInit () {
-        // console.log('onInit');
+        console.log('BoilerComponent:onInit()');
         this.accordion = {
-            activeIds: [ 'overview' ],
+            activeIds: [ 'boiler-overview' ],
             panels:    [ this._accordionData.panel, this._accordionData.overview ]
         };
         this._monitorValuesSubsciption =
@@ -80,7 +80,7 @@ export class BoilerComponent implements OnInit, OnDestroy {
     }
 
     public ngOnDestroy() {
-        console.log('onDestroy');
+        console.log('BoilerComponent:onDestroy()');
         if (this._timer) {
             clearInterval(this._timer);
             this._timer = null;
@@ -183,9 +183,9 @@ export class BoilerComponent implements OnInit, OnDestroy {
         let dt = Date.now() - at.getTime();
         // console.log(dt);
         const h = Math.floor(dt / 1000 / 60 / 60); dt = dt - h * 60 * 60 * 1000;
-        const m = Math.floor(dt / 1000 / 60); dt = dt - h * 60 * 1000;
-        const s = Math.floor(dt / 1000); dt = dt - m * 1000;
-        const ms = dt - s * 1000;
+        const m = Math.floor(dt / 1000 / 60); dt = dt - m * 60 * 1000;
+        const s = Math.floor(dt / 1000); dt = dt - s * 1000;
+        const ms = dt;
         // console.log(h, m, s, ms);
 
         if (h !== 0) {

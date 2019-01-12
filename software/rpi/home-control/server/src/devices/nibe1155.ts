@@ -4,13 +4,22 @@ const debug: debugsx.IFullLogger = debugsx.createFullLogger('devices:Nibe1155');
 
 import * as http from 'http';
 
-import { INibe1155Value, Nibe1155Value } from '../data/common/nibe1155/nibe1155-value';
+import { INibe1155Value, Nibe1155Value, Nibe1155ValueError } from '../data/common/nibe1155/nibe1155-value';
 import { IHttpGetDataMonitorQuery, IHttpGetDataMonitorResponse } from '../data/common/nibe1155/server-http';
 import { Nibe1155Controller, HeatpumpControllerMode, INibe1155Controller } from '../data/common/nibe1155/nibe1155-controller';
 // import { MonitorRecordNibe1155, IMonitorRecordNibe1155 } from '../data/common/home-control/monitor-record-nibe1155';
 import { INibe1155MonitorRecord, Nibe1155MonitorRecord } from '../data/common/nibe1155/nibe1155-monitor-record';
 import { Nibe1155ModbusIds, Nibe1155ModbusRegisters } from '../data/common/nibe1155/nibe1155-modbus-registers';
+import { IUserLogin } from '../data/common/nibe1155/user';
 
+
+interface INibe1155AuthentificationConfig {
+    pin?: string;
+    jwt?: {
+        user: { userid: string; password: string; passwordType?: 'raw' | 'sha-256'; }
+        path: string;
+    };
+}
 
 interface INibe1155Config {
     disabled?: boolean;
@@ -18,6 +27,7 @@ interface INibe1155Config {
     port: number;
     path: string;
     pathMode: string;
+    authentication: INibe1155AuthentificationConfig;
     timeoutMillis?: number;
     pollingPeriodMillis?: number;
 }
@@ -52,8 +62,6 @@ export class Nibe1155 {
     private _values: { [id: number]: Nibe1155Value } = {};
     private _controller: Nibe1155Controller;
 
-
-
     private constructor (config: INibe1155Config) {
         if (!config) { throw new Error('missing nibe1155 config'); }
         this._config = config;
@@ -62,6 +70,19 @@ export class Nibe1155 {
         if (config.port < 0 || config.port > 65535) { throw new Error('invalid/missing port in config'); }
         if (!config.path || typeof(config.path) !== 'string') { throw new Error('invalid/missing path'); }
         if (!config.pathMode || typeof(config.pathMode) !== 'string') { throw new Error('invalid/missing pathMode in path'); }
+        if (!config.authentication) { throw new Error('invalid/missing authentication'); }
+        if (config.authentication.pin) {
+            if (typeof(config.authentication.pin) !== 'string') { throw new Error('invalid/missing pin'); }
+        } else if (config.authentication.jwt) {
+            const x = config.authentication.jwt;
+            if (!x.path || typeof(x.path) !== 'string') { throw new Error('invalid/missing authentification.jwt.path'); }
+            if (!x.user) { throw new Error('invalid/missing authentification.jwt.user'); }
+            if (!x.user.userid || typeof(x.user.userid) !== 'string') { throw new Error('invalid/missing authentification.jwt.user.userid'); }
+            if (!x.user.password || typeof(x.user.password) !== 'string') { throw new Error('invalid/missing authentification.jwt.user.password'); }
+            if ([ 'raw', 'sha-256'].indexOf(x.user.passwordType) < 0) { throw new Error('invalid/missing authentification.jwt.user.passwordType'); }
+        } else {
+            throw new Error('missing authentication pin or jwt');
+        }
     }
 
     public get lastValidResponse (): { at: Date; values: INibe1155Value [] } {
@@ -648,47 +669,74 @@ export class Nibe1155 {
         return rv;
     }
 
+    // public async setHeatpumpMode (mode: Nibe1155Controller): Promise<Nibe1155Controller> {
+    //     if (this._config.disabled) {
+    //         throw new Error('nibe1155 is disabled');
+    //     }
+    //     if (!mode || !mode.createdAt || !mode.desiredMode) {
+    //         return Promise.reject(new Error('invalid mode'));
+    //     }
+    //     const rv = new Promise<Nibe1155Controller>( (resolve, reject) => {
+    //         const x = mode.toObject();
+    //         if (!x.pin && this._config.authentication.pin) {
+    //             x.pin = this._config.authentication.pin;
+    //         }
+    //         const body = JSON.stringify(x);
+    //         const options = Object.assign({}, this._options);
+    //         options.method = 'POST';
+    //         options.path = this._config.pathMode;
+    //         options.headers = {
+    //             'Content-Type': 'application/json',
+    //             'Content-Length': Buffer.byteLength(body)
+    //         };
+    //         const req = http.request(options, (res) => {
+    //             if (res.statusCode !== 200) {
+    //                 reject(new Error('response error status ' + res.statusCode));
+    //                 return;
+    //             }
+    //             res.setEncoding('utf8');
+    //             let s = '';
+    //             res.on('data', chunk => {
+    //                 s += chunk;
+    //             });
+    //             res.on('end', () => {
+    //                 try {
+    //                     resolve(new Nibe1155Controller(JSON.parse(s)));
+    //                 } catch (err) {
+    //                     debug.warn(err);
+    //                     reject(err);
+    //                 }
+    //             });
+    //         });
+    //         req.on('error', (err) => {
+    //             debug.warn(err);
+    //             reject(err);
+    //         });
+    //         req.write(body);
+    //         req.end();
+    //     });
+    //     return rv;
+    // }
+
     public async setHeatpumpMode (mode: Nibe1155Controller): Promise<Nibe1155Controller> {
         if (this._config.disabled) {
             throw new Error('nibe1155 is disabled');
         }
-        if (!mode || !mode.createdAt || !mode.desiredMode
-             || !mode.pin) {
+        if (!mode || !mode.createdAt || !mode.desiredMode) {
             return Promise.reject(new Error('invalid mode'));
         }
         const rv = new Promise<Nibe1155Controller>( (resolve, reject) => {
-            const body = JSON.stringify(mode);
-            const options = Object.assign({}, this._options);
-            options.method = 'POST';
-            options.path = this._config.pathMode;
-            options.headers = {
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(body)
-            };
-            const req = http.request(options, (res) => {
-                if (res.statusCode !== 200) {
-                    reject(new Error('response error status ' + res.statusCode));
-                    return;
-                }
-                res.setEncoding('utf8');
-                let s = '';
-                res.on('data', chunk => {
-                    s += chunk;
-                });
-                res.on('end', () => {
-                    try {
-                        resolve(new Nibe1155Controller(JSON.parse(s)));
-                    } catch (err) {
-                        debug.warn(err);
-                        reject(err);
-                    }
-                });
-            });
-            req.on('error', (err) => {
+            const x = mode.toObject();
+            if (!x.pin && this._config.authentication.pin) {
+                x.pin = this._config.authentication.pin;
+            }
+            const body = JSON.stringify(x);
+            this.httpPost(this._config.pathMode, body).then( (result) => {
+                resolve(new Nibe1155Controller(JSON.parse(result)));
+            }).catch( (err) => {
                 debug.warn(err);
+                reject(err);
             });
-            req.write(body);
-            req.end();
         });
         return rv;
     }
@@ -710,6 +758,115 @@ export class Nibe1155 {
             timeout: this._config.timeoutMillis > 0 ? this._config.timeoutMillis : 1000
         };
         await this.handleTimer(true);
+    }
+
+    private async authenticate (authUser?: IUserLogin) {
+        const jwt = this._config && this._config.authentication && this._config.authentication.jwt;
+        if (!jwt) { throw new Error('no jwt authentication configured'); }
+        try {
+            const path = jwt.path;
+            const user = JSON.stringify(jwt.user);
+            const rv = await this.httpPost(path, user);
+            console.log(rv);
+        } catch (err) {
+            debug.warn(err);
+            throw new Nibe1155Error('jwt authentication fails', err);
+        }
+    }
+
+    private async httpSendRequest (options: http.RequestOptions, body?: string): Promise<{ status: number, body: string }> {
+        const opt = Object.assign({}, options);
+        if (body) {
+            if (!opt.headers) {  opt.headers = {}; }
+            opt.headers['Content-Length'] = Buffer.byteLength(body);
+        }
+        const rv = new Promise<{ status: number, body: string }>( (res, rej) => {
+            const requ = http.request(opt, (resp) => {
+                resp.setEncoding('utf8');
+                let s = '';
+                resp.on('data', chunk => {
+                    s += chunk;
+                });
+                resp.on('end', () => {
+                    if (res) {
+                        res({ status: resp.statusCode, body: s });
+                    } else {
+                        debug.warn('cannot resolve request');
+                    }
+                });
+            });
+            requ.on('error', (err) => {
+                res = null;
+                const myrej = rej;
+                rej = null;
+                if (myrej) {
+                    myrej(err);
+                }
+            });
+            // requ.setTimeout(5000, () => {
+            //     res = null;
+            //     const myrej = rej;
+            //     rej = null;
+            //     if (myrej) {
+            //         myrej(new Error('Timeout'));
+            //     }
+            // });
+            if (body) {
+                requ.write(body);
+            }
+            requ.end();
+        });
+        return rv;
+    }
+
+    private async httpGet (path: string): Promise<string> {
+        const rv = new Promise<string>( (res, rej) => {
+            const options = Object.assign({}, this._options);
+            options.path = path;
+            const requ = http.request(options, (resp) => {
+                if (resp.statusCode === 200) {
+                    resp.setEncoding('utf8');
+                    let s = '';
+                    resp.on('data', chunk => {
+                        s += chunk;
+                    });
+                    resp.on('end', () => {
+                        res(s);
+                    });
+                } else {
+                    rej(new Error('http response status ' + resp.statusCode));
+                }
+            });
+            requ.on('error', (err) => {
+                this._getPendingSince = null;
+                rej(err);
+            });
+            requ.end();
+        });
+        return rv;
+    }
+
+    private async httpPost (path: string, body: string, authUser?: IUserLogin): Promise<string> {
+        const options = Object.assign({}, this._options);
+        options.method = 'POST';
+        options.path = path;
+        options.headers = {
+            'Content-Type': 'application/json',
+        };
+        try {
+            debug.info('---> %s %s:%d %s', options.method, options.host, options.port, options.path);
+            const rv = await this.httpSendRequest(options, body);
+            if (rv.status === 200) {
+                return rv.body;
+            } else if (rv.status === 401 && authUser) {
+                await this.authenticate(authUser);
+                return await this.httpPost(path, body, null);
+            } else {
+                throw new Error('post fails');
+            }
+        } catch (err) {
+            throw new Nibe1155Error('post fails', err);
+        }
     }
 
     private async handleTimer (init?: boolean) {
@@ -774,3 +931,6 @@ export class Nibe1155 {
 }
 
 
+class Nibe1155Error extends Error {
+    constructor (msg: string, public cause: Error) { super(msg); }
+}

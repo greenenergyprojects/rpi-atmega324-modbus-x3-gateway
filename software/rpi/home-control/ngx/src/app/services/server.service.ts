@@ -15,7 +15,7 @@ export class ServerService {
     private _authServerUri: string;
     private _authUri: string;
     private _remoteToken: string;
-    private _autoLogin: IUserLogin = { userid: 'test', passwordType: 'raw', password: 'geheim' };
+    private _autoLogin: IUserLogin = isDevMode() ? { userid: 'test', passwordType: 'raw', password: 'geheim' } : null;
 
     constructor (private httpClient: HttpClient, private _authService: AuthService, private _componentFactoryResolver: ComponentFactoryResolver) {
         // ng serve      --> development mode, server running on same host

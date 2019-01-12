@@ -64,7 +64,8 @@ export class MonitorRecordBoiler extends DataRecord<IMonitorRecordBoiler> implem
 
     // ********************************************************
 
-    public getModeAsString (maxAgeSeconds = 5000): string | null {
+    public getModeAsString (maxAgeSeconds = 5): string | null {
+        // console.log('--> getModeAsString():', this._monitorRecord);
         if (!this._monitorRecord) { return null; }
         const tMin = Date.now() - maxAgeSeconds * 1000;
         const ts = this._monitorRecord.createdAt;
@@ -74,10 +75,10 @@ export class MonitorRecordBoiler extends DataRecord<IMonitorRecordBoiler> implem
         return rv;
     }
 
-    public getActivePowerAsNumber (maxAgeSeconds = 5000): number | null {
-        if (!this._monitorRecord) { return null; }
+    public getActivePowerAsNumber (maxAgeSeconds = 5): number | null {
+        if (!this._monitorRecord || !this._monitorRecord.activePower) { return null; }
         const tMin = Date.now() - maxAgeSeconds * 1000;
-        const ts = this._monitorRecord.createdAt;
+        const ts = this._monitorRecord.activePower.createdAt;
         if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
         const rv = this._monitorRecord.activePower.value;
         if (!(rv >= 0)) { return null; }

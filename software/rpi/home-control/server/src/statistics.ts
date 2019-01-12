@@ -2,6 +2,9 @@
 import * as debugsx from 'debug-sx';
 const debug: debugsx.IFullLogger = debugsx.createFullLogger('statistics');
 
+const debugSpy: debugsx.IFullLogger = debugsx.createFullLogger('spy');
+
+
 import * as fs from 'fs';
 
 import { sprintf } from 'sprintf-js';
@@ -335,25 +338,42 @@ class StatisticsRecordFactory extends StatisticsRecord {
                 debug.warn('error on header-id %s / value-id %s / index %d / offset %d', h.id, v.id, i, offset);
                 continue;
             }
+
+            const ie = r.froniussymo ? r.froniussymo.inverterExtension : null;
+            if (ie) {
+                const dcw_1 = ie.registerValues.getValue(40275);
+                const dcst_1 = ie.registerValues.getValue(40281);
+                const dcw_sf = ie.registerValues.getValue(40258);
+                if (dcw_1 && dcw_1.value === 65535) {
+                    debugSpy.warn('dcw_1 === 65535 dcw_1=%o dcw_sf=%o dcw_sf=%o', dcw_1, dcw_sf, dcst_1);
+                }
+            }
+
+        if (!ie || !ie.dcw_1 || !(ie.dcw_1.at instanceof Date)) { return null; }
+        return ie.dcw_1;
+            const x = r.getPvSouthActivePower();
+
+
+
             switch (h.id) {
-                case 'p-grid':          this.handleValue(v, this._valueCount, r.getGridActivePower()); break;
-                case 'p-load':          this.handleValue(v, this._valueCount, r.getLoadActivePower()); break;
-                case 'p-storage':       this.handleValue(v, this._valueCount, r.getBatteryPower()); break;
-                case 'storage-percent': this.handleValue(v, this._valueCount, r.getBatteryEnergyInPercent()); break;
-                case 'p-pv':            this.handleValue(v, this._valueCount, r.getPvActivePower()); break;
-                case 'p-pv-s':          this.handleValue(v, this._valueCount, r.getPvSouthActivePower()); break;
-                case 'p-pv-ew':         this.handleValue(v, this._valueCount, r.getPvEastWestActivePower()); break;
-                case 'e-pv-daily':      this.handleValue(v, this._valueCount, r.getPvEnergyDaily()); break;
-                case 'e-pv-s-daily':    this.handleValue(v, this._valueCount, r.getPvSouthEnergyDaily()); break;
-                case 'e-pv-ew-daily':   this.handleValue(v, this._valueCount, r.getPvEastWestEnergyDaily()); break;
-                case 'e-pv-s':          this.handleValue(v, this._valueCount, r.getPvSouthEnergy()); break;
-                case 'e-out':           this.handleValue(v, this._valueCount, r.getEOut()); break;
-                case 'e-in':            this.handleValue(v, this._valueCount, r.getEIn()); break;
-                case 'e-pv-ew':         this.handleValue(v, this._valueCount, r.getPvEastWestEnergy()); break;
-                case 'e-site':          this.handleValue(v, this._valueCount, r.getFroniusSiteEnergy()); break;
-                case 'e-site-daily':    this.handleValue(v, this._valueCount, r.getFroniusSiteDailyEnergy()); break;
-                case 'e-in-daily':      this.handleValue(v, this._valueCount, r.getEInDaily()); break;
-                case 'e-out-daily':     this.handleValue(v, this._valueCount, r.getEOutDaily()); break;
+                case 'p-grid':          this.handleValue(v, this._valueCount, r.getGridActivePowerAsNumber()); break;
+                case 'p-load':          this.handleValue(v, this._valueCount, r.getLoadActivePowerAsNumber()); break;
+                case 'p-storage':       this.handleValue(v, this._valueCount, r.getBatteryPowerAsNumber()); break;
+                case 'storage-percent': this.handleValue(v, this._valueCount, r.getBatteryEnergyInPercentAsNumber()); break;
+                case 'p-pv':            this.handleValue(v, this._valueCount, r.getPvActivePowerAsNumber()); break;
+                case 'p-pv-s':          this.handleValue(v, this._valueCount, r.getPvSouthActivePowerAsNumber()); break;
+                case 'p-pv-ew':         this.handleValue(v, this._valueCount, r.getPvEastWestActivePowerAsNumber()); break;
+                case 'e-pv-daily':      this.handleValue(v, this._valueCount, r.getPvEnergyDailyAsNumber()); break;
+                case 'e-pv-s-daily':    this.handleValue(v, this._valueCount, r.getPvSouthEnergyDailyAsNumber()); break;
+                case 'e-pv-ew-daily':   this.handleValue(v, this._valueCount, r.getPvEastWestEnergyDailyAsNumber()); break;
+                case 'e-pv-s':          this.handleValue(v, this._valueCount, r.getPvSouthEnergyAsNumber()); break;
+                case 'e-out':           this.handleValue(v, this._valueCount, r.getEOutAsNumber()); break;
+                case 'e-in':            this.handleValue(v, this._valueCount, r.getEInAsNumber()); break;
+                case 'e-pv-ew':         this.handleValue(v, this._valueCount, r.getPvEastWestEnergyAsNumber()); break;
+                case 'e-site':          this.handleValue(v, this._valueCount, r.getFroniusSiteEnergyAsNumber()); break;
+                case 'e-site-daily':    this.handleValue(v, this._valueCount, r.getFroniusSiteDailyEnergyAsNumber()); break;
+                case 'e-in-daily':      this.handleValue(v, this._valueCount, r.getEInDailyAsNumber()); break;
+                case 'e-out-daily':     this.handleValue(v, this._valueCount, r.getEOutDailyAsNumber()); break;
                 default: debug.warn('unsupported id %s', h.id); break;
             }
         }

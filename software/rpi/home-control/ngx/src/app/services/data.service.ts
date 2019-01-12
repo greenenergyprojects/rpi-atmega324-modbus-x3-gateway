@@ -167,13 +167,13 @@ export class DataService {
 
     public setHeatPumpMode (mode: INibe1155Controller): Promise<INibe1155Controller> {
         console.log(mode);
-        const uri = '/control/heatpumpmode';
+        const uri = '/control/nibe1155-controller';
         return this._serverService.httpPostAndGetJson(uri, mode);
     }
 
     public setBoilerMode (mode: IBoilerMode): Promise<IBoilerController> {
         console.log(mode);
-        const uri = '/control/boilermode';
+        const uri = '/control/boiler-mode';
         return this._serverService.httpPostAndGetJson(uri, mode);
     }
 

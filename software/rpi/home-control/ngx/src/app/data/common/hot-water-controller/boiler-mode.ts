@@ -1,6 +1,5 @@
 
 import { DataRecord } from '../data-record';
-import { CommonLogger } from '../../common-logger';
 
 export enum ControllerMode { off = 'off', power = 'power', test = 'test', shutdown = 'shutdown' }
 
@@ -8,15 +7,14 @@ export interface IBoilerMode {
     createdAt: Date | number | string;
     desiredMode: ControllerMode;
     currentMode?: ControllerMode;
-    pin?: string;
-    setpointPower: number | string;
+    setpointPower: number;
 }
 
 export class BoilerMode extends DataRecord<IBoilerMode> implements IBoilerMode {
 
     private _createdAt: Date;
     private _desiredMode: ControllerMode;
-    private _pin?: string;
+    private _currentMode?: ControllerMode;
     private _setpointPower: number;
 
     constructor (data: IBoilerMode) {
@@ -27,13 +25,11 @@ export class BoilerMode extends DataRecord<IBoilerMode> implements IBoilerMode {
                 if ( [ 'createdAt' ].indexOf(a) >= 0 ) {
                     (<any>this)['_' + a] = DataRecord.parseDate(data, { attribute: a, validate: true } );
                 } else if ( [ 'setpointPower' ].indexOf(a) >= 0 ) {
-                    (<any>this)['_' + a] = DataRecord.parseNumber(data, { attribute: a, allowString: true, validate: true, min: 0 } );
-                } else if ( [ 'desiredMode' ].indexOf(a) >= 0 ) {
+                    (<any>this)['_' + a] = DataRecord.parseNumber(data, { attribute: a, validate: true, allowString: true, min: 0 } );
+                } else if ( [ 'desiredMode', 'currentMode' ].indexOf(a) >= 0 ) {
                     (<any>this)['_' + a] = DataRecord.parseEnum<ControllerMode>(
                         data, {attribute: a, validate: true, validValues: DataRecord.enumToStringValues(ControllerMode) }
                     );
-                } else if ( [ 'pin' ].indexOf(a) >= 0 ) {
-                        (<any>this)['_' + a] = DataRecord.parseString(data, { attribute: a, validate: true } );
                 } else {
                     throw new Error('attribute ' + a + ' not found in data:IBoilerMode');
                 }
@@ -47,13 +43,13 @@ export class BoilerMode extends DataRecord<IBoilerMode> implements IBoilerMode {
         }
     }
 
-    public toObject (convertData = false): IBoilerMode {
+    public toObject (convertDate = false): IBoilerMode {
         const rv: IBoilerMode = {
-            createdAt:     convertData ? this._createdAt.getTime() : this._createdAt,
+            createdAt:     convertDate ? this._createdAt.getTime() : this._createdAt,
             desiredMode:   this._desiredMode,
             setpointPower: this._setpointPower
         };
-        if (this._pin) { rv.pin = this._pin; }
+        if (this._currentMode) { rv.currentMode = this._currentMode; }
         return rv;
     }
 
@@ -65,8 +61,8 @@ export class BoilerMode extends DataRecord<IBoilerMode> implements IBoilerMode {
         return this._desiredMode;
     }
 
-    public get pin (): string {
-        return this._pin;
+    public get currentMode (): ControllerMode {
+        return this._currentMode;
     }
 
     public get setpointPower (): number {

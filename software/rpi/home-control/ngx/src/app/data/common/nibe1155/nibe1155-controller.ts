@@ -44,7 +44,7 @@ export class Nibe1155Controller extends DataRecord<INibe1155Controller> implemen
                 if ( [ 'createdAt', 'inProgressSince' ].indexOf(a) >= 0 ) {
                     (<any>this)['_' + a] = DataRecord.parseDate(data, { attribute: a, validate: true } );
                 } else if ( [ 'fSetpoint', 'fMin', 'fMax', 'tempSetpoint', 'tempMin', 'tempMax' ].indexOf(a) >= 0 ) {
-                    (<any>this)['_' + a] = DataRecord.parseNumber(data, { attribute: a, validate: true, min: 0 } );
+                    (<any>this)['_' + a] = DataRecord.parseNumber(data, { attribute: a, validate: true, allowString: true, min: 0 } );
                 } else if ( [ 'running' ].indexOf(a) >= 0 ) {
                     (<any>this)['_' + a] = DataRecord.parseBoolean(data, { attribute: a, validate: true } );
                 } else if ( [ 'desiredMode', 'currentMode' ].indexOf(a) >= 0 ) {

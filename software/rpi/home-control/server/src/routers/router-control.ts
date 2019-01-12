@@ -11,6 +11,7 @@ import { handleError, RouterError, BadRequestError, AuthenticationError } from '
 import { Nibe1155 } from '../devices/nibe1155';
 import { HotWaterController } from '../devices/hot-water-controller';
 import { BoilerMode, IBoilerMode, ControllerMode } from '../data/common/hot-water-controller/boiler-mode';
+import { INibe1155Controller, Nibe1155Controller } from '../data/common/nibe1155/nibe1155-controller';
 
 
 export class RouterControl {
@@ -31,8 +32,8 @@ export class RouterControl {
     private constructor () {
         this._router = express.Router();
         // this._router.get('/heatpumpmode', (req, res, next) => this.getHeatpumpmode(req, res, next));
-        // this._router.post('/heatpumpmode', (req, res, next) => this.postHeatpumpmode(req, res, next));
-        this._router.post('/boilermode', (req, res, next) => this.postBoilerMode(req, res, next));
+        this._router.post('/nibe1155-controller', (req, res, next) => this.postNibe1155Controller(req, res, next));
+        this._router.post('/boiler-mode', (req, res, next) => this.postBoilerMode(req, res, next));
 
     }
 
@@ -44,27 +45,32 @@ export class RouterControl {
     //     }
     // }
 
-    // private async postHeatpumpmode (req: express.Request, res: express.Response, next: express.NextFunction) {
-    //     try {
-    //         debug.warn(req.body);
-    //         const x: IHeatpumpMode = req.body;
-    //         if (!x || !x.createdAt || !x.desiredMode) { throw new BadRequestError('invalid request'); }
-    //         if (x.pin === undefined) { throw new AuthenticationError('missing pin'); }
-    //         const rv = await Nibe1155.Instance.setHeatpumpMode(x);
-    //         res.send(rv);
-    //     } catch (err) {
-    //         handleError(err, req, res, next, debug);
-    //     }
-    // }
+    private async postNibe1155Controller (req: express.Request, res: express.Response, next: express.NextFunction) {
+        try {
+            debug.info('POST /nibe1155-controller %o', req.body);
+            let nc: Nibe1155Controller;
+            try {
+                const data: INibe1155Controller = req.body;
+                nc = new Nibe1155Controller(data);
+                debug.info('POST /nibe1155-controller parsing ok');
+            } catch (err) {
+                throw new BadRequestError('invalid request', err);
+            }
+            const rv = await Nibe1155.getInstance().setHeatpumpMode(nc);
+            res.send(rv.toObject());
+        } catch (err) {
+            handleError(err, req, res, next, debug);
+        }
+    }
 
     private async postBoilerMode (req: express.Request, res: express.Response, next: express.NextFunction) {
         try {
-            debug.info('POST /boilermode %o', req.body);
+            debug.info('POST /boiler-mode %o', req.body);
             let bm: BoilerMode;
             try {
                 const data: IBoilerMode = req.body;
                 bm = new BoilerMode(data);
-                debug.info('POST /boilermode parsing ok');
+                debug.info('POST /boiler-mode parsing ok');
             } catch (err) {
                 throw new BadRequestError('invalid request', err);
             }

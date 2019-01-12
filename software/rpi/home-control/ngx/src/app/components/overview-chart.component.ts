@@ -126,19 +126,19 @@ export class OverviewChartComponent implements OnInit, OnDestroy {
             this.chartData[3].data.push(null);
             this.chartData[4].data.push(null);
         } else {
-            this.chartData[0].data.push(v.getGridActivePower());
-            this.chartData[1].data.push(v.getBatteryPower());
-            this.chartData[2].data.push(v.getPvActivePower());
+            this.chartData[0].data.push(v.getGridActivePowerAsNumber());
+            this.chartData[1].data.push(v.getBatteryPowerAsNumber());
+            this.chartData[2].data.push(v.getPvActivePowerAsNumber());
             const heatPumpPower = !n ? 0.0 :
                 n.values[43084].value + // electricHeaterPower
                 n.values[43141].value + // copressorInPower
                 n.values[43437].value / 100 * 30 + // supplyPumpSpeed
                 n.values[43439].value / 100 * 30; // brinePumpSpeed
             if (typeof(heatPumpPower) === 'number' && !Number.isNaN(heatPumpPower)) {
-                this.chartData[3].data.push(-v.getLoadActivePower() + heatPumpPower);
+                this.chartData[3].data.push(-v.getLoadActivePowerAsNumber() + heatPumpPower);
                 this.chartData[4].data.push(-heatPumpPower);
             } else {
-                this.chartData[3].data.push(-v.getLoadActivePower());
+                this.chartData[3].data.push(-v.getLoadActivePowerAsNumber());
                 this.chartData[4].data.push(null);
             }
 

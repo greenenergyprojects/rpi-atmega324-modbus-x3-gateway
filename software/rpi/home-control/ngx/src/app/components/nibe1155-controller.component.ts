@@ -4,10 +4,11 @@ import { Subscription } from 'rxjs';
 import { MonitorRecord } from '../data/common/home-control/monitor-record';
 import { ValidatorElement } from '../directives/validator.directive';
 import { HeatpumpControllerMode } from '../data/common/nibe1155/nibe1155-controller';
+import { ISyncButtonConfig } from './sync-button.component';
 
 @Component({
-    selector: 'app-heating-controller',
-    templateUrl: 'heating-controller.component.html',
+    selector: 'app-nibe1155-controller',
+    templateUrl: 'nibe1155-controller.component.html',
     styles: [`
     .ng-valid[required], .ng-valid.required  {
         border-left: 5px solid #00ff00; /* green */
@@ -18,7 +19,7 @@ import { HeatpumpControllerMode } from '../data/common/nibe1155/nibe1155-control
     `]
 
 })
-export class HeatingControllerComponent implements OnInit, OnDestroy {
+export class Nibe1155ControllerComponent implements OnInit, OnDestroy {
 
     @Input() config: any;
     @Input() data: any;
@@ -28,6 +29,7 @@ export class HeatingControllerComponent implements OnInit, OnDestroy {
     public currentMode: string;
     public inputs: IInput [] = [];
     public inputTest: IInput;
+    public buttonConfig: ISyncButtonConfig;
 
     private _monitorValuesSubsciption: Subscription;
     private _inputFrequency: IInput;
@@ -36,11 +38,20 @@ export class HeatingControllerComponent implements OnInit, OnDestroy {
     private _inputTemp: IInput;
     private _inputTempMin: IInput;
     private _inputTempMax: IInput;
-    private _inputPin: IInput;
+    // private _inputPin: IInput;
 
     constructor (private dataService: DataService) {
         const fMin = 25, fMax = 90, tempMin = 20, tempMax = 60;
         this.currentMode = '?';
+
+        this.buttonConfig = {
+            text: 'Senden',
+            classes: { default: 'btn btn-primary', onSuccess: 'btn btn-success', onError: 'btn btn-danger' },
+            handler: {
+                onClick: (cfg) => this.onSubmit(cfg),
+                onCancel: (cfg) => this.onCancel(cfg)
+            }
+        };
 
         this.validatorMode = new ValidatorElement<string>(
             'off', (e, n, v) => {
@@ -110,7 +121,7 @@ export class HeatingControllerComponent implements OnInit, OnDestroy {
             id: 'idFrequencyMin', type: 'number', key: 'Frequenz-Min', name: 'frequencyMin',
             min: fMin, max: fMax, hidden: true, validator: null, pattern: '', mode: ''
         };
-        this._inputFrequencyMin.validator = new ValidatorElement<number>(25, null, (e, n, v) => {
+        this._inputFrequencyMin.validator = new ValidatorElement<number>(22, null, (e, n, v) => {
             if (Number.isNaN(+v)) { return false; }
             if (+v < fMin) { return false; }
             if (+v > fMax) { return false; }
@@ -122,7 +133,7 @@ export class HeatingControllerComponent implements OnInit, OnDestroy {
             id: 'idFrequencyMax', type: 'number', key: 'Frequenz-Max', name: 'frequencyMax',
             min: fMin, max: fMax, hidden: true, validator: null, pattern: '', mode: ''
         };
-        this._inputFrequencyMax.validator = new ValidatorElement<number>(68, null, (e, n, v) => {
+        this._inputFrequencyMax.validator = new ValidatorElement<number>(90, null, (e, n, v) => {
             if (Number.isNaN(+v)) { return false; }
             if (+v < fMin) { return false; }
             if (+v > fMax) { return false; }
@@ -165,15 +176,15 @@ export class HeatingControllerComponent implements OnInit, OnDestroy {
             return true;
         });
 
-        this._inputPin = {
-            id: 'idPin', type: 'password', key: 'PIN', name: 'pin',
-            min: '', max: '', hidden: false, validator: null, pattern: '[0-9]*', mode: 'numeric'
-        };
-        this._inputPin.validator = new ValidatorElement<string>('', null, (e, n, v) => {
-            if (Number.isNaN(+v)) { return false; }
-            const rv = !(+v < 0  || +v > 9999 || (typeof v === 'string' && v.length !== 4));
-            return rv;
-        });
+        // this._inputPin = {
+        //     id: 'idPin', type: 'password', key: 'PIN', name: 'pin',
+        //     min: '', max: '', hidden: false, validator: null, pattern: '[0-9]*', mode: 'numeric'
+        // };
+        // this._inputPin.validator = new ValidatorElement<string>('', null, (e, n, v) => {
+        //     if (Number.isNaN(+v)) { return false; }
+        //     const rv = !(+v < 0  || +v > 9999 || (typeof v === 'string' && v.length !== 4));
+        //     return rv;
+        // });
 
         this.inputTest = {
             id: 'idTest', type: 'password', key: 'Test', name: 'test',
@@ -188,7 +199,8 @@ export class HeatingControllerComponent implements OnInit, OnDestroy {
 
         this.inputs = [
             this._inputFrequency, this._inputFrequencyMin, this._inputFrequencyMax,
-            this._inputTemp, this._inputTempMin, this._inputTempMax, this._inputPin
+            this._inputTemp, this._inputTempMin, this._inputTempMax
+            // , this._inputPin
         ];
 
     }
@@ -203,7 +215,45 @@ export class HeatingControllerComponent implements OnInit, OnDestroy {
         this._monitorValuesSubsciption = null;
     }
 
-    public onSubmit() {
+
+    public async onCancel (cfg: ISyncButtonConfig) {
+        console.log('cancel', cfg);
+    }
+
+    public async onSubmit(cfg: ISyncButtonConfig): Promise<void> {
+        try {
+            console.log('--> onSubmit --> setHeatPumpMode');
+            let mode: HeatpumpControllerMode;
+            switch (this.validatorMode.value) {
+                case 'off': mode = HeatpumpControllerMode.off; break;
+                case 'frequency': mode = HeatpumpControllerMode.frequency; break;
+                case 'test': mode = HeatpumpControllerMode.test; break;
+                default: {
+                    console.log('ERROR: unknown mode ' + this.validatorMode.value);
+                    mode = HeatpumpControllerMode.off;
+                    break;
+                }
+            }
+
+            const rv = await this.dataService.setHeatPumpMode({
+                createdAt:        new Date(),
+                desiredMode:      mode,
+                // pin:              this._inputPin.validator.value,
+                fSetpoint:        this._inputFrequency.validator.value,
+                fMin:             this._inputFrequencyMin.validator.value,
+                fMax:             this._inputFrequencyMax.validator.value,
+                tempSetpoint:     this._inputTemp.validator.value,
+                tempMin:          this._inputTempMin.validator.value,
+                tempMax:          this._inputTempMax.validator.value
+            });
+            console.log(rv);
+        } catch (err) {
+            console.log(err);
+            throw err;
+        }
+    }
+
+    public onSubmitOld() {
         let mode: HeatpumpControllerMode;
         switch (this.validatorMode.value) {
             case 'off': mode = HeatpumpControllerMode.off; break;
@@ -218,7 +268,7 @@ export class HeatingControllerComponent implements OnInit, OnDestroy {
         this.dataService.setHeatPumpMode({
             createdAt:        new Date(),
             desiredMode:      mode,
-            pin:              this._inputPin.validator.value,
+            // pin:              this._inputPin.validator.value,
             fSetpoint:        this._inputFrequency.validator.value,
             fMin:             this._inputFrequencyMin.validator.value,
             fMax:             this._inputFrequencyMax.validator.value,

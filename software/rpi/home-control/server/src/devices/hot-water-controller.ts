@@ -118,16 +118,17 @@ export class HotWaterController {
                     resp.on('end', () => {
                         try {
                             debug.finest(s);
+                            // debug.fine('--> HWC response:\n%s', s);
                             const r: IMonitorRecord [] = JSON.parse(s);
                             if (!Array.isArray(r) || r.length !== 1) {
                                 debug.warn('invalid response\n%s', s);
                                 this._getPendingSince = null;
                                 rej(new Error('invalid response'));
                             } else {
-                                r[0].mode = 'power';
                                 const mr = new MonitorRecord(r[0]);
                                 debug.finer('reading successful: %o', r);
                                 this._lastValidResponse = { at: new Date(), value: mr };
+                                // debug.fine('--> HWC _lastValidResponse:\n%o', this._lastValidResponse);
                                 this._getPendingSince = null;
                                 res(mr);
                             }
@@ -155,7 +156,7 @@ export class HotWaterController {
             throw new Error('HotWaterController disabled');
         }
         const rv = new Promise<BoilerController>( (resolve, reject) => {
-            const x = mode.toObject();
+            const x = <any>mode.toObject();
             if (!x.pin) {
                 x.pin = this._config.pin;
             }
@@ -221,6 +222,9 @@ export class HotWaterController {
     private async handleTimer (init?: boolean) {
         try {
             const rv = await this.getData();
+            if (this._lastValidResponse && this._lastValidResponse.value) {
+                debug.fine('--> %s mode = %s', this._lastValidResponse.value.createdAt.toISOString(), this._lastValidResponse.value.mode)
+            }
             debug.finer('HotWaterController update done');
         } catch (err) {
             debug.warn('request fails\n%e', err);

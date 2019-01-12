@@ -16,7 +16,7 @@ const routes: Routes = [
     { path: 'app/test', component: TestComponent },
     { path: 'app/froniussymo', component: TestComponent },
     { path: 'app/boiler', component: BoilerComponent },
-    { path: 'app/nibe1155', component: TestComponent }
+    { path: 'app/nibe1155', component: Nibe1155Component }
 
 ];
 

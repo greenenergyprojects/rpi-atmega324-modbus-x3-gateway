@@ -14,7 +14,7 @@ import { OverviewComponent } from './components/overview.component';
 import { OverviewChartComponent } from './components/overview-chart.component';
 import { BoilerComponent } from './components/boiler.component';
 import { BoilerControllerComponent } from './components/boiler-controller.component';
-import { HeatingControllerComponent } from './components/heating-controller.component';
+import { Nibe1155ControllerComponent } from './components/nibe1155-controller.component';
 import { FroniusSymoComponent } from './components/fronius-symo.component';
 import { Nibe1155Component } from './components/nibe1155.component';
 import { TestComponent } from './components/test.component';
@@ -37,7 +37,7 @@ library.add(faEye, faEyeSlash, faSpinner, faSync);
         ValidatorDirective, FilterPipe,
         NavbarComponent, AppComponent, ModalLoginComponent, SyncButtonComponent,
         OverviewComponent, OverviewChartComponent,
-        BoilerComponent, BoilerControllerComponent, HeatingControllerComponent,
+        BoilerComponent, BoilerControllerComponent, Nibe1155ControllerComponent,
         FroniusSymoComponent,
         Nibe1155Component,
         TestComponent
