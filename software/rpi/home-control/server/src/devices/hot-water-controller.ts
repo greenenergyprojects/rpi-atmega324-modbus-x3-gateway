@@ -222,9 +222,9 @@ export class HotWaterController {
     private async handleTimer (init?: boolean) {
         try {
             const rv = await this.getData();
-            if (this._lastValidResponse && this._lastValidResponse.value) {
-                debug.fine('--> %s mode = %s', this._lastValidResponse.value.createdAt.toISOString(), this._lastValidResponse.value.mode)
-            }
+            // if (this._lastValidResponse && this._lastValidResponse.value) {
+            //     debug.fine('--> %s mode = %s', this._lastValidResponse.value.createdAt.toISOString(), this._lastValidResponse.value.mode)
+            // }
             debug.finer('HotWaterController update done');
         } catch (err) {
             debug.warn('request fails\n%e', err);

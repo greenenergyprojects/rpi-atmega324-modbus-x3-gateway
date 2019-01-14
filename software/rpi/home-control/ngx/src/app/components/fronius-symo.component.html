@@ -1,52 +1,40 @@
-<!-- <div style="margin:1em">
-    <accordion *ngIf="accordions">
-        <accordion-group *ngFor="let a of accordions" [(isOpen)]="a.isOpen" (isOpenChange)="onAccordionOpenChanged(a, $event)">
-            <div accordion-heading>
-                <i *ngIf="!a.isOpen" class="fa fa-chevron-right pull-left" style="margin:0.25rem 0.75rem 0 0"></i>
-                <i *ngIf="a.isOpen" class="fa fa-chevron-down pull-left" style="margin:0.25rem 0.75rem 0 0"></i>
-                {{a.header}}
-            </div>
-            <p *ngIf="a.infos.length === 0 && !a.table && !a.showComponent">Keine Daten vorhanden!</p>
+<div style="margin-top: 4.5em" class="container">
+    <ngb-alert *ngIf="showWarning" [dismissible]="false">
+        <strong>Warning!</strong> Check Console!
+    </ngb-alert>
+    <ngb-accordion #acc="ngbAccordion" *ngIf="accordion" [closeOthers]="true" activeIds="{{accordion.activeIds}}" (panelChange)="onAccordionChange($event)">
+            <ngb-panel *ngFor="let p of accordion.panels" id="{{p.id}}" type="{{p.type}}">
+                <ng-template ngbPanelTitle>
+                    <span *ngIf="!acc.isExpanded(p.id)" style="color: black;">
+                        <i class="fa fa-chevron-right pull-left" style="margin:0.25rem 0.75rem 0 0"></i>
+                        {{p.title}}
+                    </span>
+                    <span *ngIf="acc.isExpanded(p.id)" style="color: black; font-weight: bold;">
+                        <i class="fa fa-chevron-down pull-left" style="margin:0.25rem 0.75rem 0 0"></i>
+                        {{p.title}}
+                    </span>
+                </ng-template>
+                <ng-template ngbPanelContent>
+                    <p *ngIf="p.infos.length === 0 && !p.table && !p.showComponent">Keine Daten vorhanden!</p>
 
-            <div *ngIf="a.filter" class="input-group" >
-                <span class="filter input-group-addon" style="margin:5pt"><strong>Filter</strong></span>
-                <input type="text" class="form-control" [ngStyle]="{'text-decoration': a.filter.isDisabled ? 'line-through' : 'none'}"
-                        name="filter" [ngModel]="a.filter.value" (ngModelChange)="changeFilter($event, a)">
-                <button class="filter input-group-addon btn btn-sm btn-primary" style="margin-left:5pt;padding: 0 1.5rem 0 1.5rem" (click)="onButtonFilter(a)">
-                    <i *ngIf="a.filter.isDisabled" class="fa fa-ban"></i>
-                    <i *ngIf="!a.filter.isDisabled" class="fa fa-filter"></i>
-                </button> 
-                <button class="input-group-addon btn btn-sm btn-success" style="margin-left:5pt;padding: 0 1.5rem 0 1.5rem" (click)="onButtonRefresh(a)">
-                    <i class="fa fa-refresh"></i>
-                </button> 
-            </div>
-
-            <div *ngFor="let i of a.infos | filterPipe:a.filter.filter" class="input-group" style="margin-bottom: 0.5rem">
-                <span class="input-group-addon form-control-sm" [ngStyle]="{'min-width':i.width}">
-                    <strong>{{i.key}}</strong>
-                </span>
-                <input type="text" class="form-control form-control-sm" readonly value="{{i.value}}">
-            </div>
-
-            <div *ngIf="a.showComponent">
-                <div *ngFor="let c of a.showComponent">
-                    <div *ngIf="c.name === 'ServerRateComponent'" style="margin-bottom: 1rem">
+                    <div *ngIf="p.showComponent">
+                        <!-- <div *ngFor="let c of p.showComponent">
+                            <div *ngIf="c.name === 'XXXComponent'" style="margin-bottom: 1rem">
+                                <app-xxx style="display:block" [config]="c.config" [data]="c.data">
+                                </app-xxx>
+                            </div>
+                        </div> -->
                     </div>
-                </div>
-            </div>
-      
-            <table *ngIf="a.table" class="table table-sm">
-                <thead>
-                    <tr>
-                        <th *ngFor="let h of a.table.headers">{{h}}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr *ngFor="let row of a.table.rows; trackBy: trackByTableRow">
-                        <td *ngFor="let t of row.text">{{t}}</td>
-                    </tr>
-                </tbody>
-            </table>   
-        </accordion-group>
-    </accordion>
-</div> -->
+
+                    <div *ngFor="let i of p.infos | filterPipe:p.filter?.filter" class="input-group" style="margin-bottom: 0.5rem">
+                        <span class="input-group-addon form-control-sm" [ngStyle]="{'min-width':i.width}">
+                            <strong>{{i.key}}</strong>
+                        </span>
+                        <input type="text" class="form-control form-control-sm" readonly value="{{i.value}}">
+                    </div>
+            
+                </ng-template>
+            </ngb-panel>
+    </ngb-accordion>
+</div>        
+ 

@@ -291,7 +291,13 @@ export class Monitor {
 
             if (this._symo) {
                 const pPvS = this._symo.getPvSouthActivePower();
+                const pBatt = this._symo.getBatteryActivePower();
+
                 if (pPvS && pPvS.value >= 0) {
+                    if (pPvS.value < 10 && pBatt && pBatt.value > 100) {
+                        debug.fine('Fronius Bug string2/string1 pBatt=%dW pPvS: %sW -> 0W', pBatt.value, pPvS.value);
+                        pPvS.value = 0;
+                    }
                     this._pvSouthEnergy.accumulateTotalEnergy(pPvS.value, pPvS.at);
                     const before = this._pvSouthEnergyDaily.dailyEnergy;
                     this._pvSouthEnergyDaily.accumulateDailyEnergy(pPvS.value, pPvS.at);
@@ -300,7 +306,7 @@ export class Monitor {
                 } else {
                     // debug.info('  pvSouth ---> ??W ==> %dWh', this._pvSouthEnergyDaily.dailyEnergy);
                 }
-                const pBatt = this._symo.getBatteryActivePower();
+
                 if (pBatt) {
                     if (pBatt.value === 0) {
                         this._batInDaily.accumulateDailyEnergy(0, pBatt.at);

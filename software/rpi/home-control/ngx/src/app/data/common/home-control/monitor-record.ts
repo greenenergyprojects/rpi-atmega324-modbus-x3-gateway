@@ -116,7 +116,7 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
 
     // *****************************************************
 
-    public getGridActivePowerAsNumber (maxAgeSeconds = 10): number | null {
+    public getGridActivePowerAsNumber (maxAgeSeconds = 20): number | null {
         if (!this.gridmeter) { return null; }
         const tMin = Date.now() - maxAgeSeconds * 1000;
         const ts = this._gridmeter.createdAt;
@@ -124,7 +124,7 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
         return this._gridmeter.activePower; // >0 ==> get power from grid, <0 -> feed power to grid
     }
 
-    public getPvEastWestActivePowerAsNumber (maxAgeSeconds = 10): number | null {
+    public getPvEastWestActivePowerAsNumber (maxAgeSeconds = 20): number | null {
         if (!this._extPvMeter) { return null; }
         const x = <EnergyMeter>this._extPvMeter['pveastwest'];
         if (!x) { return null; }
@@ -140,7 +140,7 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
         return ie.dcw_1;
     }
 
-    public getPvSouthActivePowerAsNumber (maxAgeSeconds = 10): number | null {
+    public getPvSouthActivePowerAsNumber (maxAgeSeconds = 20): number | null {
         if (!this.froniussymo || !this.froniussymo.inverterExtension) { return null; }
         const tMin = Date.now() - maxAgeSeconds * 1000;
         const ts = this.froniussymo.inverterExtension.dcw_1.at;
@@ -149,7 +149,7 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
         return this.froniussymo.inverterExtension.dcw_1.value;
     }
 
-    public getLoadActivePowerAsNumber (maxAgeSeconds = 10): number | null {
+    public getLoadActivePowerAsNumber (maxAgeSeconds = 20): number | null {
         if (!this.gridmeter) { return null; }
         if (!this.extPvMeter) { return null; }
         if (!this.froniussymo || !this.froniussymo.inverter) { return null; }
@@ -179,7 +179,7 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
     }
 
 
-    public getBatteryPowerAsNumber (maxAgeSeconds = 10): number | null {
+    public getBatteryPowerAsNumber (maxAgeSeconds = 20): number | null {
         if (!this._froniussymo) { return null; }
         const inv = this._froniussymo.inverter;
         const invEx = this._froniussymo.inverterExtension;
@@ -204,7 +204,7 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
         return pBatt;
     }
 
-    public getBatteryNominalEnergyAsNumber (maxAgeSeconds = 10000): number | null {
+    public getBatteryNominalEnergyAsNumber (maxAgeSeconds = 20000): number | null {
         if (!this._froniussymo) { return null; }
         const np = this._froniussymo.nameplate;
         if (!np || !np.registerValues) { return null; }
@@ -215,7 +215,7 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
         return x.value;
     }
 
-    public getBatteryEnergyInPercentAsNumber (maxAgeSeconds = 10): number | null {
+    public getBatteryEnergyInPercentAsNumber (maxAgeSeconds = 20): number | null {
         if (!this._froniussymo) { return null; }
         const fronStor = this._froniussymo.storage;
         if (!fronStor || !fronStor.registerValues) { return null; }
@@ -226,43 +226,43 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
         return x.value;
     }
 
-    public getBatteryStateAsString (maxAgeSeconds = 10): string | null {
+    public getBatteryStateAsString (maxAgeSeconds = 20): string | null {
         if (!this._froniussymo) { return null; }
         const fronStor = this._froniussymo.storage;
         if (!fronStor || !fronStor.registerValues) { return null; }
         return fronStor.getBatteryStateAsString(maxAgeSeconds);
     }
 
-    public getPvActivePowerAsNumber (maxAgeSeconds = 10): number | null {
+    public getPvActivePowerAsNumber (maxAgeSeconds = 20): number | null {
         const p1 = this.getPvSouthActivePowerAsNumber(maxAgeSeconds);
         const p2 = this.getPvEastWestActivePowerAsNumber(maxAgeSeconds);
         if (p1 === null || p2 === null) { return null; }
         return p1 + p2;
     }
 
-    public getPvEnergyDailyAsNumber (maxAgeSeconds = 10): number | null {
+    public getPvEnergyDailyAsNumber (maxAgeSeconds = 20): number | null {
         const e1 = this.getPvEastWestEnergyDailyAsNumber(maxAgeSeconds);
         const e2 = this.getPvSouthEnergyDailyAsNumber(maxAgeSeconds);
         if (e1 === null || e2 === null) { return null; }
         return e1 + e2;
     }
 
-    public getPvSouthEnergyDailyAsNumber (maxAgeSeconds = 10): number | null {
+    public getPvSouthEnergyDailyAsNumber (maxAgeSeconds = 20): number | null {
         if (!this._calculated || typeof this._calculated.pvSouthEnergyDaily !== 'number') { return null; }
         return this._calculated.pvSouthEnergyDaily;
     }
 
-    public getPvEastWestEnergyDailyAsNumber (maxAgeSeconds = 10): number | null {
+    public getPvEastWestEnergyDailyAsNumber (maxAgeSeconds = 20): number | null {
         if (!this._calculated || typeof this._calculated.pvSouthEnergyDaily !== 'number') { return null; }
         return this._calculated.pvEastWestEnergyDaily;
     }
 
-    public getPvSouthEnergyAsNumber (maxAgeSeconds = 10): number | null {
+    public getPvSouthEnergyAsNumber (maxAgeSeconds = 20): number | null {
         if (!this._calculated || typeof this._calculated.pvSouthEnergy !== 'number') { return null; }
         return this._calculated.pvSouthEnergy;
     }
 
-    public getEOutAsNumber (maxAgeSeconds = 10): number | null {
+    public getEOutAsNumber (maxAgeSeconds = 20): number | null {
         if (!this.gridmeter) { return null; }
         const tMin = Date.now() - maxAgeSeconds * 1000;
         const ts = this.gridmeter.createdAt;
@@ -270,7 +270,7 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
         return this.gridmeter.energyTotalExported;
     }
 
-    public getEInAsNumber (maxAgeSeconds = 10): number | null {
+    public getEInAsNumber (maxAgeSeconds = 20): number | null {
         if (!this.gridmeter) { return null; }
         const tMin = Date.now() - maxAgeSeconds * 1000;
         const ts = this.gridmeter.createdAt;
@@ -279,18 +279,18 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
 
     }
 
-    public getEOutDailyAsNumber (maxAgeSeconds = 10): number | null {
+    public getEOutDailyAsNumber (maxAgeSeconds = 20): number | null {
         if (!this._calculated || typeof this._calculated.eOutDaily !== 'number') { return null; }
         return this._calculated.eOutDaily;
     }
 
-    public getEInDailyAsNumber (maxAgeSeconds = 10): number | null {
+    public getEInDailyAsNumber (maxAgeSeconds = 20): number | null {
         if (!this._calculated || typeof this._calculated.eInDaily !== 'number') { return null; }
         return this._calculated.eInDaily;
 
     }
 
-    public getPvEastWestEnergyAsNumber (maxAgeSeconds = 10): number | null {
+    public getPvEastWestEnergyAsNumber (maxAgeSeconds = 20): number | null {
         if (!this._extPvMeter) { return null; }
         const x = <EnergyMeter>this._extPvMeter['pveastwest'];
         if (!x) { return null; }
@@ -300,7 +300,7 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
         return x.energyTotal;
     }
 
-    public getFroniusSiteEnergyAsNumber (maxAgeSeconds = 10): number | null {
+    public getFroniusSiteEnergyAsNumber (maxAgeSeconds = 20): number | null {
         const freg = this._froniussymo.register;
         if (!freg || !freg.registerValues) { return null; }
 
@@ -311,7 +311,7 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
         return x.value;
     }
 
-    public getFroniusSiteDailyEnergyAsNumber (maxAgeSeconds = 10): number | null {
+    public getFroniusSiteDailyEnergyAsNumber (maxAgeSeconds = 20): number | null {
         const freg = this._froniussymo.register;
         if (!freg || !freg.registerValues) { return null; }
 
@@ -323,7 +323,7 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
     }
 
 
-    public getCompresserFrequencyValueAsNumber (maxAgeSeconds = 10): number | null {
+    public getCompresserFrequencyValueAsNumber (maxAgeSeconds = 20): number | null {
         if (!this._nibe1155) { return null; }
         return this._nibe1155.getCompressorFrequencyAsNumber(maxAgeSeconds);
     }
@@ -333,7 +333,7 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
         return this._nibe1155.getCompressorFrequency();
     }
 
-    public getHeatpumpPowerAsNumber (maxAgeSeconds = 10): number | null {
+    public getHeatpumpPowerAsNumber (maxAgeSeconds = 20): number | null {
         const nibe = this._nibe1155;
         if (!nibe || !nibe.values) { return null; }
         const x = nibe.getCompressorInPowerAsNumber(maxAgeSeconds);

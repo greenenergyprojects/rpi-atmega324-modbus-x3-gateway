@@ -239,7 +239,7 @@ export class FroniusSymo extends ModbusTcpDevice {
             pBatt = -pBatt;
         }
 
-        debug.fine('-----------> getBatteryActivePower() => %d (PInv=%d, String1=%d, String2=%d)', pBatt, pInv, pPvSouth, pBatt);
+        // debug.fine('-----------> getBatteryActivePower() => %d (PInv=%d, String1=%d, String2=%d)', pBatt, pInv, pPvSouth, pBatt);
         return { at: this._inverterExtension.regs.dcw_2.at, value: pBatt };
     }
 

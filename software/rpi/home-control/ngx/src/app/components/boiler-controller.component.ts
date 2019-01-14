@@ -60,7 +60,12 @@ export class BoilerControllerComponent implements OnInit, OnDestroy {
 
                     case 'power': {
                         if (this._lastMonitorRecord) {
-                            this._inputPower.validator.value = this._lastMonitorRecord.getActivePowerAsNumber();
+                            const p = this._lastMonitorRecord.getActivePowerAsNumber();
+                            if (p > 0) {
+                                this._inputPower.validator.value = Math.round(p / 100) * 100;
+                            } else {
+                                this._inputPower.validator.value = 2000;
+                            }
                         }
                         this._inputPower.hidden = false;
                         break;

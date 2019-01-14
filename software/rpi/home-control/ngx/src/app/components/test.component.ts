@@ -3,6 +3,7 @@ import { DataService } from '../services/data.service';
 import { Subscription } from 'rxjs';
 import { MonitorRecord } from '../data/common/home-control/monitor-record';
 import { ControllerMode } from '../data/common/hot-water-controller/boiler-mode';
+import { HeatpumpControllerMode } from '../data/common/nibe1155/nibe1155-controller';
 
 @Component({
     selector: 'app-test',
@@ -182,71 +183,80 @@ export class TestComponent implements OnInit, OnDestroy {
             }
             nibe.values.push({ key: 't-Außen', values: [ v1 ] });
 
-            x1 = n ? n.getFSetpointAsNumber() : null;
-            if (x1 === null) {
-                console.log('nibe1155.controller.fSetpoint', n.controller);
-                v1 = { value: '?' };
-            } else {
-                v1 = { value: (Math.round(x1 * 10) / 10) + 'Hz' };
-            }
-            nibe.values.push({ key: 'f-Sollwert', values: [ v1 ] });
+            const mode = n.controller ? n.controller.currentMode : null;
+            if (mode === HeatpumpControllerMode.off) {
+                nibe.values.push({ key: 'Wärmepumpe', values: [ { value: 'Aus' } ] });
 
-            x1 = n ? n.getCompressorFrequencyAsNumber() : null;
-            if (x1 === null) {
-                console.log('getCompressorFrequencyAsNumber', x1);
-                v1 = { value: '?' };
             } else {
-                v1 = { value: (Math.round(x1 * 10) / 10) + 'Hz' };
-            }
-            x2 = n ? n.getCompressorInPowerAsNumber() : null;
-            if (x2 === null) {
-                console.log('getCompressorInPowerAsNumber', x2);
-                v2 = { value: '?' };
-            } else {
-                v2 = { value: (Math.round(x2 * 10) / 10) + 'W' };
-            }
 
-            nibe.values.push({ key: 'Kompressor', values: [ v1, v2 ]});
+                x1 = n ? n.getFSetpointAsNumber() : null;
+                if (x1 === null) {
+                    console.log('nibe1155.controller.fSetpoint', n.controller);
+                    v1 = { value: '?' };
+                } else {
+                    v1 = { value: (Math.round(x1 * 10) / 10) + 'Hz' };
+                }
+                nibe.values.push({ key: 'f-Sollwert', values: [ v1 ] });
 
-            x1 = n ? n.getSupplyS1TempAsNumber() : null;
-            if (x1 === null) {
-                console.log('getSupplyS1TempAsNumber', x1);
-                v1 = { value: '?' };
-            } else {
-                v1 = { value: Math.round(x1 * 10) / 10 + '°C' };
+                x1 = n ? n.getCompressorFrequencyAsNumber() : null;
+                if (x1 === null) {
+                    console.log('getCompressorFrequencyAsNumber', x1);
+                    v1 = { value: '?' };
+                } else {
+                    v1 = { value: (Math.round(x1 * 10) / 10) + 'Hz' };
+                }
+                x2 = n ? n.getCompressorInPowerAsNumber() : null;
+                if (x2 === null) {
+                    console.log('getCompressorInPowerAsNumber', x2);
+                    v2 = { value: '?' };
+                } else {
+                    v2 = { value: (Math.round(x2 * 10) / 10) + 'W' };
+                }
+
+                nibe.values.push({ key: 'Kompressor', values: [ v1, v2 ]});
+
+                x1 = n ? n.getSupplyS1TempAsNumber() : null;
+                if (x1 === null) {
+                    console.log('getSupplyS1TempAsNumber', x1);
+                    v1 = { value: '?' };
+                } else {
+                    v1 = { value: Math.round(x1 * 10) / 10 + '°C' };
+                }
+                x2 = n ? n.getSupplyS1ReturnTempAsNumber() : null;
+                if (x2 === null) {
+                    console.log('getSupplyS1ReturnTempAsNumber', x2);
+                    v2 = { value: '?' };
+                } else {
+                    v2 = { value: (Math.round(x2 * 10) / 10) + '°C' };
+                }
+                nibe.values.push({ key: 'Vor/Rücklauf', values: [ v1, v2 ]});
             }
-            x2 = n ? n.getSupplyS1ReturnTempAsNumber() : null;
-            if (x2 === null) {
-                console.log('getSupplyS1ReturnTempAsNumber', x2);
-                v2 = { value: '?' };
-            } else {
-                v2 = { value: (Math.round(x2 * 10) / 10) + '°C' };
-            }
-            nibe.values.push({ key: 'Vor/Rücklauf', values: [ v1, v2 ]});
 
             x1 = n ? n.getBrineInTempAsNumber() : null;
-            if (x1 === null) {
-                console.log('getBrineInTempAsNumber', x1);
-                v1 = { value: '?' };
-            } else {
-                v1 = { value: (Math.round(x1 * 10) / 10) + '°C' };
-            }
             x2 = n ? n.getBrineOutTempAsNumber() : null;
-            if (x2 === null) {
-                console.log('getBrineOutTempAsNumber', x2);
-                v2 = { value: '?' };
-            } else {
-                v2 = { value: (Math.round(x2 * 10) / 10) + '°C' };
-            }
             x3 = n ? n.getBrinePumpSpeedAsNumber() : null;
-            if (x3 === null) {
-                console.log('getBrinePumpSpeedAsNumber', x3);
-                v3 = { value: '?' };
-            } else {
-                v3 = { value: Math.round(x2) + '%' };
-            }
-            nibe.values.push({ key: 'Sole', values: [ v1, v2, v3 ]});
+            if (x3 > 0) {
+            if (x1 === null) {
+                    console.log('getBrineInTempAsNumber', x1);
+                    v1 = { value: '?' };
+                } else {
+                    v1 = { value: (Math.round(x1 * 10) / 10) + '°C' };
+                }
 
+                if (x2 === null) {
+                    console.log('getBrineOutTempAsNumber', x2);
+                    v2 = { value: '?' };
+                } else {
+                    v2 = { value: (Math.round(x2 * 10) / 10) + '°C' };
+                }
+                if (x3 === null) {
+                    console.log('getBrinePumpSpeedAsNumber', x3);
+                    v3 = { value: '?' };
+                } else {
+                    v3 = { value: Math.round(x3) + '%' };
+                }
+                nibe.values.push({ key: 'Sole', values: [ v1, v2, v3 ]});
+            }
 
             x1 = n ? n.getSupplyTempAsNumber() : null;
             if (x1 === null) {
@@ -285,14 +295,14 @@ export class TestComponent implements OnInit, OnDestroy {
             const b = v.boiler;
 
             const m = b && b.monitorRecord ? b.monitorRecord : null;
-            x1 = b ? b.getActivePowerAsNumber(15) : null;
+            x1 = b ? b.getActivePowerAsNumber(20) : null;
             if (x1 === null) {
                 console.log('getActivePowerAsNumber', b);
                 v1 = { value: '?' };
             } else {
                 v1 = { value: Math.round(x1) + 'W' };
             }
-            const s1 = b ? b.getModeAsString() : null;
+            const s1 = b ? b.getModeAsString(20) : null;
             if (s1 === null) {
                 v2 = { value: '?' };
             } else {

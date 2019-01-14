@@ -1,13 +1,14 @@
 // https://ng-bootstrap.github.io/#/components/accordion/api
 // https://ng-bootstrap.github.io/#/components/accordion/examples
 
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { NgbPanelChangeEvent } from '@ng-bootstrap/ng-bootstrap';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { NgbPanelChangeEvent, NgbAccordion } from '@ng-bootstrap/ng-bootstrap';
 import { DataService } from '../services/data.service';
 import { ConfigService } from '../services/config.service';
 import { Subscription } from 'rxjs';
 import { sprintf } from 'sprintf-js';
 import { MonitorRecord } from '../data/common/home-control/monitor-record';
+import { access } from 'fs';
 
 @Component({
     selector: 'app-nibe1155',
@@ -33,16 +34,21 @@ import { MonitorRecord } from '../data/common/home-control/monitor-record';
 })
 export class Nibe1155Component implements OnInit, OnDestroy {
 
+    public accordion: IAccordion;
+    @ViewChild('acc') accComponent: NgbAccordion;
+
+
     private _accordionData: {
-        panel: IAccordionPanel;
+        activeIds:  string | string [];
+        panel:      IAccordionPanel;
         overview:   IAccordionPanel;
+        logsetRegs: IAccordionPanel;
+        modbusRegs: IAccordionPanel;
     };
 
     private _timer: any;
     private _subsciption: Subscription;
     private _monitorValuesSubsciption: Subscription;
-
-    public accordion: IAccordion;
 
 
     public constructor (private _dataService: DataService, private _configService: ConfigService) {
@@ -52,6 +58,7 @@ export class Nibe1155Component implements OnInit, OnDestroy {
             this._accordionData = x;
         } else {
             this._accordionData = {
+                activeIds: [],
                 panel: {
                     id: 'nibe1155-controller',
                     title: 'Heizung Steuerung',
@@ -62,7 +69,18 @@ export class Nibe1155Component implements OnInit, OnDestroy {
                     id: 'nibe1155-overview',
                     title: 'Heizung Überblick',
                     infos: []
-                }
+                },
+                logsetRegs: {
+                    id: 'nibe1155-logsetRegs',
+                    title: 'Logset Register',
+                    infos: []
+                },
+                modbusRegs: {
+                    id: 'nibe1155-modbusRegs',
+                    title: 'Modbus Register',
+                    infos: []
+                },
+
             };
         }
     }
@@ -70,9 +88,13 @@ export class Nibe1155Component implements OnInit, OnDestroy {
     public ngOnInit () {
         console.log('Nibe1155Component:onInit()');
         this.accordion = {
-            activeIds: [ 'nibe1155-overview' ],
-            panels:    [ this._accordionData.panel, this._accordionData.overview ]
+            activeIds: this._accordionData.activeIds,
+            panels:    [ this._accordionData.panel, this._accordionData.overview, this._accordionData.logsetRegs, this._accordionData.modbusRegs ]
         };
+        if (!Array.isArray(this._accordionData.activeIds) || this._accordionData.activeIds.length === 0) {
+            this._accordionData.activeIds = [ 'nibe1155-overview' ];
+            this.accordion.activeIds = this._accordionData.activeIds;
+        }
         this._monitorValuesSubsciption =
             this._dataService.monitorObservable.subscribe((value) => this.handleMonitorValues(value));
 
@@ -94,14 +116,11 @@ export class Nibe1155Component implements OnInit, OnDestroy {
     }
 
     public onAccordionChange (event: NgbPanelChangeEvent) {
-        console.log(event);
-        if (event.panelId === 'preventchange-2') {
-          event.preventDefault();
-        }
-
-        if (event.panelId === 'preventchange-3' && event.nextState === false) {
-          event.preventDefault();
-        }
+        // console.log(event);
+        // console.log(this.accComponent);
+        setTimeout(() => {
+            this._accordionData.activeIds = this.accComponent.activeIds;
+        }, 0);
     }
 
     public onAccordionOpenChanged (acc: IAccordion, open: boolean) {
@@ -218,18 +237,6 @@ export class Nibe1155Component implements OnInit, OnDestroy {
     }
 
 
-    // private handleControllerValues () {
-    //     const controller = this._dataService.nibe1155 && this._dataService.nibe1155.controller;
-    //     if (!controller) {
-    //         this._accordionData.controller.infos = [];
-    //     } else {
-    //         const a = this._accordionData.controller;
-    //         a.infos = this.createAccordionInfo(controller);
-    //     }
-
-    // }
-
-
 
     private createAccordionInfo (data: any, width?: string): { key: string, value: string, width: string } [] {
         const rv: { key: string, value: string, width: string } [] = [];
@@ -273,7 +280,7 @@ interface IInfo {
 }
 
 interface IAccordion {
-    activeIds: string [];
+    activeIds: string | string [];
     panels: IAccordionPanel [];
 }
 

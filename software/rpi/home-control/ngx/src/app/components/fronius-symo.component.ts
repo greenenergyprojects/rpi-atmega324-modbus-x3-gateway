@@ -1,13 +1,21 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+// https://ng-bootstrap.github.io/#/components/accordion/api
+// https://ng-bootstrap.github.io/#/components/accordion/examples
+
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { NgbPanelChangeEvent, NgbAccordion } from '@ng-bootstrap/ng-bootstrap';
 import { DataService } from '../services/data.service';
 import { ConfigService } from '../services/config.service';
-import { FroniusSymo, IFroniusSymo } from '../data/common/fronius-symo/fronius-symo';
-import { FroniusSymoModelRegister } from '../data/common/fronius-symo/fronius-symo-model-register';
-import { FroniusMeter } from '../data/common/fronius-meter/fronius-meter';
 import { Subscription } from 'rxjs';
+import { sprintf } from 'sprintf-js';
+import { MonitorRecord } from '../data/common/home-control/monitor-record';
+import { ageToString, timeStampAsString } from '../utils/util';
+import { FroniusSymo } from '../data/common/fronius-symo/fronius-symo';
+import { FroniusSymoModbusRegisters } from '../data/common/fronius-symo/fronius-symo-modbus-registers';
+import { IRegisterDefinition, RegisterDefinition } from '../data/common/modbus/register-definition';
+import { FroniusSymoModel } from '../data/common/fronius-symo/fronius-symo-model';
 
 @Component({
-    selector: 'app-froniussymo',
+    selector: 'app-fronius-symo',
     templateUrl: 'fronius-symo.component.html',
     styles: [ `
         .form-group {
@@ -30,98 +38,83 @@ import { Subscription } from 'rxjs';
 })
 export class FroniusSymoComponent implements OnInit, OnDestroy {
 
-    private _symo: FroniusSymo;
-    private _meter: FroniusMeter;
+    @ViewChild('acc') accComponent: NgbAccordion;
+    public accordion: IAccordion;
+    public showWarning = false;
 
     private _accordionData: {
-        froniusRegister:   IAccordion;
-        common:            IAccordion;
-        inverter:          IAccordion;
-        nameplate:         IAccordion;
-        setting:           IAccordion;
-        status:            IAccordion;
-        control:           IAccordion;
-        storage:           IAccordion;
-        inverterExtension: IAccordion;
-        meter:             IAccordion;
+        activeIds:         string | string [];
+        overview:          IAccordionPanel;
+        inverter:          IAccordionPanel;
+        modbusInverter:    IAccordionPanel;
+        inverterExt:       IAccordionPanel;
+        modbusInverterExt: IAccordionPanel;
     };
 
     private _timer: any;
     private _subsciption: Subscription;
-
-    public accordions: IAccordion [];
-
+    private _monitorValuesSubsciption: Subscription;
 
     public constructor (private _dataService: DataService, private _configService: ConfigService) {
-        console.log('constructor');
+        // console.log('constructor');
         const x = this._configService.pop('fronius-symo:__accordionData');
         if (x) {
             this._accordionData = x;
         } else {
             this._accordionData = {
-                froniusRegister:   {
-                    infos: [], filter: {isDisabled: false, value: '', filter: null }, isOpen: false, header: 'Fronius Register'
+                activeIds: [],
+                overview: {
+                    id: 'fronius-symo-overview',
+                    title: 'Symo Überblick',
+                    infos: []
                 },
-                common:            { infos: [], filter: {isDisabled: false, value: '', filter: null }, isOpen: false, header: 'Common'},
-                inverter:          { infos: [], filter: {isDisabled: false, value: '', filter: null }, isOpen: false, header: 'Inverter'},
-                nameplate:         { infos: [], filter: {isDisabled: false, value: '', filter: null }, isOpen: false, header: 'Nameplate'},
-                setting:           { infos: [], filter: {isDisabled: false, value: '', filter: null }, isOpen: false, header: 'Settings'},
-                status:            { infos: [], filter: {isDisabled: false, value: '', filter: null }, isOpen: false, header: 'Status'},
-                control:           { infos: [], filter: {isDisabled: false, value: '', filter: null }, isOpen: false, header: 'Control'},
-                storage:           { infos: [], filter: {isDisabled: false, value: '', filter: null }, isOpen: false, header: 'Storage'},
-                inverterExtension: {
-                    infos: [], filter: {isDisabled: false, value: '', filter: null }, isOpen: false, header: 'Inverter Extension'
+                inverter: {
+                    id: 'inverter',
+                    title: 'Inverter',
+                    infos: []
                 },
-                meter:             { infos: [], filter: {isDisabled: false, value: '', filter: null }, isOpen: false, header: 'Meter'}
+                inverterExt: {
+                    id: 'inverter-ext',
+                    title: 'Inverter Extension',
+                    infos: []
+                },
+                modbusInverter: {
+                    id: 'modbus-inverter',
+                    title: 'Modbus Inverter',
+                    infos: []
+                },
+                modbusInverterExt: {
+                    id: 'modbus-inverter-ext',
+                    title: 'Modbus Inverter Extension',
+                    infos: []
+                }
             };
-        }
-        try {
-            this._accordionData.froniusRegister.filter.filter = (data) => this.filter(this._accordionData.froniusRegister, data);
-            this._accordionData.common.filter.filter = (data) => this.filter(this._accordionData.common, data);
-            this._accordionData.inverter.filter.filter = (data) => this.filter(this._accordionData.inverter, data);
-            this._accordionData.nameplate.filter.filter = (data) => this.filter(this._accordionData.nameplate, data);
-            this._accordionData.setting.filter.filter = (data) => this.filter(this._accordionData.setting, data);
-            this._accordionData.status.filter.filter = (data) => this.filter(this._accordionData.status, data);
-            this._accordionData.control.filter.filter = (data) => this.filter(this._accordionData.control, data);
-            this._accordionData.storage.filter.filter = (data) => this.filter(this._accordionData.storage, data);
-            this._accordionData.inverterExtension.filter.filter = (data) => this.filter(this._accordionData.inverterExtension, data);
-            this._accordionData.meter.filter.filter = (data) => this.filter(this._accordionData.meter, data);
-        } catch (err) {
-            console.log(err);
         }
     }
 
     public ngOnInit () {
-        console.log('onInit');
-        this._symo = FroniusSymo.createInstance();
-        this._meter = FroniusMeter.createInstance();
-        // this._subsciption =
-        //     this.dataService.froniusMeterObservable.subscribe((value) => this.handleValues(value));
-        this._dataService.getFroniusSymoValues({ all: true }).then( (values) => {
-            console.log(values);
-            this.handleSymoFroniusRegister();
-            this.handleSymoCommon();
-            this.handleSymoInverter();
-            this.handleSymoNameplate();
-            this.handleSymoSetting();
-            this.handleSymoStatus();
-            this.handleSymoControl();
-            this.handleSymoStorage();
-            this.handleSymoInverterExtension();
-            this.handleFroniusMeter();
-        }).catch( (err) => {
-            console.log(err);
-        });
-
-        this.accordions = [];
-        for (const a in this._accordionData) {
-            if (!this._accordionData.hasOwnProperty(a)) { continue; }
-            this.accordions.push(this._accordionData[a]);
+        console.log('BoilerComponent:onInit()');
+        this.accordion = {
+            activeIds: this._accordionData.activeIds,
+            panels: [
+                this._accordionData.overview,
+                this._accordionData.inverter,
+                this._accordionData.inverterExt,
+                this._accordionData.modbusInverter,
+                this._accordionData.modbusInverterExt
+            ]
+        };
+        if (!Array.isArray(this._accordionData.activeIds) || this._accordionData.activeIds.length === 0) {
+            this._accordionData.activeIds = [ 'fronius-symo-overview' ];
+            this.accordion.activeIds = this._accordionData.activeIds;
         }
+        this._monitorValuesSubsciption =
+            this._dataService.monitorObservable.subscribe((value) => this.handleMonitorValues(value));
+
     }
 
     public ngOnDestroy() {
-        console.log('onDestroy');
+        console.log('BoilerComponent:onDestroy()');
         if (this._timer) {
             clearInterval(this._timer);
             this._timer = null;
@@ -131,241 +124,219 @@ export class FroniusSymoComponent implements OnInit, OnDestroy {
             this._subsciption = null;
         }
         this._configService.push('fronius-symo:__accordionData', this._accordionData);
-        this._symo = null;
+        this._monitorValuesSubsciption.unsubscribe();
+        this._monitorValuesSubsciption = null;
     }
 
-    public onAccordionOpenChanged (acc: IAccordion, open: boolean) {
-        console.log(acc, open);
+    public onAccordionChange (event: NgbPanelChangeEvent) {
+        setTimeout(() => {
+            this._accordionData.activeIds = this.accComponent.activeIds;
+        }, 0);
     }
 
-    public async onButtonRefresh (a: IAccordion) {
-        if (a === this._accordionData.froniusRegister) {
-            this._dataService.getFroniusSymoValues({ froniusregister: true }).then( (values) => {
-                this.handleSymoFroniusRegister();
-            }).catch( (err) => { console.log(err); });
 
-        } else if (a === this._accordionData.common) {
-            this._dataService.getFroniusSymoValues({ common: true }).then( (values) => {
-                this.handleSymoCommon();
-            }).catch( (err) => { console.log(err); });
 
-        } else if (a === this._accordionData.inverter) {
-            this._dataService.getFroniusSymoValues({ inverter: true }).then( (values) => {
-                this.handleSymoInverter();
-            }).catch( (err) => { console.log(err); });
+    private handleMonitorValues (v: MonitorRecord) {
+        // console.log(v.hwcMonitorRecord);
+        this.showWarning = false;
+        for (const p of this.accordion.panels) {
+            if (this.accComponent.activeIds.indexOf(p.id) >= 0) {
+                switch (p.id) {
+                    case 'fronius-symo-overview': this.handleOverview(v); break;
+                    case 'inverter': this.handleInverter(v.froniussymo); break;
+                    case 'inverter-ext': {
+                        const def = FroniusSymoModbusRegisters.regDefByLabel.inverterExtension;
+                        this.handleModel(this._accordionData.inverterExt, def, v.froniussymo.inverterExtension);
+                        break;
+                    }
+                    case 'modbus-inverter': {
+                        const def = FroniusSymoModbusRegisters.regDefByLabel.inverter;
+                        this.handleModbusRegister(this._accordionData.modbusInverter, def, v.froniussymo.inverter);
+                        break;
+                    }
+                    case 'modbus-inverter-ext': {
+                        const def = FroniusSymoModbusRegisters.regDefByLabel.inverterExtension;
+                        this.handleModbusRegister(this._accordionData.modbusInverterExt, def, v.froniussymo.inverterExtension);
+                        break;
+                    }
 
-        } else if (a === this._accordionData.nameplate) {
-            this._dataService.getFroniusSymoValues({ nameplate: true }).then( (values) => {
-                this.handleSymoNameplate();
-            }).catch( (err) => { console.log(err); });
-
-        } else if (a === this._accordionData.setting) {
-            this._dataService.getFroniusSymoValues({ setting: true }).then( (values) => {
-                this.handleSymoSetting();
-            }).catch( (err) => { console.log(err); });
-
-        } else if (a === this._accordionData.status) {
-            this._dataService.getFroniusSymoValues({ status: true }).then( (values) => {
-                this.handleSymoStatus();
-            }).catch( (err) => { console.log(err); });
-
-        } else if (a === this._accordionData.storage) {
-            this._dataService.getFroniusSymoValues({ storage: true }).then( (values) => {
-                this.handleSymoStorage();
-            }).catch( (err) => { console.log(err); });
-
-        } else if (a === this._accordionData.inverterExtension) {
-            this._dataService.getFroniusSymoValues({ inverterExtension: true }).then( (values) => {
-                this.handleSymoInverterExtension();
-            }).catch( (err) => { console.log(err); });
-
-        } else if (a === this._accordionData.meter) {
-            this._dataService.getFroniusSymoValues({ meter: true }).then( (values) => {
-                this.handleFroniusMeter();
-            }).catch( (err) => { console.log(err); });
+                    default: {
+                        console.log(new Error('unknown p.id ' + p.id));
+                        this.showWarning = true;
+                    }
+                }
+            }
 
         }
     }
 
-    public changeFilter (event, a: IAccordion) {
-        a.filter.value = event;
+
+    private handleOverview (v?: MonitorRecord) {
+        const a = this._accordionData.overview;
+        const symo = v ? v.froniussymo : null;
+        const items: { key: string, value: string } [] = [];
+        items.push({ key: 'SiteEnergyDay', value: '?' });
+
+        if (symo) {
+            for (const o of items) {
+                let val = '?';
+                try {
+                    switch (o.key) {
+                        case 'SiteEnergyDay': {
+                            const x = symo.register ? symo.register.f_site_energy_day : null;
+                            if (x && x.at instanceof Date && x.value >= 0) {
+                                val = x.value + 'Wh (' + ageToString(x.at) + ')';
+                            }
+                            break;
+                        }
+                        default: {
+                            console.log(new Error('unsupported attribute ' + o.key));
+                            this.showWarning = true;
+                            break;
+                        }
+                    }
+                } catch (err) {
+                    console.log(err);
+                }
+                o.value = val;
+            }
+        }
+        a.infos = this.createAccordionInfo(items);
     }
 
-    public onButtonFilter (a: IAccordion) {
-        console.log('onButtonFilter', a);
-        if (a && a.filter) {
-            a.filter.isDisabled = !a.filter.isDisabled;
+    private handleInverter (symo?: FroniusSymo) {
+        const a = this._accordionData.inverter;
+        try {
+            const items: { key: string, value: string } [] = [];
+            const def = FroniusSymoModbusRegisters.regDefByLabel.inverter;
+
+            const at = symo.inverter.registerValues.regBlocks[0].at;
+            items.push({ key: 'Datum/Zeit', value: timeStampAsString(at) } );
+
+            if (symo) {
+                for (const att of Object.getOwnPropertyNames(def)) {
+                    const d = <IRegisterDefinition>def[att];
+                    const ids =  RegisterDefinition.getIds([d]);
+                    const v = <{ at: Date, value: number }>(symo.inverter ? symo.inverter[att] : null);
+                    if (!v || ids.length <= 0) { continue; }
+                    const id = ids.length === 1 ? ids[0].toString() : ids[0] + '..' + ids[ids.length - 1];
+                    items.push({
+                        key: att + ' (' + id + ')',
+                        value: sprintf(d.format, v.value) + (d.unit ? d.unit : '')
+                    });
+                }
+            }
+            a.infos = this.createAccordionInfo(items);
+        } catch (err) {
+            a.infos = [];
+            console.log(err);
+            this.showWarning = true;
         }
     }
 
-    private filter (a: IAccordion, items: IInfo []): any [] {
-        let rv: any [];
-        if (a.filter.isDisabled || !a.filter.value) {
-            rv = items;
-        } else {
-            rv = [];
-            for (const i of items) {
-                if (typeof i.key !== 'string') { continue; }
-                if (i.key === 'createdAt' || i.key.indexOf(a.filter.value) !== -1) {
-                    rv.push(i);
+    private handleModbusRegister (acc: IAccordionPanel, def: { [ label: string]: IRegisterDefinition }, model: FroniusSymoModel<any, any>) {
+        try {
+            const items: { key: string, value: string } [] = [];
+
+            const at = model.registerValues.regBlocks[0].at;
+            items.push({ key: 'Datum/Zeit', value: timeStampAsString(at) } );
+
+            for (const att of Object.getOwnPropertyNames(def)) {
+                const d = <IRegisterDefinition>def[att];
+                const ids =  RegisterDefinition.getIds([d]);
+
+                for (const id of ids) {
+                    const x = model.registerValues.getValue(id);
+                    items.push({
+                        key: att + ' (' + id + ')',
+                        value: sprintf('%d', x.value)
+                    });
+                }
+            }
+            acc.infos = this.createAccordionInfo(items);
+
+        } catch (err) {
+            acc.infos = [];
+            console.log(err);
+            this.showWarning = true;
+        }
+    }
+
+    private handleModel (acc: IAccordionPanel, def: { [ label: string]: IRegisterDefinition }, model: FroniusSymoModel<any, any>) {
+        try {
+            const items: { key: string, value: string } [] = [];
+
+            const at = model.registerValues.regBlocks[0].at;
+            items.push({ key: 'Datum/Zeit', value: timeStampAsString(at) } );
+
+            for (const att of Object.getOwnPropertyNames(def)) {
+                const d = <IRegisterDefinition>def[att];
+                const ids =  RegisterDefinition.getIds([d]);
+                const v = <{ at: Date, value: number }>(model ? model[att] : null);
+                if (!v || ids.length <= 0) { continue; }
+                const id = ids.length === 1 ? ids[0].toString() : ids[0] + '..' + ids[ids.length - 1];
+                items.push({
+                    key: att + ' (' + id + ')',
+                    value: sprintf(d.format, v.value) + (d.unit ? d.unit : '')
+                });
+
+            }
+            acc.infos = this.createAccordionInfo(items);
+
+        } catch (err) {
+            acc.infos = [];
+            console.log(err);
+            this.showWarning = true;
+        }
+    }
+
+    private handleModbusInverter (symo?: FroniusSymo) {
+        const a = this._accordionData.inverter;
+        const items: { key: string, value: string } [] = [];
+        const def = FroniusSymoModbusRegisters.regDefByLabel.inverter;
+
+        if (symo) {
+            for (const att of Object.getOwnPropertyNames(def)) {
+                const d = <IRegisterDefinition>def[att];
+                const ids =  RegisterDefinition.getIds([d]);
+
+                for (const id of ids) {
+                    const x = symo.inverter.registerValues.getValue(id);
+                    items.push({
+                        key: att + ' (' + id + ')',
+                        value: sprintf('%d', x.value)
+                    });
                 }
             }
         }
-        return rv;
+        a.infos = this.createAccordionInfo(items);
     }
 
-    private handleSymoFroniusRegister () {
-        if (!this._symo) { return; }
-        // if (v.froniusRegister) {
-        //     if (v.froniusRegister.error) {
-        //         this._symo.froniusRegister = null;
-        //         this._accordionData.froniusRegister.infos = [];
-        //     } else {
-        //         const a = this._accordionData.froniusRegister;
-        //         this._symo.froniusRegister = new symo.FroniusRegister(v.froniusRegister.createdAt, v.froniusRegister.regs);
-        //         a.infos = this.createAccordionInfo(this._symo.froniusRegister.toHumanReadableObject());
-        //     }
-        // }
+    private isValueOk (v: { valueAt: Date }, timeoutMillis: number) {
+        if (!v || !v.valueAt) { return false; }
+        return (Date.now() - v.valueAt.getTime()) < timeoutMillis;
     }
 
-    private handleSymoCommon () {
-        if (!this._symo) { return; }
-        // if (v.common) {
-        //     if (v.common.error) {
-        //         this._symo.common = null;
-        //         this._accordionData.common.infos = [];
-        //     } else {
-        //         const a = this._accordionData.common;
-        //         this._symo.common = new symo.Common(v.common.createdAt, v.common.regs);
-        //         a.infos = this.createAccordionInfo(this._symo.common.toHumanReadableObject());
-        //     }
-        // }
-    }
-
-    private handleSymoInverter () {
-        if (!this._symo) { return; }
-        // if (v.inverter) {
-        //     if (v.inverter.error) {
-        //         this._symo.inverter = null;
-        //         this._accordionData.inverter.infos = [];
-        //     } else {
-        //         this._symo.inverter = new symo.Inverter(v.inverter.createdAt, v.inverter.regs);
-        //         this._accordionData.inverter.infos = this.createAccordionInfo(this._symo.inverter.toHumanReadableObject());
-        //     }
-        // }
-    }
-
-    private handleSymoNameplate () {
-        if (!this._symo) { return; }
-        // if (v.nameplate) {
-        //     if (v.nameplate.error) {
-        //         this._symo.nameplate = null;
-        //         this._accordionData.nameplate.infos = [];
-        //     } else {
-        //         this._symo.nameplate = new symo.Nameplate(v.nameplate.createdAt, v.nameplate.regs);
-        //         this._accordionData.nameplate.infos = this.createAccordionInfo(this._symo.nameplate.toHumanReadableObject());
-        //     }
-        // }
-
-    }
-
-    private handleSymoSetting() {
-        if (!this._symo) { return; }
-        // if (v.setting) {
-        //     if (v.setting.error) {
-        //         this._symo.setting = null;
-        //         this._accordionData.setting.infos = [];
-        //     } else {
-        //         this._symo.setting = new symo.Setting(v.setting.createdAt, v.setting.regs);
-        //         this._accordionData.setting.infos = this.createAccordionInfo(this._symo.setting.toHumanReadableObject());
-        //     }
-        // }
-    }
-
-    private handleSymoStatus() {
-        if (!this._symo) { return; }
-        // if (v.status) {
-        //     if (v.status.error) {
-        //         this._symo.status = null;
-        //         this._accordionData.status.infos = [];
-        //     } else {
-        //         this._symo.status = new symo.Status(v.status.createdAt, v.status.regs);
-        //         this._accordionData.status.infos = this.createAccordionInfo(this._symo.status.toHumanReadableObject());
-        //     }
-        // }
-    }
-
-    private handleSymoControl() {
-        if (!this._symo) { return; }
-        // if (v.control) {
-        //     if (v.control.error) {
-        //         this._symo.control = null;
-        //         this._accordionData.control.infos = [];
-        //     } else {
-        //         this._symo.control = new symo.Control(v.control.createdAt, v.control.regs);
-        //         this._accordionData.control.infos = this.createAccordionInfo(this._symo.control.toHumanReadableObject());
-        //     }
-        // }
-    }
-
-    private handleSymoStorage() {
-        if (!this._symo) { return; }
-        // if (v.storage) {
-        //     if (v.storage.error) {
-        //         this._symo.storage = null;
-        //         this._accordionData.storage.infos = [];
-        //     } else {
-        //         this._symo.storage = new symo.Storage(v.storage.createdAt, v.storage.regs);
-        //         this._accordionData.storage.infos = this.createAccordionInfo(this._symo.storage.toHumanReadableObject());
-        //         if (this._symo.nameplate && this._symo.nameplate.nominalStorageEnergy > 0) {
-        //             this._accordionData.storage.infos.push({
-        //                 key: '*chargeLevel',
-        //                 value: (this._symo.nameplate.nominalStorageEnergy * this._symo.storage.chargeLevelInPercent / 100) + 'Wh',
-        //                 width: this._accordionData.storage.infos[0].width
-        //             });
-        //         }
-        //     }
-        // }
-    }
-
-    private handleSymoInverterExtension() {
-        if (!this._symo) { return; }
-        // if (v.inverterExtension) {
-        //     if (v.inverterExtension.error) {
-        //         this._symo.inverterExtension = null;
-        //         this._accordionData.inverterExtension.infos = [];
-        //     } else {
-        //         this._symo.inverterExtension = new symo.InverterExtension(v.inverterExtension.createdAt, v.inverterExtension.regs);
-        //         this._accordionData.inverterExtension.infos =
-        //             this.createAccordionInfo(this._symo.inverterExtension.toHumanReadableObject());
-        //     }
-        // }
-    }
-
-    private handleFroniusMeter() {
-        if (!this._symo) { return; }
-        // if (v.meter) {
-        //     if (v.meter.error) {
-        //         this._symo.meter = null;
-        //         this._accordionData.meter.infos = [];
-        //     } else {
-        //         this._symo.meter = new symo.Meter(v.meter.createdAt, v.meter.regs);
-        //         this._accordionData.meter.infos = this.createAccordionInfo(this._symo.meter.toHumanReadableObject());
-        //     }
-        // }
-    }
 
     private createAccordionInfo (data: any, width?: string): { key: string, value: string, width: string } [] {
         const rv: { key: string, value: string, width: string } [] = [];
         let kLength = 0;
-        for (const k in data) {
-            if (!data.hasOwnProperty(k)) { continue; }
-            let v = data[k];
-            if (v instanceof Date) {
-                v = v.toLocaleString();
+        if (Array.isArray(data)) {
+            for (const item of data) {
+                rv.push( { key: item.key, value: item.value, width: width } );
+                kLength = Math.max(kLength, item.key.length);
             }
-            rv.push( { key: k, value: v, width: width } );
-            kLength = Math.max(kLength, k.length);
+
+        } else {
+            for (const k in data) {
+                if (!data.hasOwnProperty(k)) { continue; }
+                let v = data[k];
+                if (v instanceof Date) {
+                    v = v.toLocaleString();
+                }
+                rv.push( { key: k, value: v, width: width } );
+                kLength = Math.max(kLength, k.length);
+            }
         }
         if (!width) {
             const w = (kLength / 2 + 1) + 'rem';
@@ -397,8 +368,14 @@ interface IInfo {
 }
 
 interface IAccordion {
-    isOpen: boolean;
-    header: string;
+    activeIds: string | string [];
+    panels: IAccordionPanel [];
+}
+
+interface IAccordionPanel {
+    id: string;
+    title: string;
+    type?: 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'danger' | 'light' | 'dark';
     infos: IInfo [];
     table?: { headers: string [], rows: ITableRow [] };
     filter?: IFilter;
