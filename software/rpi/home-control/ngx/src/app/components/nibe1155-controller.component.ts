@@ -21,7 +21,7 @@ import { ISyncButtonConfig } from './sync-button.component';
 })
 export class Nibe1155ControllerComponent implements OnInit, OnDestroy {
 
-    @Input() config: any;
+    @Input() config: INibe1155ControllerComponentConfig;
     @Input() data: any;
 
     public validatorMode: ValidatorElement<string>;
@@ -41,7 +41,7 @@ export class Nibe1155ControllerComponent implements OnInit, OnDestroy {
     // private _inputPin: IInput;
 
     constructor (private dataService: DataService) {
-        const fMin = 25, fMax = 90, tempMin = 20, tempMax = 60;
+        const fMin = 23, fMax = 90, tempMin = 20, tempMax = 60;
         this.currentMode = '?';
 
         this.buttonConfig = {
@@ -54,7 +54,7 @@ export class Nibe1155ControllerComponent implements OnInit, OnDestroy {
         };
 
         this.validatorMode = new ValidatorElement<string>(
-            'off', (e, n, v) => {
+            HeatpumpControllerMode.off, (e, n, v) => {
                 switch (v) {
                     case 'off': {
                         this._inputFrequency.hidden = true;
@@ -206,6 +206,8 @@ export class Nibe1155ControllerComponent implements OnInit, OnDestroy {
     }
 
     public ngOnInit () {
+        this.validatorMode.value = this.config ? this.config.mode : HeatpumpControllerMode.off;
+        this._inputFrequency.validator.value = this.config ? this.config.fSetpoint : 30;
         this._monitorValuesSubsciption =
             this.dataService.monitorObservable.subscribe((value) => this.handleMonitorValues(value));
     }
@@ -253,34 +255,34 @@ export class Nibe1155ControllerComponent implements OnInit, OnDestroy {
         }
     }
 
-    public onSubmitOld() {
-        let mode: HeatpumpControllerMode;
-        switch (this.validatorMode.value) {
-            case 'off': mode = HeatpumpControllerMode.off; break;
-            case 'frequency': mode = HeatpumpControllerMode.frequency; break;
-            case 'test': mode = HeatpumpControllerMode.test; break;
-            default: {
-                console.log('ERROR: unknown mode ' + this.validatorMode.value);
-                mode = HeatpumpControllerMode.off;
-                break;
-            }
-        }
-        this.dataService.setHeatPumpMode({
-            createdAt:        new Date(),
-            desiredMode:      mode,
-            // pin:              this._inputPin.validator.value,
-            fSetpoint:        this._inputFrequency.validator.value,
-            fMin:             this._inputFrequencyMin.validator.value,
-            fMax:             this._inputFrequencyMax.validator.value,
-            tempSetpoint:     this._inputTemp.validator.value,
-            tempMin:          this._inputTempMin.validator.value,
-            tempMax:          this._inputTempMax.validator.value
-        }).then( (rv) =>  {
-            console.log(rv);
-        }).catch( (err) => {
-            console.log(err);
-        });
-    }
+    // public onSubmitOld() {
+    //     let mode: HeatpumpControllerMode;
+    //     switch (this.validatorMode.value) {
+    //         case 'off': mode = HeatpumpControllerMode.off; break;
+    //         case 'frequency': mode = HeatpumpControllerMode.frequency; break;
+    //         case 'test': mode = HeatpumpControllerMode.test; break;
+    //         default: {
+    //             console.log('ERROR: unknown mode ' + this.validatorMode.value);
+    //             mode = HeatpumpControllerMode.off;
+    //             break;
+    //         }
+    //     }
+    //     this.dataService.setHeatPumpMode({
+    //         createdAt:        new Date(),
+    //         desiredMode:      mode,
+    //         // pin:              this._inputPin.validator.value,
+    //         fSetpoint:        this._inputFrequency.validator.value,
+    //         fMin:             this._inputFrequencyMin.validator.value,
+    //         fMax:             this._inputFrequencyMax.validator.value,
+    //         tempSetpoint:     this._inputTemp.validator.value,
+    //         tempMin:          this._inputTempMin.validator.value,
+    //         tempMax:          this._inputTempMax.validator.value
+    //     }).then( (rv) =>  {
+    //         console.log(rv);
+    //     }).catch( (err) => {
+    //         console.log(err);
+    //     });
+    // }
 
     private handleMonitorValues (v: MonitorRecord) {
         const n = this.dataService.nibe1155;
@@ -302,4 +304,9 @@ interface IInput {
     pattern: string;
     mode: string;
     validator: ValidatorElement<any>;
+}
+
+export interface INibe1155ControllerComponentConfig {
+    mode: HeatpumpControllerMode;
+    fSetpoint: number;
 }

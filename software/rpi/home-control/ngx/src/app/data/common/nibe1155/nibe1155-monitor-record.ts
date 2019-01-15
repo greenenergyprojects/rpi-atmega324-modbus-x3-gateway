@@ -3,7 +3,7 @@ import { DataRecord } from '../data-record';
 import { INibe1155Value, Nibe1155Value, Nibe1155CompressorStateValue, Nibe1155PumpStateValue, Nibe1155PumpModeValue,
          Nibe1155AlarmValue, Nibe1155OperationModeValue } from './nibe1155-value';
 import { Nibe1155ModbusRegisters, Nibe1155ModbusIds } from './nibe1155-modbus-registers';
-import { INibe1155Controller, Nibe1155Controller } from './nibe1155-controller';
+import { INibe1155Controller, Nibe1155Controller, HeatpumpControllerMode } from './nibe1155-controller';
 import { CommonLogger } from '../../common-logger';
 
 export interface INibe1155MonitorRecord {
@@ -117,13 +117,35 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
 
     // ****************************************************
 
+    public getControllerMode (): { valueAt: Date, value: HeatpumpControllerMode } | null {
+        if (!this._controller) { return null; }
+        return { valueAt: this._controller.createdAt, value: this._controller.currentMode };
+    }
+
+    public getControllerModeAsString (maxAgeSeconds = 10): string | null {
+        if (!this._controller) { return null; }
+        return this.getValueAsString(this.getControllerMode(), maxAgeSeconds);
+    }
+
+    public getControllerFSetpoint (): { valueAt: Date, value: number } | null {
+        if (!this._controller) { return null; }
+        return { valueAt: this._controller.createdAt, value: this._controller.fSetpoint };
+    }
+
+    public getControllerFSetpointAsNumber (maxAgeSeconds = 10): number | null {
+        if (!this._controller) { return null; }
+        return this.getValueAsNumber(this.getControllerFSetpoint(), maxAgeSeconds);
+    }
+
+    // ****************************************************
+
     public getSupplyS1Temp (): Nibe1155Value | null {
         const id = <Nibe1155ModbusIds>Nibe1155ModbusRegisters.regDefByLabel['supplyS1Temp'].id; // 40008
         const v = this._values && this._values[id];
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getSupplyS1TempAsNumber (maxAgeSeconds = 10000): number | null {
+    public getSupplyS1TempAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getSupplyS1Temp(), maxAgeSeconds);
     }
 
@@ -133,7 +155,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getSupplyS1ReturnTempAsNumber (maxAgeSeconds = 10000): number | null {
+    public getSupplyS1ReturnTempAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getSupplyS1ReturnTemp(), maxAgeSeconds);
     }
 
@@ -143,7 +165,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getBrineInTempAsNumber (maxAgeSeconds = 10000): number | null {
+    public getBrineInTempAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getBrineInTemp(), maxAgeSeconds);
     }
 
@@ -153,7 +175,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getBrineOutTempAsNumber (maxAgeSeconds = 10000): number | null {
+    public getBrineOutTempAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getBrineOutTemp(), maxAgeSeconds);
     }
 
@@ -163,7 +185,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getCondensorOutTempAsNumber (maxAgeSeconds = 10000): number | null {
+    public getCondensorOutTempAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getCondensorOutTemp(), maxAgeSeconds);
     }
 
@@ -173,7 +195,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getHotGasTempAsNumber (maxAgeSeconds = 10000): number | null {
+    public getHotGasTempAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getHotGasTemp(), maxAgeSeconds);
     }
 
@@ -183,7 +205,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getLiquidLineTempAsNumber (maxAgeSeconds = 10000): number | null {
+    public getLiquidLineTempAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getLiquidLineTemp(), maxAgeSeconds);
     }
 
@@ -193,7 +215,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getSuctionTempAsNumber (maxAgeSeconds = 10000): number | null {
+    public getSuctionTempAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getSuctionTemp(), maxAgeSeconds);
     }
 
@@ -203,7 +225,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getSupplyTempAsNumber (maxAgeSeconds = 10000): number | null {
+    public getSupplyTempAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getSupplyTemp(), maxAgeSeconds);
     }
 
@@ -213,7 +235,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getDegreeMinutesAsNumber (maxAgeSeconds = 10000): number | null {
+    public getDegreeMinutesAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getDegreeMinutes(), maxAgeSeconds);
     }
 
@@ -223,7 +245,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getCalcSupplyTempAsNumber (maxAgeSeconds = 10000): number | null {
+    public getCalcSupplyTempAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getCalcSupplyTemp(), maxAgeSeconds);
     }
 
@@ -233,7 +255,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getElectricHeaterPowerAsNumber (maxAgeSeconds = 10000): number | null {
+    public getElectricHeaterPowerAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getElectricHeaterPower(), maxAgeSeconds);
     }
 
@@ -243,7 +265,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getCompressorFrequencyAsNumber (maxAgeSeconds = 10000): number | null {
+    public getCompressorFrequencyAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getCompressorFrequency(), maxAgeSeconds);
     }
 
@@ -253,7 +275,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getCompressorInPowerAsNumber (maxAgeSeconds = 10000): number | null {
+    public getCompressorInPowerAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getCompressorInPower(), maxAgeSeconds);
     }
 
@@ -263,7 +285,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getCompressorStateAsString (maxAgeSeconds = 10000): string | null {
+    public getCompressorStateAsString (maxAgeSeconds = 10): string | null {
         const v = this.getValueAsNumber(this.getCompressorState(), maxAgeSeconds);
         if (!v) { return null; }
         switch (v) {
@@ -281,7 +303,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getSupplyPumpStateAsString (maxAgeSeconds = 10000): string | null {
+    public getSupplyPumpStateAsString (maxAgeSeconds = 10): string | null {
         const v = this.getValueAsNumber(this.getSupplyPumpState(), maxAgeSeconds);
         if (!v) { return null; }
         switch (v) {
@@ -301,7 +323,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getBrinePumpStateAsString (maxAgeSeconds = 10000): string | null {
+    public getBrinePumpStateAsString (maxAgeSeconds = 10): string | null {
         const v = this.getValueAsNumber(this.getBrinePumpState(), maxAgeSeconds);
         if (!v) { return null; }
         switch (v) {
@@ -321,7 +343,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getSupplyPumpSpeedAsNumber (maxAgeSeconds = 10000): number | null {
+    public getSupplyPumpSpeedAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getSupplyPumpSpeed(), maxAgeSeconds);
     }
 
@@ -331,7 +353,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getBrinePumpSpeedAsNumber (maxAgeSeconds = 10000): number | null {
+    public getBrinePumpSpeedAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getBrinePumpSpeed(), maxAgeSeconds);
     }
 
@@ -353,7 +375,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getRoomTempAsNumber (maxAgeSeconds = 10000): number | null {
+    public getRoomTempAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getRoomTemp(), maxAgeSeconds);
     }
 
@@ -363,7 +385,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getEnergyCompAndElHeaterAsNumber (maxAgeSeconds = 10000): number | null {
+    public getEnergyCompAndElHeaterAsNumber (maxAgeSeconds = 3600): number | null {
         return this.getValueAsNumber(this.getEnergyCompAndElHeater(), maxAgeSeconds);
     }
 
@@ -378,7 +400,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getEnergyCompressorAsNumber (maxAgeSeconds = 10000): number | null {
+    public getEnergyCompressorAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getEnergyCompressor(), maxAgeSeconds);
     }
 
@@ -388,7 +410,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getCompFrequTargetAsNumber (maxAgeSeconds = 10000): number | null {
+    public getCompFrequTargetAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getCompFrequTarget(), maxAgeSeconds);
     }
 
@@ -400,7 +422,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getCompNumberOfStartsAsNumber (maxAgeSeconds = 10000): number | null {
+    public getCompNumberOfStartsAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getCompNumberOfStarts(), maxAgeSeconds);
     }
 
@@ -410,7 +432,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getCompTotalOperationTimeAsNumber (maxAgeSeconds = 10000): number | null {
+    public getCompTotalOperationTimeAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getCompTotalOperationTime(), maxAgeSeconds);
     }
 
@@ -420,11 +442,11 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getAlarmAsNumber (maxAgeSeconds = 10000): number | null {
+    public getAlarmAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getAlarm(), maxAgeSeconds);
     }
 
-    public getAlarmAsString (maxAgeSeconds = 10000): string | null {
+    public getAlarmAsString (maxAgeSeconds = 10): string | null {
         const v = this.getValueAsNumber(this.getAlarm(), maxAgeSeconds);
         if (!v) { return null; }
         switch (v) {
@@ -442,7 +464,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getHeatCurveS1AsNumber (maxAgeSeconds = 10000): number | null {
+    public getHeatCurveS1AsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getHeatCurveS1(), maxAgeSeconds);
     }
 
@@ -452,7 +474,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getHeatOffsetS1AsNumber (maxAgeSeconds = 10000): number | null {
+    public getHeatOffsetS1AsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getHeatOffsetS1(), maxAgeSeconds);
     }
 
@@ -462,7 +484,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getSupplyMinS1AsNumber (maxAgeSeconds = 10000): number | null {
+    public getSupplyMinS1AsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getSupplyMinS1(), maxAgeSeconds);
     }
 
@@ -472,7 +494,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getSupplyMaxS1AsNumber (maxAgeSeconds = 10000): number | null {
+    public getSupplyMaxS1AsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getSupplyMaxS1(), maxAgeSeconds);
     }
 
@@ -490,7 +512,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getRegMaxSupplyDiffAsNumber (maxAgeSeconds = 10000): number | null {
+    public getRegMaxSupplyDiffAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getSupplyMaxS1(), maxAgeSeconds);
     }
 
@@ -500,7 +522,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getRegMinCompFrequAsNumber (maxAgeSeconds = 10000): number | null {
+    public getRegMinCompFrequAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getRegMinCompFrequ(), maxAgeSeconds);
     }
 
@@ -510,7 +532,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getRegMaxCompFrequAsNumber (maxAgeSeconds = 10000): number | null {
+    public getRegMaxCompFrequAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getRegMaxCompFrequ(), maxAgeSeconds);
     }
 
@@ -520,11 +542,11 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getOperationalModeAsNumber (maxAgeSeconds = 10000): number | null {
+    public getOperationalModeAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getOperationalMode(), maxAgeSeconds);
     }
 
-    public getOperationalModeAsString (maxAgeSeconds = 10000): string | null {
+    public getOperationalModeAsString (maxAgeSeconds = 10): string | null {
         const v = this.getValueAsNumber(this.getOperationalMode(), maxAgeSeconds);
         if (!v) { return null; }
         switch (v) {
@@ -541,11 +563,11 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getSupplyPumpModeAsNumber (maxAgeSeconds = 10000): number | null {
+    public getSupplyPumpModeAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getSupplyPumpMode(), maxAgeSeconds);
     }
 
-    public getSupplyPumpModeAsString (maxAgeSeconds = 10000): string | null {
+    public getSupplyPumpModeAsString (maxAgeSeconds = 10): string | null {
         const v = this.getValueAsNumber(this.getSupplyPumpMode(), maxAgeSeconds);
         if (!v) { return null; }
         switch (v) {
@@ -563,11 +585,11 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getBrinePumpModeAsNumber (maxAgeSeconds = 10000): number | null {
+    public getBrinePumpModeAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getBrinePumpMode(), maxAgeSeconds);
     }
 
-    public getBrinePumpModeAsString (maxAgeSeconds = 10000): string | null {
+    public getBrinePumpModeAsString (maxAgeSeconds = 10): string | null {
         const v = this.getValueAsNumber(this.getBrinePumpMode(), maxAgeSeconds);
         if (!v) { return null; }
         switch (v) {
@@ -585,27 +607,27 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getDmStartHeatingAsNumber (maxAgeSeconds = 10000): number | null {
+    public getDmStartHeatingAsNumber (maxAgeSeconds = 10): number | null {
         return this.getValueAsNumber(this.getDmStartHeating(), maxAgeSeconds);
     }
 
 
     // **************************************************
 
-    public getBrinePumpPowerAsNumber (maxAgeSeconds = 10000): number | null {
+    public getBrinePumpPowerAsNumber (maxAgeSeconds = 10): number | null {
         const v = this.getBrinePumpSpeedAsNumber(maxAgeSeconds);
         if (v === null) { return null; }
         return 30 / 100 * v;
     }
 
-    public getSupplyPumpPowerAsNumber (maxAgeSeconds = 10000): number | null {
+    public getSupplyPumpPowerAsNumber (maxAgeSeconds = 10): number | null {
         const v = this.getSupplyPumpSpeedAsNumber(maxAgeSeconds);
         if (v === null) { return null; }
         return 30 / 100 * v;
 
     }
 
-    public getFSetpointAsNumber(maxAgeSeconds = 10000): number | null {
+    public getFSetpointAsNumber(maxAgeSeconds = 10): number | null {
         if (!this._controller) { return null; }
         const tMin = Date.now() - maxAgeSeconds * 1000;
         const ts = this._controller.createdAt;
@@ -622,7 +644,15 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
 
     // **************************************************
 
-    private getValueAsNumber (value: Nibe1155Value, maxAgeSeconds: number): number | null {
+    private getValueAsNumber (value: { valueAt: Date, value: number }, maxAgeSeconds: number): number | null {
+        if (!value) { return null; }
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = value.valueAt;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        return value.value;
+    }
+
+    private getValueAsString (value: { valueAt: Date, value: string }, maxAgeSeconds: number): string | null {
         if (!value) { return null; }
         const tMin = Date.now() - maxAgeSeconds * 1000;
         const ts = value.valueAt;

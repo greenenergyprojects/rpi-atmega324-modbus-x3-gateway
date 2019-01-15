@@ -8,6 +8,7 @@ import { ControllerMode } from '../data/common/hot-water-controller/boiler-mode'
 import { ageToString } from '../utils/util';
 import { MonitorRecordBoiler } from '../data/common/home-control/monitor-record-boiler';
 import { ISyncButtonConfig } from './sync-button.component';
+import { INibe1155ControllerComponentConfig } from './nibe1155-controller.component';
 
 @Component({
     selector: 'app-boiler-controller',
@@ -24,7 +25,7 @@ import { ISyncButtonConfig } from './sync-button.component';
 })
 export class BoilerControllerComponent implements OnInit, OnDestroy {
 
-    @Input() config: any;
+    @Input() config: INibe1155ControllerComponentConfig;
     @Input() data: any;
 
     public validatorMode: ValidatorElement<string>;
@@ -37,6 +38,7 @@ export class BoilerControllerComponent implements OnInit, OnDestroy {
     private _inputPower: IInput;
     // private _inputPin: IInput;
     private _lastMonitorRecord: MonitorRecordBoiler;
+
 
     constructor (private dataService: DataService) {
         this.currentMode = '?';

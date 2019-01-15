@@ -302,13 +302,22 @@ export class TestComponent implements OnInit, OnDestroy {
             } else {
                 v1 = { value: Math.round(x1) + 'W' };
             }
-            const s1 = b ? b.getModeAsString(20) : null;
-            if (s1 === null) {
+            x2 = b ? b.getEnergyDailyAsNumber(20) : null;
+            if (x2 === null) {
+                console.log('getEnergyDailyAsNumber', b);
                 v2 = { value: '?' };
             } else {
-                v2 = { value: s1 };
+                v2 = { value: Math.round(x2 / 10) / 100 + 'kWh' };
             }
-            boiler.values.push({ key: 'Boiler', values: [ v1, v2 ]});
+            const s1 = b ? b.getModeAsString(20) : null;
+            if (s1 === null) {
+                v3 = { value: '?' };
+            } else {
+                v3 = { value: s1 };
+            }
+
+
+            boiler.values.push({ key: 'Boiler', values: [ v1, v2, v3 ]});
 
             // if (m === null) {
             //     console.log('boiler.monitorRecord', b);

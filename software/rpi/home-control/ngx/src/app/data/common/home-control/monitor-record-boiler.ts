@@ -86,6 +86,16 @@ export class MonitorRecordBoiler extends DataRecord<IMonitorRecordBoiler> implem
 
     }
 
+    public getEnergyDailyAsNumber (maxAgeSeconds = 20): number | null {
+        if (!this._monitorRecord || !this._monitorRecord.activePower) { return null; }
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = this._monitorRecord.activePower.createdAt;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        const rv = this._monitorRecord.energyDaily.value;
+        if (!(rv >= 0)) { return null; }
+        return rv;
+    }
+
 }
 
 export class MonitorRecordBoilerError extends Error {

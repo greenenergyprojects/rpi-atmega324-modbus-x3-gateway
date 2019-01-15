@@ -9,6 +9,8 @@ import { Subscription } from 'rxjs';
 import { sprintf } from 'sprintf-js';
 import { MonitorRecord } from '../data/common/home-control/monitor-record';
 import { access } from 'fs';
+import { INibe1155ControllerComponentConfig } from './nibe1155-controller.component';
+import { HeatpumpControllerMode } from '../data/common/nibe1155/nibe1155-controller';
 
 @Component({
     selector: 'app-nibe1155',
@@ -37,6 +39,7 @@ export class Nibe1155Component implements OnInit, OnDestroy {
     public accordion: IAccordion;
     @ViewChild('acc') accComponent: NgbAccordion;
 
+    public controllerConfig: INibe1155ControllerComponentConfig;
 
     private _accordionData: {
         activeIds:  string | string [];
@@ -49,10 +52,16 @@ export class Nibe1155Component implements OnInit, OnDestroy {
     private _timer: any;
     private _subsciption: Subscription;
     private _monitorValuesSubsciption: Subscription;
+    private _lastMonitorRecord: MonitorRecord;
 
 
     public constructor (private _dataService: DataService, private _configService: ConfigService) {
         // console.log('constructor');
+        this.controllerConfig = {
+            mode: HeatpumpControllerMode.frequency,
+            fSetpoint: 30
+        };
+
         const x = this._configService.pop('nibe1155:__accordionData');
         if (x) {
             this._accordionData = x;
@@ -63,7 +72,7 @@ export class Nibe1155Component implements OnInit, OnDestroy {
                     id: 'nibe1155-controller',
                     title: 'Heizung Steuerung',
                     infos: [],
-                    showComponent: [ { name: 'Nibe1155ControllerComponent', config: null, data: null } ]
+                    showComponent: [ { name: 'Nibe1155ControllerComponent', config: 'controllerConfig', data: null } ]
                 },
                 overview: {
                     id: 'nibe1155-overview',
@@ -116,20 +125,32 @@ export class Nibe1155Component implements OnInit, OnDestroy {
     }
 
     public onAccordionChange (event: NgbPanelChangeEvent) {
-        // console.log(event);
-        // console.log(this.accComponent);
+        console.log(event);
+        if (event && event.panelId === 'nibe1155-controller' && event.nextState === true) {
+            if (this._lastMonitorRecord && this._lastMonitorRecord.nibe1155) {
+                const mode = this._lastMonitorRecord.nibe1155.getControllerMode();
+                if (mode) {
+                    this.controllerConfig.mode = HeatpumpControllerMode.frequency;
+                }
+                const fSetpoint = this._lastMonitorRecord.nibe1155.getControllerFSetpoint();
+                if (fSetpoint) {
+                    this.controllerConfig.fSetpoint = fSetpoint.value;
+                }
+            }
+        }
         setTimeout(() => {
             this._accordionData.activeIds = this.accComponent.activeIds;
         }, 0);
     }
 
-    public onAccordionOpenChanged (acc: IAccordion, open: boolean) {
-        console.log(acc, open);
-    }
+    // public onAccordionOpenChanged (acc: IAccordion, open: boolean) {
+    //     console.log(acc, open);
+    // }
 
 
     private handleMonitorValues (v: MonitorRecord) {
         // console.log(v.hwcMonitorRecord);
+        this._lastMonitorRecord = v;
         this.handleOverview(v);
     }
 

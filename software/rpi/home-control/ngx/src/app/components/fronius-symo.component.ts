@@ -45,11 +45,24 @@ export class FroniusSymoComponent implements OnInit, OnDestroy {
     private _accordionData: {
         activeIds:         string | string [];
         overview:          IAccordionPanel;
+        register:          IAccordionPanel;
         inverter:          IAccordionPanel;
-        modbusInverter:    IAccordionPanel;
         inverterExt:       IAccordionPanel;
+        common:            IAccordionPanel;
+        settings:          IAccordionPanel;
+        status:            IAccordionPanel;
+        control:           IAccordionPanel;
+        storage:           IAccordionPanel;
+        modbusRegister:    IAccordionPanel;
+        modbusInverter:    IAccordionPanel;
         modbusInverterExt: IAccordionPanel;
+        modbusCommon:      IAccordionPanel;
+        modbusSettings:    IAccordionPanel;
+        modbusStatus:      IAccordionPanel;
+        modbusControl:     IAccordionPanel;
+        modbusStorage:     IAccordionPanel;
     };
+
 
     private _timer: any;
     private _subsciption: Subscription;
@@ -63,31 +76,23 @@ export class FroniusSymoComponent implements OnInit, OnDestroy {
         } else {
             this._accordionData = {
                 activeIds: [],
-                overview: {
-                    id: 'fronius-symo-overview',
-                    title: 'Symo Überblick',
-                    infos: []
-                },
-                inverter: {
-                    id: 'inverter',
-                    title: 'Inverter',
-                    infos: []
-                },
-                inverterExt: {
-                    id: 'inverter-ext',
-                    title: 'Inverter Extension',
-                    infos: []
-                },
-                modbusInverter: {
-                    id: 'modbus-inverter',
-                    title: 'Modbus Inverter',
-                    infos: []
-                },
-                modbusInverterExt: {
-                    id: 'modbus-inverter-ext',
-                    title: 'Modbus Inverter Extension',
-                    infos: []
-                }
+                overview:    { id: 'fronius-symo-overview', title: 'Symo Überblick', infos: [] },
+                register:    { id: 'register', title: 'Register', infos: [] },
+                inverter:    { id: 'inverter', title: 'Inverter', infos: [] },
+                inverterExt: { id: 'inverter-ext', title: 'Inverter Extension', infos: [] },
+                common:      { id: 'common', title: 'Common', infos: [] },
+                settings:    { id: 'settings', title: 'Settings', infos: [] },
+                status:      { id: 'status', title: 'Status', infos: [] },
+                control:     { id: 'control', title: 'Control', infos: [] },
+                storage:     { id: 'storage', title: 'Storage', infos: [] },
+                modbusRegister:    { id: 'modbus-register', title: 'Modbus Register', infos: [] },
+                modbusInverter:    { id: 'modbus-inverter', title: 'Modbus Inverter', infos: [] },
+                modbusInverterExt: { id: 'modbus-inverter-ext', title: 'Modbus Inverter Extension', infos: [] },
+                modbusCommon:      { id: 'modbus-common', title: 'Modbus Common', infos: [] },
+                modbusSettings:    { id: 'modbus-settings', title: 'Modbus Settings', infos: [] },
+                modbusStatus:      { id: 'modbus-status', title: 'Modbus Status', infos: [] },
+                modbusControl:     { id: 'modbus-control', title: 'Modbus Control', infos: [] },
+                modbusStorage:     { id: 'modbus-storage', title: 'Modbus Storage', infos: [] }
             };
         }
     }
@@ -98,10 +103,22 @@ export class FroniusSymoComponent implements OnInit, OnDestroy {
             activeIds: this._accordionData.activeIds,
             panels: [
                 this._accordionData.overview,
+                this._accordionData.register,
                 this._accordionData.inverter,
                 this._accordionData.inverterExt,
+                this._accordionData.common,
+                this._accordionData.settings,
+                this._accordionData.status,
+                this._accordionData.control,
+                this._accordionData.storage,
+                this._accordionData.modbusRegister,
                 this._accordionData.modbusInverter,
-                this._accordionData.modbusInverterExt
+                this._accordionData.modbusInverterExt,
+                this._accordionData.modbusCommon,
+                this._accordionData.modbusSettings,
+                this._accordionData.modbusStatus,
+                this._accordionData.modbusControl,
+                this._accordionData.modbusStorage
             ]
         };
         if (!Array.isArray(this._accordionData.activeIds) || this._accordionData.activeIds.length === 0) {
@@ -143,10 +160,50 @@ export class FroniusSymoComponent implements OnInit, OnDestroy {
             if (this.accComponent.activeIds.indexOf(p.id) >= 0) {
                 switch (p.id) {
                     case 'fronius-symo-overview': this.handleOverview(v); break;
-                    case 'inverter': this.handleInverter(v.froniussymo); break;
+                    // case 'inverter': this.handleInverter(v.froniussymo);
+                    case 'register': {
+                        const def = FroniusSymoModbusRegisters.regDefByLabel.register;
+                        this.handleModel(this._accordionData.register, def, v.froniussymo.register);
+                        break;
+                    }
+                    case 'inverter': {
+                        const def = FroniusSymoModbusRegisters.regDefByLabel.inverter;
+                        this.handleModel(this._accordionData.inverter, def, v.froniussymo.inverter);
+                        break;
+                    }
                     case 'inverter-ext': {
                         const def = FroniusSymoModbusRegisters.regDefByLabel.inverterExtension;
                         this.handleModel(this._accordionData.inverterExt, def, v.froniussymo.inverterExtension);
+                        break;
+                    }
+                    case 'common': {
+                        const def = FroniusSymoModbusRegisters.regDefByLabel.common;
+                        this.handleModel(this._accordionData.common, def, v.froniussymo.common);
+                        break;
+                    }
+                    case 'settings': {
+                        const def = FroniusSymoModbusRegisters.regDefByLabel.settings;
+                        this.handleModel(this._accordionData.settings, def, v.froniussymo.settings);
+                        break;
+                    }
+                    case 'status': {
+                        const def = FroniusSymoModbusRegisters.regDefByLabel.status;
+                        this.handleModel(this._accordionData.status, def, v.froniussymo.status);
+                        break;
+                    }
+                    case 'control': {
+                        const def = FroniusSymoModbusRegisters.regDefByLabel.control;
+                        this.handleModel(this._accordionData.control, def, v.froniussymo.control);
+                        break;
+                    }
+                    case 'storage': {
+                        const def = FroniusSymoModbusRegisters.regDefByLabel.storage;
+                        this.handleModel(this._accordionData.storage, def, v.froniussymo.storage);
+                        break;
+                    }
+                    case 'modbus-register': {
+                        const def = FroniusSymoModbusRegisters.regDefByLabel.register;
+                        this.handleModbusRegister(this._accordionData.modbusRegister, def, v.froniussymo.register);
                         break;
                     }
                     case 'modbus-inverter': {
@@ -157,6 +214,31 @@ export class FroniusSymoComponent implements OnInit, OnDestroy {
                     case 'modbus-inverter-ext': {
                         const def = FroniusSymoModbusRegisters.regDefByLabel.inverterExtension;
                         this.handleModbusRegister(this._accordionData.modbusInverterExt, def, v.froniussymo.inverterExtension);
+                        break;
+                    }
+                    case 'modbus-common': {
+                        const def = FroniusSymoModbusRegisters.regDefByLabel.common;
+                        this.handleModbusRegister(this._accordionData.modbusCommon, def, v.froniussymo.common);
+                        break;
+                    }
+                    case 'modbus-settings': {
+                        const def = FroniusSymoModbusRegisters.regDefByLabel.settings;
+                        this.handleModbusRegister(this._accordionData.modbusSettings, def, v.froniussymo.settings);
+                        break;
+                    }
+                    case 'modbus-status': {
+                        const def = FroniusSymoModbusRegisters.regDefByLabel.status;
+                        this.handleModbusRegister(this._accordionData.modbusStatus, def, v.froniussymo.status);
+                        break;
+                    }
+                    case 'modbus-control': {
+                        const def = FroniusSymoModbusRegisters.regDefByLabel.control;
+                        this.handleModbusRegister(this._accordionData.modbusControl, def, v.froniussymo.control);
+                        break;
+                    }
+                    case 'modbus-storage': {
+                        const def = FroniusSymoModbusRegisters.regDefByLabel.storage;
+                        this.handleModbusRegister(this._accordionData.modbusStorage, def, v.froniussymo.storage);
                         break;
                     }
 
