@@ -100,7 +100,7 @@ export class Auth {
             try {
                 tContent = <ITokenContent>await this.verifyToken(token);
             } catch (err) {
-                debug.fine('%s %s -> authorization error\n%e', req.method, req.originalUrl, err);
+                debug.finer('%s %s -> authorization error\n%e', req.method, req.originalUrl, err);
                 throw new AuthenticationError('invalid token');
             }
             if (tContent.exp * 1000 <= Date.now()) {
@@ -195,8 +195,8 @@ export class Auth {
 
             if (req.headers['content-type'] === 'application/json') {
                 // login request send from ngx application, response json
-                if (debug.fine.enabled) {
-                    debug.fine('handleLogin(): login %s -> response %o', userAuth);
+                if (debug.finer.enabled) {
+                    debug.finer('handleLogin(): login %s -> response %o', userAuth);
                 }
                 res.json(userAuth);
             } else {

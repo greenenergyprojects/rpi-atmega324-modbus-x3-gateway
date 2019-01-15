@@ -73,7 +73,7 @@ export class Statistics {
     private _history: StatisticsRecord [] = [];
     private _current: StatisticsRecordFactory;
     private _writeFileLines: IWriteFileLine [] = [];
-    private _pvsPBugSpy: PvsBugSpyRecord [] = [];
+    // private _pvsPBugSpy: PvsBugSpyRecord [] = [];
 
     private constructor (config: IStatisticsConfig) {
         if (!config) { throw new Error('missing config'); }
@@ -114,7 +114,7 @@ export class Statistics {
         if (!this._current) {
             this._current = new StatisticsRecordFactory(Statistics.CSVHEADER);
         }
-        this._current.addMonitorRecord(d, this._pvsPBugSpy);
+        this._current.addMonitorRecord(d);
     }
 
     private async init () {
@@ -319,7 +319,7 @@ class StatisticsRecordFactory extends StatisticsRecord {
         }
     }
 
-    public addMonitorRecord (r: MonitorRecord, pvsPBugSpy: PvsBugSpyRecord []) {
+    public addMonitorRecord (r: MonitorRecord) {
         if (this.valueCount === 0) {
             this._firstAt = r.createdAt;
         }
@@ -340,46 +340,46 @@ class StatisticsRecordFactory extends StatisticsRecord {
                 continue;
             }
 
-            const ie = r.froniussymo ? r.froniussymo.inverterExtension : null;
-            let pvsPower = null;
-            if (ie && h.id === 'p-pv-s') {
-                pvsPower = r.getPvSouthActivePowerAsNumber();
-                const dcw_1 = ie.registerValues.getValue(40275);
-                const dcst_1 = ie.registerValues.getValue(40281);
-                // const dcw_sf = ie.registerValues.getValue(40258);
-                // const dcw_2 = ie.registerValues.getValue(40295);
-                // const dcst_2 = ie.registerValues.getValue(40301);
-                // if (dcw_1 && dcw_1.value === 65535) {
-                //     if (dcst_1.value === 4) {
-                //         debugSpy.warn('dcw_1 === 65535: dcw_sf=%o  dcw_1=%o  dcst_1=%o     dcw_2=%o dcst_2=%o', dcw_sf, dcw_1, dcst_1, dcw_2, dcst_2);
+            // const ie = r.froniussymo ? r.froniussymo.inverterExtension : null;
+            // let pvsPower = null;
+            // if (ie && h.id === 'p-pv-s') {
+            //     pvsPower = r.getPvSouthActivePowerAsNumber();
+            //     const dcw_1 = ie.registerValues.getValue(40275);
+            //     const dcst_1 = ie.registerValues.getValue(40281);
+            //     // const dcw_sf = ie.registerValues.getValue(40258);
+            //     // const dcw_2 = ie.registerValues.getValue(40295);
+            //     // const dcst_2 = ie.registerValues.getValue(40301);
+            //     // if (dcw_1 && dcw_1.value === 65535) {
+            //     //     if (dcst_1.value === 4) {
+            //     //         debugSpy.warn('dcw_1 === 65535: dcw_sf=%o  dcw_1=%o  dcst_1=%o     dcw_2=%o dcst_2=%o', dcw_sf, dcw_1, dcst_1, dcw_2, dcst_2);
 
-                //     } else {
-                //         debugSpy.info('dcw_1 === 65535: dcw_sf=%o  dcw_1=%o  dcst_1=%o     dcw_2=%o dcst_2=%o', dcw_sf, dcw_1, dcst_1, dcw_2, dcst_2);
-                //     }
-                // } else {
-                //     debugSpy.fine('dcw_1 !== 65535: dcw_sf=%o  dcw_1=%o  dcst_1=%o     dcw_2=%o dcst_2=%o', dcw_sf, dcw_1, dcst_1, dcw_2, dcst_2);
-                // }
-                if (Array.isArray(pvsPBugSpy) && dcst_1 && dcw_1 && dcst_1.value >= 0 && dcw_1.value >= 0) {
-                    pvsPBugSpy.push({ dcst_1: dcst_1, dcw_1: dcw_1 });
-                    while (pvsPBugSpy.length > 10) {
-                        pvsPBugSpy.splice(0, 1);
-                    }
-                    if (pvsPBugSpy.length > 6 && dcw_1.value === 65535 && dcst_1.value === 4) {
-                        const x = pvsPBugSpy[0];
-                        if (x.dcst_1.value === 3 && x.dcw_1.value === 65535) {
-                            debug.warn('Fronius Inverter Exetension Bug, set pvs power to zero');
-                            pvsPower = 0;
-                        }
-                    }
+            //     //     } else {
+            //     //         debugSpy.info('dcw_1 === 65535: dcw_sf=%o  dcw_1=%o  dcst_1=%o     dcw_2=%o dcst_2=%o', dcw_sf, dcw_1, dcst_1, dcw_2, dcst_2);
+            //     //     }
+            //     // } else {
+            //     //     debugSpy.fine('dcw_1 !== 65535: dcw_sf=%o  dcw_1=%o  dcst_1=%o     dcw_2=%o dcst_2=%o', dcw_sf, dcw_1, dcst_1, dcw_2, dcst_2);
+            //     // }
+            //     if (Array.isArray(pvsPBugSpy) && dcst_1 && dcw_1 && dcst_1.value >= 0 && dcw_1.value >= 0) {
+            //         pvsPBugSpy.push({ dcst_1: dcst_1, dcw_1: dcw_1 });
+            //         while (pvsPBugSpy.length > 10) {
+            //             pvsPBugSpy.splice(0, 1);
+            //         }
+            //         if (pvsPBugSpy.length > 6 && dcw_1.value === 65535 && dcst_1.value === 4) {
+            //             const x = pvsPBugSpy[0];
+            //             if (x.dcst_1.value === 3 && x.dcw_1.value === 65535) {
+            //                 debug.warn('Fronius Inverter Exetension Bug, set pvs power to zero');
+            //                 pvsPower = 0;
+            //             }
+            //         }
 
 
-                }
-                if (pvsPower < 10) {
-                    // Fronius Bug, Battery (string 2) leads to wrong PV power (string 1)
-                    debug.finer('bugfix pvsPower:  %d -> 0', pvsPower);
-                    pvsPower = 0;
-                }
-            }
+            //     }
+            //     if (pvsPower < 10) {
+            //         // Fronius Bug, Battery (string 2) leads to wrong PV power (string 1)
+            //         debug.finer('bugfix pvsPower:  %d -> 0', pvsPower);
+            //         pvsPower = 0;
+            //     }
+            // }
 
             switch (h.id) {
                 case 'p-grid':          this.handleValue(v, this._valueCount, r.getGridActivePowerAsNumber()); break;
@@ -387,7 +387,7 @@ class StatisticsRecordFactory extends StatisticsRecord {
                 case 'p-storage':       this.handleValue(v, this._valueCount, r.getBatteryPowerAsNumber()); break;
                 case 'storage-percent': this.handleValue(v, this._valueCount, r.getBatteryEnergyInPercentAsNumber()); break;
                 case 'p-pv':            this.handleValue(v, this._valueCount, r.getPvActivePowerAsNumber()); break;
-                case 'p-pv-s':          this.handleValue(v, this._valueCount, pvsPower); break;
+                case 'p-pv-s':          this.handleValue(v, this._valueCount, r.getPvSouthActivePowerAsNumber()); break;
                 case 'p-pv-ew':         this.handleValue(v, this._valueCount, r.getPvEastWestActivePowerAsNumber()); break;
                 case 'e-pv-daily':      this.handleValue(v, this._valueCount, r.getPvEnergyDailyAsNumber()); break;
                 case 'e-pv-s-daily':    this.handleValue(v, this._valueCount, r.getPvSouthEnergyDailyAsNumber()); break;
@@ -610,7 +610,7 @@ class StatisticsRecordFactory extends StatisticsRecord {
     }
 }
 
-interface PvsBugSpyRecord {
-    dcst_1: { at: Date, value: number };
-    dcw_1: { at: Date, value: number };
-}
+// interface PvsBugSpyRecord {
+//     dcst_1: { at: Date, value: number };
+//     dcw_1: { at: Date, value: number };
+// }

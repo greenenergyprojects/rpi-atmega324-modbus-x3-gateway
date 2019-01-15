@@ -141,6 +141,9 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
     }
 
     public getPvSouthActivePowerAsNumber (maxAgeSeconds = 20): number | null {
+        if (this._calculated && this._calculated.pPvSouth >= 0) {
+            return this._calculated.pPvSouth;
+        }
         if (!this.froniussymo || !this.froniussymo.inverterExtension) { return null; }
         const tMin = Date.now() - maxAgeSeconds * 1000;
         const ts = this.froniussymo.inverterExtension.dcw_1.at;
@@ -347,3 +350,7 @@ export class MonitorRecordError extends Error {
     constructor (public data: IMonitorRecord, msg: string, public cause?: Error) { super(msg); }
 }
 
+interface PvsBugSpyRecord {
+    dcst_1: { at: Date, value: number };
+    dcw_1: { at: Date, value: number };
+}

@@ -77,6 +77,7 @@ export class Monitor {
     private _batInDaily: EnergyDaily;
     private _batOutDaily: EnergyDaily;
     private _lastTempCnt = 0;
+    private _pvsPBugSpy: PvsBugSpyRecord [] = [];
 
     // private _lastCaclulated: ICalculated;
     // private _pvSouthEnergyDaily = 0;
@@ -289,8 +290,31 @@ export class Monitor {
                 }
             }
 
+            const pPvS: { at: Date, value: number } = this._symo ? this._symo.getPvSouthActivePower() : { at: new Date(), value: 0 };
+            if (pPvS) {
+                const ie = this._symo.inverterExtension;
+                const dcw_1 = ie.registerValues.getValue(40275);
+                const dcst_1 = ie.registerValues.getValue(40281);
+                if (Array.isArray(this._pvsPBugSpy) && dcst_1 && dcw_1 && dcst_1.value >= 0 && dcw_1.value >= 0) {
+                    this._pvsPBugSpy.push({ dcst_1: dcst_1, dcw_1: dcw_1 });
+                    while (this._pvsPBugSpy.length > 10) {
+                        this._pvsPBugSpy.splice(0, 1);
+                    }
+                    if (this._pvsPBugSpy.length > 6 && dcw_1.value === 65535 && dcst_1.value === 4) {
+                        const pbs0 = this._pvsPBugSpy[0];
+                        if (pbs0.dcst_1.value === 3 && pbs0.dcw_1.value === 65535) {
+                            debug.warn('Fronius Inverter Exetension Bug, set pvs power to zero');
+                            pPvS.value = 0;
+                        }
+                    }
+                }
+                if (pPvS.value > 0 && pPvS.value < 10) {
+                    // Fronius Bug, Battery (string 2) leads to wrong PV power (string 1)
+                    debug.fine('bugfix pvsPower:  %d -> 0', pPvS.value);
+                    pPvS.value = 0;
+                }
+            }
             if (this._symo) {
-                const pPvS = this._symo.getPvSouthActivePower();
                 const pBatt = this._symo.getBatteryActivePower();
 
                 if (pPvS && pPvS.value >= 0) {
@@ -333,7 +357,8 @@ export class Monitor {
                 pvSouthEnergy:         this._pvSouthEnergy.totalEnergy,
                 pvSouthEnergyDaily:    this._pvSouthEnergyDaily.dailyEnergy,
                 pvEastWestEnergyDaily: this._pvEastWestEnergyDaily.dailyEnergy,
-                froniusSiteDaily:      froniusSiteDaily ? froniusSiteDaily.value : null
+                froniusSiteDaily:      froniusSiteDaily ? froniusSiteDaily.value : null,
+                pPvSouth:              pPvS.value
             };
 
             const mr = new MonitorRecord(x);
@@ -418,4 +443,9 @@ export class Monitor {
     //     }
     // }
 
+}
+
+interface PvsBugSpyRecord {
+    dcst_1: { at: Date, value: number };
+    dcw_1: { at: Date, value: number };
 }

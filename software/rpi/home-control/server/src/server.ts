@@ -1,6 +1,6 @@
 
 import * as debugsx from 'debug-sx';
-const debug: debugsx.IDefaultLogger = debugsx.createDefaultLogger('server');
+const debug: debugsx.IFullLogger = debugsx.createFullLogger('server');
 
 import * as path from 'path';
 import * as fs from 'fs';
@@ -99,7 +99,7 @@ export class Server {
             debug.info('Server gestartet: http://localhost:%s', this._config.port);
         });
         server.on('connection', socket => {
-            debug.fine('Connection established: %s:%s', socket.remoteAddress, socket.remotePort);
+            debug.finer('Connection established: %s:%s', socket.remoteAddress, socket.remotePort);
             // socket.destroy();
         });
         server.on('close', () => {

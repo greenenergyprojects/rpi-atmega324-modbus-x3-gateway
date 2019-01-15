@@ -12,12 +12,14 @@ export interface ICalculated {
     pvSouthEnergyDaily:    number;
     pvEastWestEnergyDaily: number;
     froniusSiteDaily:      number;
+    pPvSouth:              number;
 }
 
 export class Calculated extends DataRecord<ICalculated> implements ICalculated {
 
     public static ATTRIBUTES = [
-        'createdAt', 'eOutDaily', 'eInDaily', 'batOutDaily', 'batInDaily', 'pvSouthEnergy', 'pvSouthEnergyDaily', 'pvEastWestEnergyDaily', 'froniusSiteDaily'
+        'createdAt', 'eOutDaily', 'eInDaily', 'batOutDaily', 'batInDaily', 'pvSouthEnergy', 'pvSouthEnergyDaily', 'pvEastWestEnergyDaily', 'froniusSiteDaily',
+        'pPvSouth'
     ];
 
     private _createdAt:             Date;
@@ -29,6 +31,7 @@ export class Calculated extends DataRecord<ICalculated> implements ICalculated {
     private _pvSouthEnergyDaily:    number;
     private _pvEastWestEnergyDaily: number;
     private _froniusSiteDaily:      number;
+    private _pPvSouth:              number;
 
     constructor (data: ICalculated) {
         super(data);
@@ -66,7 +69,8 @@ export class Calculated extends DataRecord<ICalculated> implements ICalculated {
             pvSouthEnergy:          this._pvSouthEnergy,
             pvSouthEnergyDaily:     this._pvSouthEnergyDaily,
             pvEastWestEnergyDaily:  this._pvEastWestEnergyDaily,
-            froniusSiteDaily:       this._froniusSiteDaily
+            froniusSiteDaily:       this._froniusSiteDaily,
+            pPvSouth:               this._pPvSouth
         };
         return rv;
     }
@@ -107,6 +111,9 @@ export class Calculated extends DataRecord<ICalculated> implements ICalculated {
         return this._froniusSiteDaily;
     }
 
+    public get pPvSouth (): number {
+        return this._pPvSouth;
+    }
 
 }
 
