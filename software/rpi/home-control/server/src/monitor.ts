@@ -301,6 +301,13 @@ export class Monitor {
                         this._pvsPBugSpy.splice(0, 1);
                     }
                     if (this._pvsPBugSpy.length > 6 && dcw_1.value === 65535 && dcst_1.value === 4) {
+                        for (const o of this._pvsPBugSpy) {
+                            if (o.dcst_1.value !== dcst_1.value || o.dcw_1.value !== dcw_1.value) {
+                                debug.fine(sprintf('PV-S Spy --> %s: dcw_1=%dW  dcst_1=%d', dcst_1.at.toISOString(), dcw_1.value, dcst_1.value));
+                            }
+                        }
+                    }
+                    if (this._pvsPBugSpy.length > 6 && dcw_1.value === 65535 && dcst_1.value === 4) {
                         const pbs0 = this._pvsPBugSpy[0];
                         if (pbs0.dcst_1.value === 3 && pbs0.dcw_1.value === 65535) {
                             debug.warn('Fronius Inverter Exetension Bug, set pvs power to zero');
@@ -308,18 +315,14 @@ export class Monitor {
                         }
                     }
                 }
-                if (pPvS.value > 0 && pPvS.value < 10) {
-                    // Fronius Bug, Battery (string 2) leads to wrong PV power (string 1)
-                    debug.fine('bugfix pvsPower:  %d -> 0', pPvS.value);
-                    pPvS.value = 0;
-                }
             }
             if (this._symo) {
                 const pBatt = this._symo.getBatteryActivePower();
 
                 if (pPvS && pPvS.value >= 0) {
-                    if (pPvS.value < 10 && pBatt && pBatt.value > 100) {
-                        debug.fine('Fronius Bug string2/string1 pBatt=%dW pPvS: %sW -> 0W', pBatt.value, pPvS.value);
+                    // Fronius Bug, Battery (string 2) leads to wrong PV power (string 1)
+                    if (pPvS.value > 0 && pPvS.value < 10 && pBatt && pBatt.value > 100) {
+                        debug.finer('Fronius Bug string2/string1 pBatt=%dW pPvS: %sW -> 0W', pBatt.value, pPvS.value);
                         pPvS.value = 0;
                     }
                     this._pvSouthEnergy.accumulateTotalEnergy(pPvS.value, pPvS.at);
