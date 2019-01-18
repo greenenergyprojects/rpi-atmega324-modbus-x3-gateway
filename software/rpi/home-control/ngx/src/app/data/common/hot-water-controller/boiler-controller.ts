@@ -11,7 +11,11 @@ export interface IBoilerController {
     activePower: IValue;
     setpointPower: IValue;
     maxPower: IValue;
+    energyDaily: IValue;
+    energyTotal: IValue;
 }
+
+// export type IBoilerControllerAttributes = keyof IBoilerController;
 
 export class BoilerController extends DataRecord<IBoilerController> implements IBoilerController {
 
@@ -21,10 +25,19 @@ export class BoilerController extends DataRecord<IBoilerController> implements I
     private _activePower: Value;
     private _setpointPower: Value;
     private _maxPower: Value;
+    private _energyDaily: Value;
+    private _energyTotal: Value;
+
 
     constructor (data: IBoilerController) {
         super(data);
         try {
+            const missing = DataRecord.getMissingAttributes( data, [
+                'mode', 'powerSetting', 'activePower', 'setpointPower', 'maxPower', 'energyDaily', 'energyTotal'
+            ]);
+            if (missing) {
+                throw new Error('missing attribute ' + missing);
+            }
             let attCnt = 0;
             for (const a of Object.getOwnPropertyNames(data)) {
                 if ( [ 'createdAt' ].indexOf(a) >= 0 ) {
@@ -36,7 +49,7 @@ export class BoilerController extends DataRecord<IBoilerController> implements I
                 } else if ( [ 'powerSetting' ].indexOf(a) >= 0 ) {
                     const x: IPowerSetting = (<any>data)[a];
                     (<any>this)['_' + a] = new PowerSetting(x);
-                } else if ( [ 'activePower', 'setpointPower', 'maxPower' ].indexOf(a) >= 0 ) {
+                } else if ( [ 'activePower', 'setpointPower', 'maxPower', 'energyDaily', '_energyTotal' ].indexOf(a) >= 0 ) {
                     const x: IValue = (<any>data)[a];
                     (<any>this)['_' + a] = new Value(x);
                 } else {
@@ -59,7 +72,9 @@ export class BoilerController extends DataRecord<IBoilerController> implements I
             powerSetting:  this._powerSetting.toObject(convertDate),
             activePower:   this._activePower.toObject(convertDate),
             setpointPower: this._setpointPower.toObject(convertDate),
-            maxPower:      this._maxPower.toObject(convertDate)
+            maxPower:      this._maxPower.toObject(convertDate),
+            energyDaily:   this._energyDaily.toObject(convertDate),
+            energyTotal:   this._energyTotal.toObject(convertDate),
         };
         return rv;
     }
@@ -86,6 +101,14 @@ export class BoilerController extends DataRecord<IBoilerController> implements I
 
     public get maxPower (): Value {
         return this._maxPower;
+    }
+
+    public get energyDaily (): Value {
+        return this._energyDaily;
+    }
+
+    public get energyTotal (): Value {
+        return this._energyTotal;
     }
 
 }
