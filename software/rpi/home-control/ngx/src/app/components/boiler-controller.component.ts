@@ -2,13 +2,14 @@ import { Component, Input, OnInit, OnDestroy } from '@angular/core';
 import { DataService } from '../services/data.service';
 import { Subscription } from 'rxjs';
 import { MonitorRecord } from '../data/common/home-control/monitor-record';
-import { MonitorRecord as HwcMonitorRecord } from '../data/common/hot-water-controller/monitor-record';
+import { MonitorRecord as BoilerMonitorRecord } from '../data/common/hot-water-controller/monitor-record';
+import { ControllerParameter, IControllerParameter } from '../data/common/hot-water-controller/controller-parameter';
+import { ControllerStatus } from '../data/common/hot-water-controller/controller-status';
 import { ValidatorElement } from '../directives/validator.directive';
-import { ControllerMode } from '../data/common/hot-water-controller/boiler-mode';
 import { ageToString } from '../utils/util';
-import { MonitorRecordBoiler } from '../data/common/home-control/monitor-record-boiler';
 import { ISyncButtonConfig } from './sync-button.component';
 import { INibe1155ControllerComponentConfig } from './nibe1155-controller.component';
+import { ControllerMode } from '../data/common/hot-water-controller/controller-mode';
 
 @Component({
     selector: 'app-boiler-controller',
@@ -37,7 +38,7 @@ export class BoilerControllerComponent implements OnInit, OnDestroy {
     private _monitorValuesSubsciption: Subscription;
     private _inputPower: IInput;
     // private _inputPin: IInput;
-    private _lastMonitorRecord: MonitorRecordBoiler;
+    private _lastMonitorRecord: BoilerMonitorRecord;
 
 
     constructor (private dataService: DataService) {
@@ -129,12 +130,18 @@ export class BoilerControllerComponent implements OnInit, OnDestroy {
     public async onSubmit(cfg: ISyncButtonConfig): Promise<void> {
         try {
             console.log('--> onSubmit --> setBoilerMode');
-            const rv = await this.dataService.setBoilerMode({
+            const pData: IControllerParameter = {
                 createdAt:        new Date(),
-                desiredMode:      <ControllerMode>this.validatorMode.value,
-                // pin:              this._inputPin.validator.value,
-                setpointPower:    this._inputPower.validator.value
-            });
+                from:             'BoilerControllerComponent',
+                mode:             <ControllerMode>this.validatorMode.value,
+                desiredWatts:     this._inputPower.validator.value
+            };
+            if (pData.mode === ControllerMode.off) {
+                pData.desiredWatts = 0;
+            }
+
+            const p = new ControllerParameter(pData);
+            const rv = await this.dataService.setBoilerControllerParameter(p);
             console.log(rv);
         } catch (err) {
             console.log(err);

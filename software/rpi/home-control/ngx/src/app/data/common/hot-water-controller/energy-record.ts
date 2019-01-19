@@ -15,10 +15,6 @@ export class EnergyRecord extends DataRecord<IEnergyRecord> implements IEnergyRe
     constructor (data: IEnergyRecord) {
         super(data);
         try {
-            const missing = DataRecord.getMissingAttributes( data, [ 'startedAt', 'endedAt', 'energyWattHours' ]);
-            if (missing) {
-                throw new Error('missing attribute ' + missing);
-            }
             let attCnt = 0;
             for (const a of Object.getOwnPropertyNames(data)) {
                 if ( [ 'startedAt', 'endedAt' ].indexOf(a) >= 0 ) {

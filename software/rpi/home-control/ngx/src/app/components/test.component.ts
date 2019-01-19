@@ -2,7 +2,7 @@ import { Component, Input, OnInit, OnDestroy } from '@angular/core';
 import { DataService } from '../services/data.service';
 import { Subscription } from 'rxjs';
 import { MonitorRecord } from '../data/common/home-control/monitor-record';
-import { ControllerMode } from '../data/common/hot-water-controller/boiler-mode';
+import { ControllerMode } from '../data/common/hot-water-controller/controller-mode';
 import { HeatpumpControllerMode } from '../data/common/nibe1155/nibe1155-controller';
 
 @Component({
@@ -294,7 +294,6 @@ export class TestComponent implements OnInit, OnDestroy {
             };
             const b = v.boiler;
 
-            const m = b && b.monitorRecord ? b.monitorRecord : null;
             x1 = b ? b.getActivePowerAsNumber(20) : null;
             if (x1 === null) {
                 console.log('getActivePowerAsNumber', b);

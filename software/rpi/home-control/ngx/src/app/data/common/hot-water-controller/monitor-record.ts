@@ -1,55 +1,54 @@
 
 import { DataRecord } from '../data-record';
-import { IEnergyRecord, EnergyRecord } from './energy-record';
 import { ICurrent4To20mA, Current4To20mA } from './current4-to-20ma';
-import { IPowerSetting, PowerSetting } from './power-setting';
 import { IValue, Value } from './value';
-import { ControllerMode } from './boiler-mode';
+import { IEnergyRecord, EnergyRecord } from './energy-record';
+import { IControllerStatus, ControllerStatus } from './controller-status';
 
 export interface IMonitorRecord {
-    createdAt: Date | number | string;
-    mode: ControllerMode | string;
-    powerSetting: IPowerSetting;
-    activePower: IValue;
-    setpointPower: IValue;
-    maxPower: IValue;
-    energy?: IEnergyRecord [];
-    energyDaily?: IValue;
+    createdAt:       Date | number | string;
+    controller?:     IControllerStatus;
     current4to20mA?: ICurrent4To20mA;
+    energy?:         IEnergyRecord [];
 }
 
 export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonitorRecord {
 
-    private _createdAt: Date;
-    private _mode: ControllerMode;
-    private _powerSetting: PowerSetting;
-    private _activePower: Value;
-    private _setpointPower: Value;
-    private _maxPower: Value;
-    private _energy: EnergyRecord [] = [];
-    private _energyDaily?: Value;
+    private _createdAt:       Date;
+    private _controller?:     ControllerStatus;
     private _current4to20mA?: Current4To20mA;
+    private _energy?:         EnergyRecord [];
 
     constructor (data: IMonitorRecord) {
         super(data);
         try {
-            this._createdAt = DataRecord.parseDate(data, { attribute: 'createdAt', validate: true });
-            this._mode = DataRecord.parseEnum<ControllerMode>(
-                data, {attribute: 'mode', validate: true, validValues: DataRecord.enumToStringValues(ControllerMode) }
-            );
-            this._powerSetting = new PowerSetting(data.powerSetting);
-            this._activePower = new Value(data.activePower);
-            this._setpointPower = new Value(data.setpointPower);
-            this._maxPower = new Value(data.maxPower);
-            if (Array.isArray(data.energy)) {
-                data.energy.forEach( (element, i) => this._energy.push(new EnergyRecord(element)));
+            const missing = DataRecord.getMissingAttributes( data, [ 'createdAt' ]);
+            if (missing) {
+                throw new Error('missing attribute ' + missing);
             }
-            if (data.current4to20mA) {
-                this._current4to20mA = new Current4To20mA(data.current4to20mA);
+            let attCnt = 0;
+            for (const a of Object.getOwnPropertyNames(data)) {
+                if ( [ 'createdAt' ].indexOf(a) >= 0 ) {
+                    (<any>this)['_' + a] = DataRecord.parseDate(data, { attribute: a, validate: true } );
+                } else if ( [ 'controller' ].indexOf(a) >= 0 ) {
+                    this._controller = new ControllerStatus(data.controller);
+                } else if ( [ 'energyDaily', '_energyTotal' ].indexOf(a) >= 0 ) {
+                    const x: IValue = (<any>data)[a];
+                    (<any>this)['_' + a] = new Value(x);
+                } else if (data.current4to20mA) {
+                    this._current4to20mA = new Current4To20mA(data.current4to20mA);
+                } else if (Array.isArray(data.energy) ) {
+                    this._energy = [];
+                    for (const e of data.energy) { this._energy.push(new EnergyRecord(e)); }
+                } else {
+                    throw new Error('attribute ' + a + ' not found in data:IMonitorRecord');
+                }
+                attCnt++;
             }
-            if (data.energyDaily) {
-                this._energyDaily = new Value(data.energyDaily);
+            if (attCnt !== Object.getOwnPropertyNames(this).length) {
+                throw new Error('attribute count mismatch');
             }
+
         } catch (err) {
             console.log('--->', err);
             throw new MonitorRecordError('parsing IMonitorRecord fails', err);
@@ -58,22 +57,19 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
 
     public toObject (convertDate = false): IMonitorRecord {
         const rv: IMonitorRecord = {
-            createdAt: convertDate ? this._createdAt.getTime() : new Date(this._createdAt.getTime()),
-            mode: this._mode,
-            powerSetting: this._powerSetting.toObject(convertDate),
-            activePower: this._activePower.toObject(convertDate),
-            setpointPower: this._setpointPower.toObject(convertDate),
-            maxPower: this._maxPower.toObject(convertDate),
+            createdAt: convertDate ? this._createdAt.getTime() : new Date(this._createdAt.getTime())
         };
-        if (this._energy.length > 0) {
-            rv.energy = [];
-            this._energy.forEach(element => { rv.energy.push(element.toObject(convertDate)); });
+        if (this._controller) {
+            rv.controller = this._controller.toObject(convertDate);
         }
         if (this._current4to20mA) {
             rv.current4to20mA = this._current4to20mA.toObject(convertDate);
         }
-        if (this._energyDaily) {
-            rv.energyDaily = this._energyDaily.toObject(convertDate);
+        if (this._energy) {
+            rv.energy = [];
+            for (const e of this._energy) {
+                rv.energy.push(e.toObject(convertDate));
+            }
         }
 
         return rv;
@@ -83,36 +79,60 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
         return this._createdAt;
     }
 
-    public get mode (): ControllerMode {
-        return this._mode;
+    public get controller (): ControllerStatus | null {
+        return this._controller;
     }
 
-    public get powerSetting (): PowerSetting {
-        return this._powerSetting;
-    }
-
-    public get setpointPower (): Value {
-        return this._setpointPower;
-    }
-
-    public get maxPower (): Value {
-        return this._maxPower;
-    }
-
-    public get activePower (): Value {
-        return this._activePower;
-    }
-
-    public get energy (): EnergyRecord [] {
-        return this._energy;
-    }
-
-    public get current4to20mA (): Current4To20mA {
+    public get current4to20mA (): Current4To20mA | null {
         return this._current4to20mA;
     }
 
-    public get energyDaily (): Value {
-        return this._energyDaily;
+    public get energy (): EnergyRecord [] {
+        return this._energy ? this._energy : [];
+    }
+
+    // ************************************************************
+
+    public getModeAsString (maxAgeSeconds = 20): string | null {
+        // console.log('--> getModeAsString():', this._monitorRecord);
+        if (!this._controller) { return null; }
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = this._controller.createdAt;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        const rv = this._controller.mode;
+        if (!rv) { return null; }
+        return rv;
+    }
+
+    public getActivePowerAsNumber (maxAgeSeconds = 20): number | null {
+        if (!this._controller || !(this._controller.activePower >= 0)) { return null; }
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = this._controller.createdAt;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        const rv = this._controller.activePower;
+        if (!(rv >= 0)) { return null; }
+        return rv;
+
+    }
+
+    public getEnergyDailyAsNumber (maxAgeSeconds = 20): number | null {
+        if (!this._controller || !(this._controller.energyDaily >= 0)) { return null; }
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = this._controller.createdAt;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        const rv = this._controller.energyDaily;
+        if (!(rv >= 0)) { return null; }
+        return rv;
+    }
+
+    public getEnergyTotalAsNumber (maxAgeSeconds = 20): number | null {
+        if (!this._controller || !(this._controller.energyTotal >= 0)) { return null; }
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = this._controller.createdAt;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        const rv = this._controller.energyTotal;
+        if (!(rv >= 0)) { return null; }
+        return rv;
     }
 
 }

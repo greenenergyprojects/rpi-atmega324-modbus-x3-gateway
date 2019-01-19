@@ -6,11 +6,12 @@ import { ServerService } from './server.service';
 import * as serverHttp from '../data/common/home-control/server-http';
 import { IFroniusMeter } from '../data/common/fronius-meter/fronius-meter';
 import { IMonitorRecord, MonitorRecord } from '../data/common/home-control/monitor-record';
-import { IBoilerMode } from '../data/common/hot-water-controller/boiler-mode';
-import { IBoilerController } from '../data/common/hot-water-controller/boiler-controller';
 import { IFroniusSymo } from '../data/common/fronius-symo/fronius-symo';
 import { Nibe1155Value } from '../data/common/nibe1155/nibe1155-value';
 import { INibe1155Controller, Nibe1155Controller } from '../data/common/nibe1155/nibe1155-controller';
+import { ControllerParameter } from '../data/common/hot-water-controller/controller-parameter';
+import { IMonitorRecord as IBoilerMonitorRecord } from '../data/common/hot-water-controller/monitor-record';
+import { IControllerStatus } from '../data/common/hot-water-controller/controller-status';
 
 
 @Injectable({ providedIn: 'root' })
@@ -171,10 +172,10 @@ export class DataService {
         return this._serverService.httpPostAndGetJson(uri, mode);
     }
 
-    public setBoilerMode (mode: IBoilerMode): Promise<IBoilerController> {
-        console.log(mode);
-        const uri = '/control/boiler-mode';
-        return this._serverService.httpPostAndGetJson(uri, mode);
+    public setBoilerControllerParameter (p: ControllerParameter): Promise<IControllerStatus> {
+        console.log(p);
+        const uri = '/control/boiler/controller/parameter';
+        return this._serverService.httpPostAndGetJson(uri, p.toObject());
     }
 
 

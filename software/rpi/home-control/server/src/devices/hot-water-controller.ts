@@ -5,9 +5,8 @@ const debug: debugsx.IFullLogger = debugsx.createFullLogger('devices:HotWaterCon
 import * as http from 'http';
 
 import { IMonitorRecord, MonitorRecord } from '../data/common/hot-water-controller/monitor-record';
-import { BoilerMode } from '../data/common/hot-water-controller/boiler-mode';
-import { IBoilerController, BoilerController } from '../data/common/hot-water-controller/boiler-controller';
-import { IMonitorRecordBoiler } from '../data/common/home-control/monitor-record-boiler';
+import { ControllerParameter } from '../data/common/hot-water-controller/controller-parameter';
+import { IControllerStatus, ControllerStatus } from '../data/common/hot-water-controller/controller-status';
 
 
 interface IHotWaterControllerConfig {
@@ -59,19 +58,27 @@ export class HotWaterController {
         if (!config.pin || typeof(config.pin) !== 'string') { throw new Error('invalid/missing pin'); }
     }
 
-    public toObject (preserveDate = true): IMonitorRecordBoiler {
-        let rv: IMonitorRecordBoiler;
-        if (this._lastValidResponse && this._lastValidResponse.value && this._lastValidResponse.at instanceof Date) {
-            rv = {
-                createdAt:     this._lastValidResponse.at,
-                monitorRecord: this._lastValidResponse.value.toObject(preserveDate)
-            };
+    // public toObject (preserveDate = true): IBoilerMonitorRecord {
+    //     let rv: IBoilerMonitorRecord;
+    //     if (this._lastValidResponse && this._lastValidResponse.value && this._lastValidResponse.at instanceof Date) {
+    //         rv = {
+    //             createdAt:     this._lastValidResponse.at,
+    //             monitorRecord: this._lastValidResponse.value.toObject(preserveDate)
+    //         };
+    //     } else {
+    //         rv = {
+    //             createdAt: new Date()
+    //         };
+    //     }
+    //     return rv;
+    // }
+
+    public toObject (convertDate = false): IMonitorRecord {
+        if (this._lastValidResponse && this._lastValidResponse.value) {
+            return this._lastValidResponse.value.toObject(convertDate);
         } else {
-            rv = {
-                createdAt: new Date()
-            };
+            return null;
         }
-        return rv;
     }
 
     public get lastValidResponse (): { at: Date, value: MonitorRecord } {
@@ -105,6 +112,8 @@ export class HotWaterController {
         }
 
         const options = Object.assign({}, this._options);
+        options.path = '/monitor';
+
         this._getPendingSince = new Date();
         debug.finest('send request %s:%s', options.host, options.path);
         const rv = new Promise<MonitorRecord>( (res, rej) => {
@@ -151,19 +160,17 @@ export class HotWaterController {
         return rv;
     }
 
-    public async setBoilerMode (mode: BoilerMode): Promise<BoilerController> {
+    public async setParameter (p: ControllerParameter): Promise<ControllerStatus> {
         if (this._config.disabled) {
             throw new Error('HotWaterController disabled');
         }
-        const rv = new Promise<BoilerController>( (resolve, reject) => {
-            const x = <any>mode.toObject();
-            if (!x.pin) {
-                x.pin = this._config.pin;
-            }
+        const rv = new Promise<ControllerStatus>( (resolve, reject) => {
+            const x = p.toObject();
+            (<any>x).pin = '1234';
             const body = JSON.stringify(x);
             const options = Object.assign({}, this._options);
             options.method = 'POST';
-            options.path = this._config.pathController;
+            options.path = '/controller/parameter'; // this._config.pathController;
             options.headers = {
                 'Content-Type': 'application/json',
                 'Content-Length': Buffer.byteLength(body)
@@ -182,8 +189,8 @@ export class HotWaterController {
                 res.on('end', () => {
                     try {
                         debug.info('POST hwc -> %s', s);
-                        const x: IBoilerController = JSON.parse(s);
-                        const r = new BoilerController(x);
+                        const status: IControllerStatus = JSON.parse(s);
+                        const r = new ControllerStatus(status);
                         resolve(r);
                     } catch (err) {
                         debug.warn(err);

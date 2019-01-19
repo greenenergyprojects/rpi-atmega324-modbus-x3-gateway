@@ -5,7 +5,7 @@ import { sprintf } from 'sprintf-js';
 import { IFroniusSymo, FroniusSymo } from '../fronius-symo/fronius-symo';
 import { IEnergyMeter, EnergyMeter } from './energy-meter';
 // import { IMonitorRecordNibe1155, MonitorRecordNibe1155 } from './monitor-record-nibe1155';
-import { IMonitorRecordBoiler, MonitorRecordBoiler } from './monitor-record-boiler';
+import { IMonitorRecord as IMonitorRecordBoiler , MonitorRecord as MonitorRecordBoiler } from '../hot-water-controller/monitor-record';
 import { ICalculated, Calculated } from './calculated';
 import { INibe1155MonitorRecord, Nibe1155MonitorRecord } from '../nibe1155/nibe1155-monitor-record';
 import { FroniusSymoModel } from '../fronius-symo/fronius-symo-model';

@@ -182,11 +182,14 @@ export class BoilerComponent implements OnInit, OnDestroy {
     private handleOverview (v?: MonitorRecord) {
         const a = this._accordionData.overview;
         const x: { [ key: string ]: string } = {};
-        x['Leistung'] = '?';
         x['Modus'] = '?';
-        x['Energie(Tag)'] = '?';
+        x['P-Ist'] = '?';
+        x['P-Soll'] = '?';
+        x['P-Min/Max'] = '?';
         x['4..20mA Soll'] = '?';
         x['4..20mA Ist'] = '?';
+        x['Energie(Tag)'] = '?';
+        x['Energie(Gesamt)'] = '?';
 
         // console.log(v.boiler);
 
@@ -194,37 +197,56 @@ export class BoilerComponent implements OnInit, OnDestroy {
             let val = '?';
             try {
                 switch (att) {
-                    case 'Leistung': {
-                        const o = v.boiler.monitorRecord;
-                        if (o && o.activePower) {
-                            const dt = Date.now() - o.activePower.createdAt.getTime();
+                    case 'Modus': {
+                        const m = v.boiler.controller;
+                        val = m.mode + ' (' + this.ageToString(m.createdAt) + ')';
+                        break;
+                        break;
+                    }
+                    case 'P-Ist': {
+                        const o = v.boiler.controller;
+                        if (o && o.activePower >= 0) {
+                            const dt = Date.now() - o.createdAt.getTime();
                             if (dt < 10000) {
-                                val = '' + Math.round(o.activePower.value) + 'W (' + this.ageToString(o.createdAt) + ')';
+                                val = '' + Math.round(o.activePower) + 'W (' + this.ageToString(o.createdAt) + ')';
                                 break;
                             }
                         }
                         val = '?';
                         break;
                     }
-                    case 'Modus': {
-                        const m = v.boiler.monitorRecord;
-                        val = m.mode + ' (' + this.ageToString(m.createdAt) + ')';
-                        break;
+                    case 'P-Soll': {
+                        const p = v.boiler.controller.parameter;
+                        if (p && p.desiredWatts >= 0) {
+                            val = '' + p.desiredWatts + 'W (' + this.ageToString(v.boiler.controller.createdAt) + ')';
+                        }
                         break;
                     }
-                    case 'Energie(Tag)': {
-                        const o = v.boiler.monitorRecord.energyDaily;
-                        val = '' + Math.round(o.value) + o.unit + ' (' + this.ageToString(o.createdAt) + ')';
+                    case 'P-Min/Max': {
+                        const p = v.boiler.controller.parameter;
+                        if (p && p.maxWatts >= 0 && p.minWatts >= 0) {
+                            val = '' + p.minWatts + 'W ..' + p.maxWatts + 'W (' + this.ageToString(v.boiler.controller.createdAt) + ')';
+                        }
                         break;
                     }
                     case '4..20mA Soll': {
-                        const o = v.boiler.monitorRecord.current4to20mA;
+                        const o = v.boiler.current4to20mA;
                         val = '' + o.setpoint.value + o.setpoint.unit + ' (' + this.ageToString(o.setpoint.createdAt) + ')';
                         break;
                     }
                     case '4..20mA Ist': {
-                        const o = v.boiler.monitorRecord.current4to20mA;
+                        const o = v.boiler.current4to20mA;
                         val = '' + o.current.value + o.current.unit + ' (' + this.ageToString(o.current.createdAt) + ')';
+                        break;
+                    }
+                    case 'Energie(Tag)': {
+                        const o = v.boiler.controller.energyDaily;
+                        val = '' + Math.round(o / 10) / 100 + 'kWh (' + this.ageToString(v.boiler.controller.createdAt) + ')';
+                        break;
+                    }
+                    case 'Energie(Gesamt)': {
+                        const o = v.boiler.controller.energyTotal;
+                        val = '' + Math.round(o / 100) / 10 + 'kWh (' + this.ageToString(v.boiler.controller.createdAt) + ')';
                         break;
                     }
                     default: console.log('unsupported attribute ' + att); break;

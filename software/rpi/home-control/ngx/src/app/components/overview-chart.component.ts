@@ -239,7 +239,7 @@ export class OverviewChartComponent implements OnInit, OnDestroy {
             }
 
             if (n) {
-                const pBoiler = v.boiler.monitorRecord.activePower;
+                const pBoiler = v.boiler.controller.activePower;
                 let nv: Nibe1155Value;
                 nv = n.values[43136]; const compressorFrequency = nv && nv.valueAt ? nv.value : null;
                 nv = n.values[43141]; const compressorInPower   = nv && nv.valueAt ? nv.value : null;
