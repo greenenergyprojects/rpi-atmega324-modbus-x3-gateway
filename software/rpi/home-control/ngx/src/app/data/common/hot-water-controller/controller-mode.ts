@@ -1,2 +1,2 @@
 
-export enum ControllerMode { off = 'off', power = 'power', test = 'test', shutdown = 'shutdown' }
+export enum ControllerMode { off = 'off', on = 'on', power = 'power', smart = 'smart', test = 'test', shutdown = 'shutdown' }

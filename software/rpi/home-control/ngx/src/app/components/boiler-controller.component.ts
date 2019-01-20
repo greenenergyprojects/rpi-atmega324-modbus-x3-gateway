@@ -37,7 +37,10 @@ export class BoilerControllerComponent implements OnInit, OnDestroy {
 
     private _monitorValuesSubsciption: Subscription;
     private _inputPower: IInput;
-    // private _inputPin: IInput;
+    private _eBatMin: IInput;
+    private _minWatts: IInput;
+    private _maxWatts: IInput;
+
     private _lastMonitorRecord: BoilerMonitorRecord;
 
 
@@ -57,11 +60,17 @@ export class BoilerControllerComponent implements OnInit, OnDestroy {
             'off', (e, n, v) => {
                 switch (v) {
                     case 'off': {
+                        this._eBatMin.hidden = true;
                         this._inputPower.hidden = true;
+                        this._minWatts.hidden = true;
+                        this._maxWatts.hidden = true;
                         break;
                     }
 
                     case 'power': {
+                        this._eBatMin.hidden = true;
+                        this._minWatts.hidden = true;
+                        this._maxWatts.hidden = true;
                         if (this._lastMonitorRecord) {
                             const p = this._lastMonitorRecord.getActivePowerAsNumber();
                             if (p > 0) {
@@ -74,11 +83,14 @@ export class BoilerControllerComponent implements OnInit, OnDestroy {
                         break;
                     }
 
-                    case 'test': {
+                    case 'smart': {
+                        this._inputPower.hidden = true;
+                        this._eBatMin.hidden = false;
+                        this._minWatts.hidden = false;
+                        this._maxWatts.hidden = false;
                         if (this._lastMonitorRecord) {
                             this._inputPower.validator.value = 2000;
                         }
-                        this._inputPower.hidden = false;
                         break;
                     }
 
@@ -97,18 +109,42 @@ export class BoilerControllerComponent implements OnInit, OnDestroy {
             return true;
         });
 
-        // this._inputPin = {
-        //     id: 'idPin', type: 'password', key: 'PIN', name: 'pin',
-        //     min: '', max: '', hidden: false, validator: null, pattern: '[0-9]*', mode: 'numeric'
-        // };
-        // this._inputPin.validator = new ValidatorElement<string>('', null, (e, n, v) => {
-        //     if (Number.isNaN(+v)) { return false; }
-        //     const rv = !(+v < 0  || +v > 9999 || (typeof v === 'string' && v.length !== 4));
-        //     return rv;
-        // });
+        this._eBatMin = {
+            id: 'idEBatMin', type: 'number', key: 'E-Batt / %', name: 'ebatmin',
+            min: 0, max: 100, hidden: true, validator: null, pattern: '[0-9]*', mode: ''
+        };
+        this._eBatMin.validator = new ValidatorElement<number>(90, null, (e, n, v) => {
+            if (Number.isNaN(+v)) { return false; }
+            if (+v < 0) { return false; }
+            if (+v > 100) { return false; }
+            return true;
+        });
+
+        this._minWatts = {
+            id: 'idMinWatts', type: 'number', key: 'P-Min / W', name: 'minwatts',
+            min: 0, max: 2000, hidden: true, validator: null, pattern: '[0-9]*', mode: ''
+        };
+        this._minWatts.validator = new ValidatorElement<number>(0, null, (e, n, v) => {
+            if (Number.isNaN(+v)) { return false; }
+            if (+v < 0) { return false; }
+            if (+v > 2000) { return false; }
+            return true;
+        });
+
+        this._maxWatts = {
+            id: 'idMinWatts', type: 'number', key: 'P-Max / W', name: 'maxwatts',
+            min: 0, max: 2000, hidden: true, validator: null, pattern: '[0-9]*', mode: ''
+        };
+        this._maxWatts.validator = new ValidatorElement<number>(2000, null, (e, n, v) => {
+            if (Number.isNaN(+v)) { return false; }
+            if (+v < 0) { return false; }
+            if (+v > 2000) { return false; }
+            return true;
+        });
+
 
         this.inputs = [
-            this._inputPower // , this._inputPin
+            this._inputPower, this._eBatMin, this._minWatts, this._maxWatts
         ];
 
     }
@@ -134,7 +170,12 @@ export class BoilerControllerComponent implements OnInit, OnDestroy {
                 createdAt:        new Date(),
                 from:             'BoilerControllerComponent',
                 mode:             <ControllerMode>this.validatorMode.value,
-                desiredWatts:     this._inputPower.validator.value
+                desiredWatts:     this._inputPower.validator.value,
+                smart: {
+                    minEBatPercent: this._eBatMin.validator.value,
+                    minWatts:       this._minWatts.validator.value,
+                    maxWatts:       this._maxWatts.validator.value
+                }
             };
             if (pData.mode === ControllerMode.off) {
                 pData.desiredWatts = 0;

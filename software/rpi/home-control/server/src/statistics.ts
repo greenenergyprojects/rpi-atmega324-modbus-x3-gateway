@@ -46,8 +46,10 @@ export class Statistics {
         { id: 'e-site', unit: 'Wh', label: 'E-Fronius-Site/Wh', hideMin: true, hideAvg: true },
         { id: 'e-site-daily', unit: 'Wh', label: 'E(tag)-Fronius-Site/Wh', hideMin: true, hideAvg: true },
         { id: 'e-in-daily', unit: 'Wh', label: 'E-in(tag)/Wh', hideMin: true, hideAvg: true },
-        { id: 'e-out-daily', unit: 'Wh', label: 'E-out(tag)/Wh', hideMin: true, hideAvg: true }
-
+        { id: 'e-out-daily', unit: 'Wh', label: 'E-out(tag)/Wh', hideMin: true, hideAvg: true },
+        { id: 'boiler-p', unit: 'W', label: 'Boiler-P/W' },
+        { id: 'boiler-e-daily', unit: 'Wh', label: 'Boiler-Etag)/Wh', hideMin: true, hideAvg: true },
+        { id: 'boiler-e', unit: 'Wh', label: 'Boiler-E/Wh', hideMin: true, hideAvg: true }
     ];
 
     public static getInstance (): Statistics {
@@ -400,6 +402,9 @@ class StatisticsRecordFactory extends StatisticsRecord {
                 case 'e-site-daily':    this.handleValue(v, this._valueCount, r.getFroniusSiteDailyEnergyAsNumber()); break;
                 case 'e-in-daily':      this.handleValue(v, this._valueCount, r.getEInDailyAsNumber()); break;
                 case 'e-out-daily':     this.handleValue(v, this._valueCount, r.getEOutDailyAsNumber()); break;
+                case 'boiler-p':        this.handleValue(v, this._valueCount, r.getBoilerActivePower()); break;
+                case 'boiler-e-daily':  this.handleValue(v, this._valueCount, r.getBoilerEnergyDaily()); break;
+                case 'boiler-e':        this.handleValue(v, this._valueCount, r.getBoilerEnergyTotal()); break;
                 default: debug.warn('unsupported id %s', h.id); break;
             }
         }
@@ -544,6 +549,18 @@ class StatisticsRecordFactory extends StatisticsRecord {
                             break;
                         }
                         case 'e-in-daily': case 'e-out-daily': {
+                            s += this.formatLineFragment(h, 0, v);
+                            break;
+                        }
+                        case 'boiler-p': {
+                            s += this.formatLineFragment(h, 0, v);
+                            break;
+                        }
+                        case 'boiler-e-daily': {
+                            s += this.formatLineFragment(h, 0, v);
+                            break;
+                        }
+                        case 'boiler-e': {
                             s += this.formatLineFragment(h, 0, v);
                             break;
                         }

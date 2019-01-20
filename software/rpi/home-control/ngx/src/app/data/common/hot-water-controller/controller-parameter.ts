@@ -1,12 +1,14 @@
 
 import { DataRecord } from '../data-record';
 import { ControllerMode } from './controller-mode';
+import { SmartModeParameter, ISmartModeParameter } from './smart-mode-parameter';
 
 export interface IControllerParameter {
     createdAt: Date | number | string;
     from: string;
     mode: ControllerMode;
     desiredWatts: number;
+    smart: ISmartModeParameter;
     minWatts?: number;
     maxWatts?: number;
 }
@@ -21,12 +23,13 @@ export class ControllerParameter extends DataRecord<IControllerParameter> implem
     private _desiredWatts: number;
     private _minWatts: number;
     private _maxWatts: number;
+    private _smart: SmartModeParameter;
 
     constructor (data: IControllerParameter) {
         super(data);
         try {
             const missing = DataRecord.getMissingAttributes( data, [
-                'createdAt', 'from', 'mode', 'desiredWatts'
+                'createdAt', 'from', 'mode', 'desiredWatts', 'smart'
             ]);
             if (missing) {
                 throw new Error('missing attribute ' + missing);
@@ -41,6 +44,8 @@ export class ControllerParameter extends DataRecord<IControllerParameter> implem
                     (<any>this)['_' + a] = DataRecord.parseEnum<ControllerMode>(
                         data, {attribute: a, validate: true, validValues: DataRecord.enumToStringValues(ControllerMode) }
                     );
+                } else if ( [ 'smart' ].indexOf(a) >= 0 ) {
+                    this._smart = new SmartModeParameter(data.smart);
                 } else if ( [ 'minWatts', 'maxWatts', 'desiredWatts' ].indexOf(a) >= 0 ) {
                     (<any>this)['_' + a] = DataRecord.parseNumber(data, { attribute: a, validate: true, min: 0, allowString: true } );
                 } else {
@@ -65,12 +70,13 @@ export class ControllerParameter extends DataRecord<IControllerParameter> implem
 
     public toObject (convertDate = false): IControllerParameter {
         const rv: IControllerParameter = {
-            createdAt:    convertDate ? this._createdAt.getTime() : this._createdAt,
-            from:         this._from,
-            mode:         this._mode,
-            desiredWatts: this._desiredWatts,
-            minWatts:     this._minWatts,
-            maxWatts:     this._maxWatts
+            createdAt:           convertDate ? this._createdAt.getTime() : this._createdAt,
+            from:                this._from,
+            mode:                this._mode,
+            desiredWatts:        this._desiredWatts,
+            minWatts:            this._minWatts,
+            maxWatts:            this._maxWatts,
+            smart:               this._smart.toObject(convertDate)
         };
         return rv;
     }
@@ -88,6 +94,10 @@ export class ControllerParameter extends DataRecord<IControllerParameter> implem
 
     public get desiredWatts (): number {
         return this._desiredWatts;
+    }
+
+    public get smart (): SmartModeParameter {
+        return this._smart;
     }
 
     public get minWatts (): number {

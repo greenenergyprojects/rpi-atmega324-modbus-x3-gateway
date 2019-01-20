@@ -7,6 +7,7 @@ import * as http from 'http';
 import { IMonitorRecord, MonitorRecord } from '../data/common/hot-water-controller/monitor-record';
 import { ControllerParameter } from '../data/common/hot-water-controller/controller-parameter';
 import { IControllerStatus, ControllerStatus } from '../data/common/hot-water-controller/controller-status';
+import { Monitor } from '../monitor';
 
 
 interface IHotWaterControllerConfig {
@@ -112,7 +113,17 @@ export class HotWaterController {
         }
 
         const options = Object.assign({}, this._options);
-        options.path = '/monitor';
+        const mr = Monitor.getInstance().getLatestMonitorRecord();
+        const eBat = mr && mr.getBatteryEnergyInPercentAsNumber();
+        const pBat = mr && mr.getBatteryPowerAsNumber();
+        const pGrid = mr && mr.getGridActivePowerAsNumber();
+        options.path = '/monitor?eBat=' + Math.round(eBat) + '&pBat=' + Math.round(pBat) + '&pGrid=' + Math.round(pGrid);
+        debug.fine('--> path = %s', options.path);
+        // if (eBat !== null && pGrid !== null) {
+        //     options.path = '/monitor?eBat=' + Math.round(eBat) + '&pBat=' + Math.round(pBat) + '&pGrid=' + Math.round(pGrid);
+        // } else {
+        //     options.path = '/monitor';
+        // }
 
         this._getPendingSince = new Date();
         debug.finest('send request %s:%s', options.host, options.path);

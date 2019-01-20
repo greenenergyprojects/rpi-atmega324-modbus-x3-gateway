@@ -9,6 +9,8 @@ import { Subscription } from 'rxjs';
 import { sprintf } from 'sprintf-js';
 import { MonitorRecord } from '../data/common/home-control/monitor-record';
 import { stringify } from 'querystring';
+import { ControllerMode } from '../data/common/hot-water-controller/controller-mode';
+import { AuthService } from '../services/auth.service';
 
 @Component({
     selector: 'app-boiler',
@@ -47,7 +49,7 @@ export class BoilerComponent implements OnInit, OnDestroy {
     private _subsciption: Subscription;
     private _monitorValuesSubsciption: Subscription;
 
-    public constructor (private _dataService: DataService, private _configService: ConfigService) {
+    public constructor (private _dataService: DataService, private _configService: ConfigService, private _authService: AuthService) {
         // console.log('constructor');
         const x = this._configService.pop('boiler:__accordionData');
         if (x) {
@@ -182,20 +184,35 @@ export class BoilerComponent implements OnInit, OnDestroy {
     private handleOverview (v?: MonitorRecord) {
         const a = this._accordionData.overview;
         const x: { [ key: string ]: string } = {};
-        x['Modus'] = '?';
-        x['P-Ist'] = '?';
-        x['P-Soll'] = '?';
-        x['P-Min/Max'] = '?';
-        x['4..20mA Soll'] = '?';
-        x['4..20mA Ist'] = '?';
-        x['Energie(Tag)'] = '?';
-        x['Energie(Gesamt)'] = '?';
 
-        // console.log(v.boiler);
-
-        for (const att of Object.getOwnPropertyNames(x)) {
-            let val = '?';
-            try {
+        try {
+            const mode = v.boiler.controller.mode;
+            x['Energie(Tag)'] = '?';
+            x['Modus'] = mode;
+            switch (mode) {
+                case 'off': {
+                    break;
+                }
+                case 'power': {
+                    x['P-Ist'] = '?';
+                    x['P-Gewünscht'] = '?';
+                    break;
+                }
+                case 'smart': {
+                    x['P-Soll'] = '?';
+                    x['P-Ist'] = '?';
+                    x['EBat-Min'] = '?';
+                    x['P-Min/Max'] = '?';
+                    break;
+                }
+            }
+            if (this._authService.user.isAdmin) {
+                x['4..20mA Soll'] = '?';
+                x['4..20mA Ist'] = '?';
+                x['Energie(Gesamt)'] = '?';
+            }
+            for (const att of Object.getOwnPropertyNames(x)) {
+                let val = '?';
                 switch (att) {
                     case 'Modus': {
                         const m = v.boiler.controller;
@@ -216,16 +233,43 @@ export class BoilerComponent implements OnInit, OnDestroy {
                         break;
                     }
                     case 'P-Soll': {
+                        const o = v.boiler.controller;
+                        if (o && o.setpointPower >= 0) {
+                            const dt = Date.now() - o.createdAt.getTime();
+                            if (dt < 10000) {
+                                val = '' + Math.round(o.setpointPower) + 'W (' + this.ageToString(o.createdAt) + ')';
+                                break;
+                            }
+                        }
+                        val = '?';
+                        break;
+                    }
+                    case 'P-Gewünscht': {
                         const p = v.boiler.controller.parameter;
                         if (p && p.desiredWatts >= 0) {
                             val = '' + p.desiredWatts + 'W (' + this.ageToString(v.boiler.controller.createdAt) + ')';
                         }
                         break;
                     }
+                    case 'EBat-Min': {
+                        const p = v.boiler.controller.parameter;
+                        if (v.boiler.controller.mode === ControllerMode.smart) {
+                            val = '' + p.smart.minEBatPercent + '% (' + this.ageToString(v.boiler.controller.createdAt) + ')';
+                        } else {
+                            val = '-';
+                        }
+                        break;
+                    }
                     case 'P-Min/Max': {
                         const p = v.boiler.controller.parameter;
-                        if (p && p.maxWatts >= 0 && p.minWatts >= 0) {
-                            val = '' + p.minWatts + 'W ..' + p.maxWatts + 'W (' + this.ageToString(v.boiler.controller.createdAt) + ')';
+                        if (v.boiler.controller.mode === ControllerMode.smart) {
+                            if (p && p.smart && p.smart.maxWatts >= 0 && p.smart.minWatts >= 0) {
+                                val = '' + p.smart.minWatts + 'W .. ' + p.smart.maxWatts + 'W (' + this.ageToString(v.boiler.controller.createdAt) + ')';
+                            }
+                        } else {
+                            if (p && p.maxWatts >= 0 && p.minWatts >= 0) {
+                                val = '' + p.minWatts + 'W .. ' + p.maxWatts + 'W (' + this.ageToString(v.boiler.controller.createdAt) + ')';
+                            }
                         }
                         break;
                     }
@@ -251,10 +295,11 @@ export class BoilerComponent implements OnInit, OnDestroy {
                     }
                     default: console.log('unsupported attribute ' + att); break;
                 }
-            } catch (err) {
-                console.log(err);
+                x[att] = val;
             }
-            x[att] = val;
+
+        } catch (err) {
+            console.log(err);
         }
         a.infos = this.createAccordionInfo(x);
     }

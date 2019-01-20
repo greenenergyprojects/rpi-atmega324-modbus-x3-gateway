@@ -2,31 +2,36 @@
 import { DataRecord } from '../data-record';
 import { IControllerParameter, ControllerParameter } from './controller-parameter';
 import { ControllerMode } from './controller-mode';
+import { SmartModeValues, ISmartModeValues } from './smart-mode-values';
 
 export interface IControllerStatus {
-    createdAt:     Date | number | string;
-    parameter:     IControllerParameter;
-    mode:          ControllerMode;
-    activePower:   number;
-    energyDaily:   number;
-    energyTotal:   number;
+    createdAt:       Date | number | string;
+    parameter:       IControllerParameter;
+    mode:            ControllerMode;
+    smartModeValues: ISmartModeValues;
+    setpointPower:   number;
+    activePower:     number;
+    energyDaily:     number;
+    energyTotal:     number;
 }
 
 
 export class ControllerStatus extends DataRecord<IControllerStatus> implements IControllerStatus {
 
-    private _createdAt:    Date;
-    private _parameter:    ControllerParameter;
-    private _mode:         ControllerMode;
-    private _activePower:  number;
-    private _energyDaily:  number;
-    private _energyTotal:  number;
+    private _createdAt:       Date;
+    private _parameter:       ControllerParameter;
+    private _mode:            ControllerMode;
+    private _smartModeValues: SmartModeValues;
+    private _setpointPower:   number;
+    private _activePower:     number;
+    private _energyDaily:     number;
+    private _energyTotal:     number;
 
     constructor (data: IControllerStatus) {
         super(data);
         try {
             const missing = DataRecord.getMissingAttributes( data, [
-                'createdAt', 'parameter', 'mode', 'activePower', 'energyDaily', 'energyTotal'
+                'createdAt', 'parameter', 'mode', 'smartModeValues', 'setpointPower', 'activePower', 'energyDaily', 'energyTotal'
             ]);
             if (missing) {
                 throw new Error('missing attribute ' + missing);
@@ -39,10 +44,12 @@ export class ControllerStatus extends DataRecord<IControllerStatus> implements I
                     (<any>this)['_' + a] = DataRecord.parseEnum<ControllerMode>(
                         data, {attribute: a, validate: true, validValues: DataRecord.enumToStringValues(ControllerMode) }
                     );
+                } else if ( [ 'smartModeValues' ].indexOf(a) >= 0 ) {
+                    this._smartModeValues = new SmartModeValues(data.smartModeValues);
                 } else if ( [ 'parameter' ].indexOf(a) >= 0 ) {
                     const x: IControllerParameter = (<any>data)[a];
                     (<any>this)['_' + a] = new ControllerParameter(x);
-                } else if ( [ 'activePower', 'energyDaily', 'energyDaily', 'energyTotal' ].indexOf(a) >= 0 ) {
+                } else if ( [ 'setpointPower', 'activePower', 'energyDaily', 'energyDaily', 'energyTotal' ].indexOf(a) >= 0 ) {
                     (<any>this)['_' + a] = DataRecord.parseNumber(data, { attribute: a, validate: true, min: 0 } );
                 } else {
                     throw new Error('attribute ' + a + ' not found in data:IControllerStatus');
@@ -59,12 +66,14 @@ export class ControllerStatus extends DataRecord<IControllerStatus> implements I
 
     public toObject (convertDate = false): IControllerStatus {
         const rv: IControllerStatus = {
-            createdAt:   convertDate ? this._createdAt.getTime() : this._createdAt,
-            parameter:   this._parameter.toObject(convertDate),
-            mode:        this._mode,
-            activePower: this._activePower,
-            energyDaily: this._energyDaily,
-            energyTotal: this._energyTotal
+            createdAt:       convertDate ? this._createdAt.getTime() : this._createdAt,
+            parameter:       this._parameter.toObject(convertDate),
+            mode:            this._mode,
+            smartModeValues: this._smartModeValues.toObject(convertDate),
+            setpointPower:   this._setpointPower,
+            activePower:     this._activePower,
+            energyDaily:     this._energyDaily,
+            energyTotal:     this._energyTotal
         };
         return rv;
     }
@@ -79,6 +88,14 @@ export class ControllerStatus extends DataRecord<IControllerStatus> implements I
 
     public get mode (): ControllerMode {
         return this._mode;
+    }
+
+    public get smartModeValues (): SmartModeValues {
+        return this._smartModeValues;
+    }
+
+    public get setpointPower (): number {
+        return this._setpointPower;
     }
 
     public get activePower (): number {

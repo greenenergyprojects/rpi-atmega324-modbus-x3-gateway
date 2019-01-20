@@ -60,4 +60,8 @@ export class AuthService {
         this._userSubject.next(value);
     }
 
+    public get user (): User {
+        return this._user;
+    }
+
 }

@@ -8,7 +8,7 @@ export interface IUserLogin {
 
 export interface IUserAuth extends IUser {
     userid: string;
-    token: { type: 'remote' | 'asscess', value: string };
+    token: { type: 'remote' | 'access', value: string };
     surename?: string;
     firstname?: string;
     isAdmin?: boolean;
@@ -28,7 +28,7 @@ export class User extends DataRecord<IUser> implements IUser {
     private _firstname?: string;
     private _isAdmin?: boolean;
 
-    constructor (data: IUser) {
+    constructor (data: IUser | IUserAuth) {
         super(data);
         try {
             let attCnt = 0;
@@ -41,6 +41,8 @@ export class User extends DataRecord<IUser> implements IUser {
                     (<any>this)['_' + a] = DataRecord.parseString(data, { attribute: a, validate: true } );
                 } else if ( [ 'isAdmin' ].indexOf(a) >= 0 ) {
                     (<any>this)['_' + a] = DataRecord.parseBoolean(data, { attribute: a, validate: true } );
+                } else if ( [ 'token' ].indexOf(a) >= 0 ) {
+                    attCnt--;
                 } else {
                     throw new Error('attribute ' + a + ' not found in data:IUser');
                 }

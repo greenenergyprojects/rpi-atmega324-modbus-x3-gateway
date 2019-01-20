@@ -108,7 +108,10 @@ export class TestComponent implements OnInit, OnDestroy {
 
             x1 = v.getBatteryPowerAsNumber();
             if (x1 === null) {
-                console.log('getBatteryPower', x1);
+                console.log('getBatteryPower', new Date(), v.froniussymo);
+                // const now = new Date();
+                // debugger;
+                // x1 = v.getBatteryPowerAsNumber(25, now);
                 v1 = { value: '?' };
                 v2 = { value: '?' };
             } else {

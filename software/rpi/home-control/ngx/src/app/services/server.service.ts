@@ -131,19 +131,19 @@ export class ServerService {
                 if (this._autoLogin) {
                     userLogin = this._autoLogin;
                     this._autoLogin = undefined;
-                    console.log('auto login with ', userLogin);
+                    // console.log('auto login with ', userLogin);
                 } else {
                     userLogin = await this.performModalLoginDialog(config);
                 }
                 if (!userLogin.passwordType) {
                     userLogin.passwordType = 'sha-256';
                     userLogin.password = generateHash(userLogin.password, { algorithm: 'sha256'} );
-                    console.log(userLogin);
+                    // console.log(userLogin);
                 }
                 try {
                     console.log('login as user ' + userLogin.userid);
                     response = <IUserAuth> await this.performHttpPostAndGetJson(this._authUri, userLogin);
-                    console.log('... get response', response);
+                    // console.log('... get response', response);
                     if (!response.userid || !response.token.value) {
                         console.log('Error: invalid response from auth server');
                     }
@@ -158,16 +158,18 @@ export class ServerService {
         }
 
         try {
-            const response2: any = await this.performHttpGetJson('/auth');
-            if (response2.htlid !== this._authService.userid || !response2.accessToken || !response2.user) {
+            const response2 = <IUserAuth>await this.performHttpGetJson('/auth');
+            if (response2.userid !== this._authService.userid || !response2.token) {
+                console.log(response2, this._authService.userid);
                 throw new Error('invalid get auth response');
             }
-            if (!response2.htlid || !response2.accessToken || !response2.user) {
-                console.log('Error: invalid response from auth server');
+            if (!response2.userid || !response2.token || response2.token.type !== 'access' || !response2.token.value) {
+                console.log('Error: invalid response from auth server', response2);
             }
-            this._authService.userid = response2.htlid;
-            this._authService.token = response2.accessToken;
-            this._authService.user = new User(response2.user);
+            this._authService.userid = response2.userid;
+            this._authService.token = response2.token.value;
+            this._authService.user = new User(response2);
+            console.log(this._authService.user);
         } catch (err) {
             if (err instanceof HttpErrorResponse && err.status === 401) {
                 this.extractAuthUriFromHeader(err.headers);

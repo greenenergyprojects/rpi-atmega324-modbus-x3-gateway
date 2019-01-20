@@ -268,7 +268,10 @@ export class Monitor {
             }
 
             if (boiler) {
-                x.boiler = boiler.toObject();
+                const r = boiler.toObject();
+                if (r) {
+                    x.boiler = r;
+                }
             }
 
             if (saiameter)    {

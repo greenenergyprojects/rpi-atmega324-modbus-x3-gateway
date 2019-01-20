@@ -31,6 +31,9 @@ export abstract class DataRecord<T> {
                 if (!options.validate && (value === undefined || value === null)) {
                     return null;
                 }
+                if (options.allowNull && value === null) {
+                    return value;
+                }
                 if (options.allowNaN && Number.isNaN(value)) {
                     return value;
                 }
@@ -206,6 +209,7 @@ export interface IParseEnumOptions<T> {
 export interface IParseNumberOptions {
     attribute: string;
     validate?: boolean;
+    allowNull?: boolean;
     allowNaN?: boolean;
     allowString?: boolean;
     min?: number;

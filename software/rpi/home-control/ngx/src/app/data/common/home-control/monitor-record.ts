@@ -182,17 +182,18 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
     }
 
 
-    public getBatteryPowerAsNumber (maxAgeSeconds = 20): number | null {
+    public getBatteryPowerAsNumber (maxAgeSeconds = 20, now?: Date): number | null {
         if (!this._froniussymo) { return null; }
         const inv = this._froniussymo.inverter;
         const invEx = this._froniussymo.inverterExtension;
         if (!inv || !inv.registerValues || !invEx || !invEx.registerValues) { return null; }
 
-        const tMin = Date.now() - maxAgeSeconds * 1000;
+        now = now || new Date();
+        const tMin = now.getTime() - maxAgeSeconds * 1000;
         const ts = inv.registerValues.getMinMaxTimeMillis(invEx.registerValues);
         if (!ts) { return null; }
         const dt = ts.tMax - ts.tMin;
-        if (!(dt >= 0 && dt <= 2000) || ts.tMin < tMin) { return null; }
+        if (!(dt >= 0 && dt <= 3000) || ts.tMin < tMin) { return null; }
 
         // const pInv = this._inverter.regs.pf.at ? this._inverter.regs.pf.value : null;
         const pInv = inv.dcw.value;
@@ -207,7 +208,7 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
         return pBatt;
     }
 
-    public getBatteryNominalEnergyAsNumber (maxAgeSeconds = 20000): number | null {
+    public getBatteryNominalEnergyAsNumber (maxAgeSeconds = 7000): number | null {
         if (!this._froniussymo) { return null; }
         const np = this._froniussymo.nameplate;
         if (!np || !np.registerValues) { return null; }
@@ -342,6 +343,24 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
         const x = nibe.getCompressorInPowerAsNumber(maxAgeSeconds);
         if (x === null) { return null; }
         return x;
+    }
+
+    public getBoilerActivePower (maxAgeSeconds = 20): number | null {
+        const boiler = this._boiler;
+        if (!boiler) { return null; }
+        return boiler.getActivePowerAsNumber(maxAgeSeconds);
+    }
+
+    public getBoilerEnergyDaily (maxAgeSeconds = 20): number | null {
+        const boiler = this._boiler;
+        if (!boiler) { return null; }
+        return boiler.getEnergyDailyAsNumber(maxAgeSeconds);
+    }
+
+    public getBoilerEnergyTotal (maxAgeSeconds = 20): number | null {
+        const boiler = this._boiler;
+        if (!boiler) { return null; }
+        return boiler.getEnergyTotalAsNumber(maxAgeSeconds);
     }
 
 }
