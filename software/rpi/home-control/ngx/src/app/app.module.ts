@@ -11,13 +11,13 @@ import { AppComponent } from './app.component';
 import { ModalLoginComponent } from './modals/modal-login';
 import { SyncButtonComponent } from './components/sync-button.component';
 import { OverviewComponent } from './components/overview.component';
-import { OverviewChartComponent } from './components/overview-chart.component';
+// import { OverviewChartComponent } from './components/overview-chart.component';
 import { BoilerComponent } from './components/boiler.component';
 import { BoilerControllerComponent } from './components/boiler-controller.component';
 import { Nibe1155ControllerComponent } from './components/nibe1155-controller.component';
 import { FroniusSymoComponent } from './components/fronius-symo.component';
 import { Nibe1155Component } from './components/nibe1155.component';
-import { TestComponent } from './components/test.component';
+import { ChartComponent } from './components/chart.component';
 
 import { ConfigService } from './services/config.service';
 import { DataService } from './services/data.service';
@@ -36,11 +36,11 @@ library.add(faEye, faEyeSlash, faSpinner, faSync);
     declarations: [
         ValidatorDirective, FilterPipe,
         NavbarComponent, AppComponent, ModalLoginComponent, SyncButtonComponent,
-        OverviewComponent, OverviewChartComponent,
+        OverviewComponent,
+        ChartComponent,
         BoilerComponent, BoilerControllerComponent, Nibe1155ControllerComponent,
         FroniusSymoComponent,
         Nibe1155Component,
-        TestComponent
     ],
     imports: [
         BrowserModule,

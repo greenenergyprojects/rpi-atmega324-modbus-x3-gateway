@@ -1,186 +1,357 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy } from '@angular/core';
 import { DataService } from '../services/data.service';
-import { ConfigService } from '../services/config.service';
-import { MonitorRecord, IMonitorRecord } from '../data/common/home-control/monitor-record';
 import { Subscription } from 'rxjs';
+import { MonitorRecord } from '../data/common/home-control/monitor-record';
+import { ControllerMode } from '../data/common/hot-water-controller/controller-mode';
+import { HeatpumpControllerMode } from '../data/common/nibe1155/nibe1155-controller';
 
 @Component({
     selector: 'app-overview',
-    templateUrl: 'overview.component.html',
-    styles: [ `
-        .form-group {
-            margin-bottom: 0.5rem;
-        }
-        .input-group {
-            margin-bottom: 1rem;
-        }
-        .input-group input {
-            background-color: white;
-        }
-        .filter {
-            min-width: 1rem;
-            text-align: center;
-        }
-        .table-sm {
-            font-size: 0.75rem;
-        }
+    templateUrl: './overview.component.html',
+    styles: [`
+        .bgred { background-color: #ffcccc; }
+        .bggreen { background-color: #ccffcc; }
     `]
 })
 export class OverviewComponent implements OnInit, OnDestroy {
 
+    public show: IDataBlock [] = [];
+
     private _monitorValuesSubsciption: Subscription;
-    private _data: MonitorRecord;
 
-    private _accordionData: {
-        data: IAccordion;
-    };
-
-    public accordions: IAccordion [];
-
-    public constructor (private _dataService: DataService, private _configService: ConfigService) {
-        const x = this._configService.pop('overview:__accordionData');
-        if (x) {
-            this._accordionData = x;
-        } else {
-            this._accordionData = {
-                data: { infos: [], filter: {isDisabled: false, value: '', filter: null }, isOpen: false, header: 'Daten'}
-            };
-        }
-        this._accordionData.data.filter.filter = (data) => this.filter(this._accordionData.data, data);
+    constructor (private dataService: DataService) {
     }
 
     public ngOnInit () {
         this._monitorValuesSubsciption =
-            this._dataService.monitorObservable.subscribe((value) => this.handleMonitorValues(value));
-
-        this._data = null;
-        // this._subsciption =
-        //     this.dataService.froniusMeterObservable.subscribe((value) => this.handleValues(value));
-        // this._dataService.getMonitorData({ latest: true }).subscribe( (data) => {
-        //     this.handleMonitorData(data);
-        // });
-        this.accordions = [];
-        for (const a in this._accordionData) {
-            if (!this._accordionData.hasOwnProperty(a)) { continue; }
-            this.accordions.push(this._accordionData[a]);
-        }
+            this.dataService.monitorObservable.subscribe((value) => this.handleMonitorValues(value));
     }
 
     public ngOnDestroy() {
         this._monitorValuesSubsciption.unsubscribe();
         this._monitorValuesSubsciption = null;
-        this._configService.push('overview:__accordionData', this._accordionData);
-        this._data = null;
     }
+
 
     private handleMonitorValues (v: MonitorRecord) {
-        if (v) {
-            this._data = v;
-            this._accordionData.data.infos = this.createAccordionInfo(this._data.toObject());
-        } else {
-            this._data = null;
-            this._accordionData.data.infos = [];
+        this.show = [];
+        if (!v) { return; }
+
+        let x1: number;
+        let x2: number;
+        let x3: number;
+        let v1: IValue;
+        let v2: IValue;
+        let v3: IValue;
+
+        {
+            const pv: IDataBlock = {
+                values: []
+            };
+
+            x1 = v.getLoadActivePowerAsNumber();
+            if (x1 === null || x2 === null) {
+                console.log('getLoadActivePower', x1);
+                v1 = { value: '?' };
+            } else {
+                v1 = { value: Math.round(x1) + 'W' };
+            }
+            pv.values.push({ key: 'Verbrauch', values: [ v1 ] });
+
+            x1 = v.getPvActivePowerAsNumber();
+            if (x1 === null) {
+                console.log('getPvSouthActivePower', x1);
+                v1 = { value: '?' };
+            } else {
+                v1 = { value: Math.round(x1) + 'W' };
+            }
+            x2 = v.getPvEnergyDailyAsNumber();
+            if (x2 === null) {
+                console.log('getPvSouthEnergyDaily', x2);
+                v2 = { value: '?' };
+            } else {
+                v2 = { value: Math.round(x2 / 10) / 100 + 'kWh' };
+            }
+            pv.values.push({ key: 'PV', values: [ v1, v2 ]});
+
+            x1 = v.getPvSouthActivePowerAsNumber();
+            if (x1 === null) {
+                console.log('getPvSouthActivePower', x1);
+                v1 = { value: '?' };
+            } else {
+                v1 = { value: Math.round(x1) + 'W' };
+            }
+            x2 = v.getPvSouthEnergyDailyAsNumber();
+            if (x2 === null) {
+                console.log('getPvSouthEnergyDaily', x2);
+                v2 = { value: '?' };
+            } else {
+                v2 = { value: Math.round(x2 / 10) / 100 + 'kWh' };
+            }
+            pv.values.push({ key: 'PV-S', values: [ v1, v2 ] });
+
+            x1 = v.getPvEastWestActivePowerAsNumber();
+            if (x1 === null) {
+                console.log('getPvEastWestActivePower', x1);
+                v1 = { value: '?' };
+            } else {
+                v1 = { value: Math.round(x1) + 'W' };
+            }
+            x2 = v.getPvEastWestEnergyDailyAsNumber();
+            if (x2 === null) {
+                console.log('getPvEastWestEnergyDaily', x2);
+                v2 = { value: '?' };
+            } else {
+                v2 = { value: Math.round(x2 / 10) / 100 + 'kWh' };
+            }
+            pv.values.push({ key: 'PV-E/W', values: [ v1, v2 ] });
+
+            x1 = v.getBatteryPowerAsNumber();
+            if (x1 === null) {
+                console.log('getBatteryPower', new Date(), v.froniussymo);
+                // const now = new Date();
+                // debugger;
+                // x1 = v.getBatteryPowerAsNumber(25, now);
+                v1 = { value: '?' };
+                v2 = { value: '?' };
+            } else {
+                v1 = { value: Math.round(x1) + 'W', classes: { bgred: x1 > 0, bggreen: x1 < 0 }  };
+                v2 = { value: x1 > 0 ? 'Entladet' : (x1 < 0 ? 'Ladet' : 'Hold') };
+            }
+            // const s = v.getBatteryStateAsString();
+            // if (s === 'CALIBRATING's)
+            pv.values.push({ key: 'Bat-P', values: [ v1, v2 ]});
+
+            x1 = v.getBatteryEnergyInPercentAsNumber();
+            if (x1 === null) {
+                console.log('getBatteryEnergyInPercent', x1);
+                v1 = { value: '?' };
+            } else {
+                v1 = { value: x1 + '%' };
+            }
+            x2 = v.getBatteryNominalEnergyAsNumber();
+            if (x2 === null) {
+                console.log('getBatteryNominalEnergy', x2);
+                v2 = { value: '?' };
+            } else {
+                v2 = { value: x2 / 1000 + 'kWh' };
+            }
+
+            v3 = { value: v.getBatteryStateAsString() };
+            // if (s === 'CALIBRATING's)
+            pv.values.push({ key: 'Bat-E', values: [ v1, v2, v3 ]});
+
+            x1 = v.getGridActivePowerAsNumber();
+            if (x1 === null) {
+                console.log('getGridActivePower', x1);
+                v1 = { value: '?' };
+                v2 = { value: '?' };
+            } else {
+                v1 = { value: Math.round(x1) + 'W', classes: { bgred: x1 > 0, bggreen: x1 < 0} };
+                v2 = { value: x1 > 0 ? 'Bezug' : 'Lieferung' };
+            }
+            pv.values.push({ key: 'Netz', values: [ v1, v2 ]});
+
+            x2 = v.getEInDailyAsNumber();
+            if (x2 === null) {
+                console.log('getEInDaily', x2);
+                v2 = { value: '?' };
+            } else {
+                v2 = { value: (Math.round(x2 / 10) / 100) + 'kWh' };
+            }
+            x3 = v.getEOutDailyAsNumber();
+            if (x3 === null) {
+                console.log('getEOutDaily', x3);
+                v3 = { value: '?' };
+            } else {
+                v3 = { value: (Math.round(x3 / 10) / 100) + 'kWh' };
+            }
+            pv.values.push({ key: 'E-in / E-out', values: [ v2, v3 ]});
+
+            this.show.push(pv);
         }
-    }
 
-    public handleMonitorData (data: IMonitorRecord []) {
-        if (!Array.isArray(data) || data.length === 0) {
-            this._data = null;
-            this._accordionData.data.infos = [];
+        {
+            const nibe: IDataBlock = {
+                values: []
+            };
+            const n = v.nibe1155;
 
-        } else {
-            const v = data[data.length - 1];
-            this._data = new MonitorRecord(v);
-            this._accordionData.data.infos = this.createAccordionInfo(this._data.toObject());
-        }
-    }
+            x1 = n ? n.getOutdoorTempAsNumber() : null;
+            if (x1 === null) {
+                console.log('getOutdoorTempAsNumber', x1);
+                v1 = { value: '?' };
+            } else {
+                v1 = { value: (Math.round(x1 * 10) / 10) + '°C' };
+            }
+            nibe.values.push({ key: 't-Außen', values: [ v1 ] });
 
+            const mode = n.controller ? n.controller.currentMode : null;
+            if (mode === HeatpumpControllerMode.off) {
+                nibe.values.push({ key: 'Wärmepumpe', values: [ { value: 'Aus' } ] });
 
-    public onAccordionOpenChanged (acc: IAccordion, open: boolean) {
-        console.log(acc, open);
-    }
+            } else {
 
-
-    public async onButtonRefresh (a: IAccordion) {
-        if (a === this._accordionData.data) {
-            this._dataService.getMonitorData({ latest: true }).then( (values) => {
-                this.handleMonitorData(values);
-            }).catch ( (err) => { console.log(err); });
-        }
-    }
-
-    public changeFilter (event, a: IAccordion) {
-        a.filter.value = event;
-    }
-
-    public onButtonFilter (a: IAccordion) {
-        console.log('onButtonFilter', a);
-        if (a && a.filter) {
-            a.filter.isDisabled = !a.filter.isDisabled;
-        }
-    }
-
-    private filter (a: IAccordion, items: IInfo []): any [] {
-        let rv: any [];
-        if (a.filter.isDisabled || !a.filter.value) {
-            rv = items;
-        } else {
-            rv = [];
-            for (const i of items) {
-                if (typeof i.key !== 'string') { continue; }
-                if (i.key === 'createdAt' || i.key.indexOf(a.filter.value) !== -1) {
-                    rv.push(i);
+                x1 = n ? n.getFSetpointAsNumber() : null;
+                if (x1 === null) {
+                    console.log('nibe1155.controller.fSetpoint', n.controller);
+                    v1 = { value: '?' };
+                } else {
+                    v1 = { value: (Math.round(x1 * 10) / 10) + 'Hz' };
                 }
-            }
-        }
-        return rv;
-    }
+                nibe.values.push({ key: 'f-Sollwert', values: [ v1 ] });
 
-    private createAccordionInfo (data: any, width?: string): { key: string, value: string, width: string } [] {
-        const rv: { key: string, value: string, width: string } [] = [];
-        let kLength = 0;
-        for (const k in data) {
-            if (!data.hasOwnProperty(k)) { continue; }
-            let v = data[k];
-            if (v instanceof Date) {
-                v = v.toLocaleString();
+                x1 = n ? n.getCompressorFrequencyAsNumber() : null;
+                if (x1 === null) {
+                    console.log('getCompressorFrequencyAsNumber', x1);
+                    v1 = { value: '?' };
+                } else {
+                    v1 = { value: (Math.round(x1 * 10) / 10) + 'Hz' };
+                }
+                x2 = n ? n.getCompressorInPowerAsNumber() : null;
+                if (x2 === null) {
+                    console.log('getCompressorInPowerAsNumber', x2);
+                    v2 = { value: '?' };
+                } else {
+                    v2 = { value: (Math.round(x2 * 10) / 10) + 'W' };
+                }
+
+                nibe.values.push({ key: 'Kompressor', values: [ v1, v2 ]});
+
+                x1 = n ? n.getSupplyS1TempAsNumber() : null;
+                if (x1 === null) {
+                    console.log('getSupplyS1TempAsNumber', x1);
+                    v1 = { value: '?' };
+                } else {
+                    v1 = { value: Math.round(x1 * 10) / 10 + '°C' };
+                }
+                x2 = n ? n.getSupplyS1ReturnTempAsNumber() : null;
+                if (x2 === null) {
+                    console.log('getSupplyS1ReturnTempAsNumber', x2);
+                    v2 = { value: '?' };
+                } else {
+                    v2 = { value: (Math.round(x2 * 10) / 10) + '°C' };
+                }
+                nibe.values.push({ key: 'Vor/Rücklauf', values: [ v1, v2 ]});
             }
-            rv.push( { key: k, value: v, width: width } );
-            kLength = Math.max(kLength, k.length);
-        }
-        if (!width) {
-            const w = (kLength / 2 + 1) + 'rem';
-            for (const d of rv) {
-                d.width = w;
+
+            x1 = n ? n.getBrineInTempAsNumber() : null;
+            x2 = n ? n.getBrineOutTempAsNumber() : null;
+            x3 = n ? n.getBrinePumpSpeedAsNumber() : null;
+            if (x3 > 0) {
+            if (x1 === null) {
+                    console.log('getBrineInTempAsNumber', x1);
+                    v1 = { value: '?' };
+                } else {
+                    v1 = { value: (Math.round(x1 * 10) / 10) + '°C' };
+                }
+
+                if (x2 === null) {
+                    console.log('getBrineOutTempAsNumber', x2);
+                    v2 = { value: '?' };
+                } else {
+                    v2 = { value: (Math.round(x2 * 10) / 10) + '°C' };
+                }
+                if (x3 === null) {
+                    console.log('getBrinePumpSpeedAsNumber', x3);
+                    v3 = { value: '?' };
+                } else {
+                    v3 = { value: Math.round(x3) + '%' };
+                }
+                nibe.values.push({ key: 'Sole', values: [ v1, v2, v3 ]});
             }
+
+            x1 = n ? n.getSupplyTempAsNumber() : null;
+            if (x1 === null) {
+                console.log('getSupplyTempAsNumber', x1);
+                v1 = { value: '?' };
+            } else {
+                v1 = { value: Math.round(x1 * 10) / 10 + '°C' };
+            }
+            x2 = n ? n.getSupplyPumpSpeedAsNumber() : null;
+            if (x2 === null) {
+                console.log('getSupplyPumpSpeedAsNumber', x2);
+                v2 = { value: '?' };
+            } else {
+                v2 = { value: Math.round(x2 * 10) / 10 + '%' };
+            }
+            nibe.values.push({ key: 'Puffer', values: [ v1, v2 ]});
+
+            x1 = n ? n.getEnergyCompAndElHeaterAsNumber() : null;
+            if (x1 === null) {
+                console.log('getEnergyCompAndElHeaterAsNumber', x1);
+                v1 = { value: '?' };
+            } else {
+                v1 = { value: Math.round(x1 * 10000) / 10 + 'kWh' };
+            }
+            nibe.values.push({ key: 'E-Wärme', values: [ v1 ]});
+
+            this.show.push(nibe);
+
         }
-        return rv;
+
+
+        {
+            const boiler: IDataBlock = {
+                values: []
+            };
+            const b = v.boiler;
+
+            x1 = b ? b.getActivePowerAsNumber(20) : null;
+            if (x1 === null) {
+                console.log('getActivePowerAsNumber', b);
+                v1 = { value: '?' };
+            } else {
+                v1 = { value: Math.round(x1) + 'W' };
+            }
+            x2 = b ? b.getEnergyDailyAsNumber(20) : null;
+            if (x2 === null) {
+                console.log('getEnergyDailyAsNumber', b);
+                v2 = { value: '?' };
+            } else {
+                v2 = { value: Math.round(x2 / 10) / 100 + 'kWh' };
+            }
+            const s1 = b ? b.getModeAsString(20) : null;
+            if (s1 === null) {
+                v3 = { value: '?' };
+            } else {
+                v3 = { value: s1 };
+            }
+
+
+            boiler.values.push({ key: 'Boiler', values: [ v1, v2, v3 ]});
+
+            // if (m === null) {
+            //     console.log('boiler.monitorRecord', b);
+            //     v1 = { value: '?' };
+            //     v2 = { value: '?' };
+            // } else {
+            //     v1 = { value: Math.round(m.activePower.value) + m.activePower.unit };
+            //     v2 = { value: m.mode };
+            // }
+
+
+            this.show.push(boiler);
+        }
+
+
     }
 
 }
 
-interface IFilter {
-    isDisabled: boolean;
+interface IValue {
     value: string;
-    filter: (items: any []) => any [];
+    classes?: {
+        bgred?: boolean,
+        bggreen?: boolean
+    };
 }
 
-interface ITableRow {
-    id: string;
-    text: string [];
-}
-
-interface IInfo {
+interface IData {
     key: string;
-    value: string;
-    width: string;
+    values: IValue [];
 }
 
-interface IAccordion {
-    isOpen: boolean;
-    header: string;
-    infos: IInfo [];
-    table?: { headers: string [], rows: ITableRow [] };
-    filter?: IFilter;
-    showComponent?: { name: string, config?: any, data?: any } [];
+interface IDataBlock {
+    values: IData [];
 }

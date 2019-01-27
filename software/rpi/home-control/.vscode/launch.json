@@ -17,6 +17,7 @@
             "sourceMaps": true,
             "preLaunchTask": "build",
             "smartStep": true,
+            "autoAttachChildProcesses": true,
             "skipFiles": [
                 "${workspaceFolder}/node_modules/**/*.js"
             ],

@@ -1,6 +1,7 @@
 {
+    "shutdownMillis": 1000,
     "server": {
-        "start": false,
+        "start": true,
         "port": 8080,
         "morgan": {
             "disabled": true,
@@ -17,9 +18,9 @@
     },
     "database-users": {
         "users": [
-            { "userid": "test", "password": "geheim" },
-            { "userid": "manfred", "isAdmin": true, "passwordType": "sha-256", "password": "ec53103cc64f4c2e1a97450d835e1e19c81b68cdd4ea8d48863ed232f73c916d" }
-            { "userid": "sabine", "passwordType": "raw", "password": "xzz" }
+            { "userid": "test", "disabled": false, "passwordType": "raw", "password": "geheim" },
+            { "userid": "manfred", "isAdmin": true, "passwordType": "sha-256", "password": "ec53103cc64f4c2e1a97450d835e1e19c81b68cdd4ea8d48863ed232f73c916d" },
+            { "userid": "sabine", "passwordType": "sha-256", "password": "def5c2d284e33ab044b533c719523ef394b9f113250e88aabd97e7ddf6555c5d" }
         ]
     },
     "froniusSymo": {
@@ -55,15 +56,18 @@
         "debugFile": { "path": "/var/lib/home-control/home-control-debug_%Y-%M-%D.csv" },
         "tempFile": { "path": "/var/lib/home-control/.monitor-temp", "backups": 3 }
     },
-    "statistics": {
-        "disabled": false,
+    "statistics-old": {
+        "disabled": true,
         "timeslotSeconds": 60,
         "tmpFile": "/var/lib/home-control/.tmpDatabase",
         "dbtyp": "csvfile",
         "csvfile": { "filename": "/var/lib/home-control/home-control-data_%Y-%M-%D.csv" }
     },
+    "statistics": {
+        "disabled": false
+    },
     "pi-technik": {
-        "disabled": false,
+        "disabled": true,
         "host": "192.168.1.4",
         "port": 80,
         "path": "/data",
@@ -71,7 +75,7 @@
         "timeoutMillis": 1000
     },
     "nibe1155": {
-        "disabled": false,
+        "disabled": true,
         "host": "192.168.1.202",
         "port": 8080,
         "path": "/data/monitor",
@@ -80,7 +84,7 @@
         "timeoutMillis": 1000
     },
     "hot-water-controller": {
-        "disabled": false,
+        "disabled": true,
         "host": "192.168.1.5",
         "port": 80,
         "path": "/data/monitor",

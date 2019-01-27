@@ -8,10 +8,10 @@ import { sprintf } from 'sprintf-js';
 
 @Component({
     selector: 'app-overview-chart',
-    templateUrl: 'overview-chart.component.html',
+    templateUrl: 'overview-chart-old.component.html',
     styles: [ ``]
 })
-export class OverviewChartComponent implements OnInit, OnDestroy {
+export class OverviewChartComponentOld implements OnInit, OnDestroy {
 
     @ViewChild(BaseChartDirective)
     public chart: BaseChartDirective;

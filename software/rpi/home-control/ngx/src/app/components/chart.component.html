@@ -1,0 +1,14 @@
+<div style="margin-top: 4.5em" class="container">
+    <div *ngFor="let chart of charts" style="display: block">
+        <canvas baseChart
+            [datasets]="chart.datasets"
+            [labels]="chart.labels"
+            [options]="chart.options"
+            [legend]="chart.legend"
+            [chartType]="chart.type"
+            [colors]="chart.colors"
+            (chartHover)="chart.hovered($event)"
+            (chartClick)="chart.clicked($event)">
+        </canvas>
+    </div>
+</div>

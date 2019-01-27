@@ -11,7 +11,8 @@ import { FroniusSymo } from './devices/fronius-symo';
 import { PiTechnik } from './devices/pi-technik';
 import { Nibe1155 } from './devices/nibe1155';
 import { ISaiaAle3Meter } from './data/common/saia-ale3-meter/saia-ale3-meter';
-import { Statistics } from './statistics';
+import { Statistics as OldStatistics } from './statistics';
+import { Statistics as NewStatistics } from './statistics/statistics';
 import { HotWaterController } from './devices/hot-water-controller';
 import { Nibe1155ModbusRegisters, Nibe1155ModbusIds } from './data/common/nibe1155/nibe1155-modbus-registers';
 import { Nibe1155Value } from './data/common/nibe1155/nibe1155-value';
@@ -19,6 +20,7 @@ import { MonitorRecord, IMonitorRecord } from './data/common/home-control/monito
 import { ICalculated } from './data/common/home-control/calculated';
 import { FroniusMeterTcp } from './devices/fronius-meter-tcp';
 import { IEnergyDaily, EnergyDaily } from './data/common/home-control/energy-daily';
+import { Main } from './main';
 
 interface IMonitorConfig {
     disabled?:            boolean;
@@ -364,10 +366,18 @@ export class Monitor {
                 pvSouthEnergyDaily:    this._pvSouthEnergyDaily.dailyEnergy,
                 pvEastWestEnergyDaily: this._pvEastWestEnergyDaily.dailyEnergy,
                 froniusSiteDaily:      froniusSiteDaily ? froniusSiteDaily.value : null,
-                pPvSouth:              pPvS.value
+                pPvSouth:              pPvS ? pPvS.value : null
             };
 
             const mr = new MonitorRecord(x);
+            const w = Main.getInstance().getRunningWorker('statistics');
+            if (w) {
+                w.send({ monitorRecord: x}, null, (err) => {
+                    if (err) {
+                        debug.warn('sending monitor record to statistics process fails\n%e', err);
+                    }
+                });
+            }
             this.saveTemp(mr);
             // debug.info('%o', mr.toObject());
             this._history.push(mr);
@@ -375,7 +385,7 @@ export class Monitor {
                 this._history.splice(0, 1);
             }
 
-            Statistics.getInstance().handleMonitorRecord(mr);
+            OldStatistics.getInstance().handleMonitorRecord(mr);
 
         } catch (err) {
             debug.warn('%e', err);

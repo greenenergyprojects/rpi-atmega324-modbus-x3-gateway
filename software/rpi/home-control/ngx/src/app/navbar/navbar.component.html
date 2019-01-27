@@ -1,19 +1,13 @@
-<nav class="navbar fixed-top navbar-expand-lg navbar-dark bg-dark">
+<nav class="navbar fixed-top navbar-expand-sm navbar-dark bg-dark">
     <a class="navbar-brand" href="#">Home Control</a>
     <button class="navbar-toggler" type="button" (click)="isCollapsed = !isCollapsed">
         <span class="navbar-toggler-icon"></span>
     </button>
-    <div class="navbar-collapse" id="navbarSupportedContent" [ngbCollapse]="isCollapsed">
-        <ul class="navbar-nav mr-auto">
+    <div class="navbar-collapse" [ngbCollapse]="isCollapsed">
+        <ul *ngIf="!menuItems" class="navbar-nav mr-auto">
             <li class="nav-item">
                 <a class="nav-link" routerLink="app/overview" routerLinkActive="active">Überblick</a>
             </li>
-            <!-- <li class="nav-item">
-                <a class="nav-link" routerLink="app/grid" routerLinkActive="active">Netz Ein/Aus</a>
-            </li> -->
-            <!-- <li class="nav-item">
-                <a class="nav-link" routerLink="app/froniusmeter" routerLinkActive="active">Froniusmeter</a>
-            </li> -->
             <li class="nav-item">
                 <a class="nav-link" routerLink="app/boiler" routerLinkActive="active">Boiler</a>
             </li>
@@ -22,6 +16,11 @@
             </li>
             <li class="nav-item">
                 <a class="nav-link" routerLink="app/froniussymo" routerLinkActive="active">Fronius-Symo</a>
+            </li>
+        </ul>
+        <ul *ngIf="menuItems" class="navbar-nav mr-auto">
+            <li *ngFor="let m of menuItems" class="nav-item">
+                <a class="nav-link" routerLink="{{m.routerLink}}" routerLinkActive="active">{{m.label}}</a>
             </li>
         </ul>
     </div>

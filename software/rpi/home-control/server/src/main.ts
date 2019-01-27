@@ -1,10 +1,16 @@
-export const VERSION = '1.2.0';
+export const VERSION = '1.3.0';
 
-import * as nconf from 'nconf';
+import * as cluster from 'cluster';
 import * as fs from 'fs';
 import * as path from 'path';
 
+import * as nconf from 'nconf';
+
+import * as debugsx from 'debug-sx';
 import * as git from './utils/git';
+import { MainApplication } from './main-application';
+import { Statistics } from './statistics/statistics';
+
 
 process.on('unhandledRejection', (reason, p) => {
     const now = new Date();
@@ -39,168 +45,167 @@ for (const a in debugConfig) {
     }
 }
 
-// logging with debug-sx/debug
-import * as debugsx from 'debug-sx';
-const debug: debugsx.IDefaultLogger = debugsx.createDefaultLogger('main');
-
-// debugsx.addHandler(debugsx.createConsoleHandler('stdout'));
 debugsx.addHandler(debugsx.createRawConsoleHandler());
+let debug: debugsx.IDefaultLogger;
 
-const logfileConfig = nconf.get('logfile');
-if (logfileConfig) {
-    for (const att in logfileConfig) {
-        if (!logfileConfig.hasOwnProperty(att)) { continue; }
-        const logHandlerConfig = logfileConfig[att];
-        if (logHandlerConfig.disabled) { continue; }
-        const h = debugsx.createFileHandler( logHandlerConfig);
-        console.log('Logging ' + att + ' to ' + logHandlerConfig.filename);
-        debugsx.addHandler(h);
+if (cluster.isMaster) {
+    debug = debugsx.createDefaultLogger('main(master)');
+} else {
+    debug = debugsx.createDefaultLogger('main(child)');
+}
+
+// ***********************************************************
+// class Main, start point of program
+// ***********************************************************
+
+export type WorkerIds = 'statistics';
+
+export class Main {
+
+    public static getInstance (): Main {
+        if (!Main.instance) { throw new Error('instance not created yet'); }
+        return Main.instance;
     }
+
+    public static async createInstance (): Promise<Main> {
+        if (Main.instance) { throw new Error('instance already created'); }
+        Main.instance = new Main();
+        await Main.instance.init();
+        return Main.instance;
+    }
+
+    private static instance: Main;
+
+    // *****************************************************************
+
+    private _workers: { [ key in WorkerIds ]?: IWorker } = {};
+
+    private constructor () {}
+
+    public getRunningWorker(id: WorkerIds): cluster.Worker {
+        const x = this._workers[id];
+        if (!x || !x.worker || x.state !== 'online') {
+            return null;
+        }
+        return x.worker;
+    }
+
+    public async shutdown (src: string) {
+        const waiting: Promise<any> [] = [];
+        waiting.push(MainApplication.getInstance().shutdown(src));
+        const to = nconf.get('shutdownMillis');
+        for (const id of Object.getOwnPropertyNames(this._workers)) {
+            const x = <IWorker>(<any>this._workers)[id];
+            waiting.push(this.shutdownWorker(x.worker, src, to > 0 ? to : 500));
+        }
+        Promise.all(waiting).then( () => {
+            console.log('shutdown successful');
+            process.exit(0);
+        }).catch ( (err) => {
+            console.log('shutdown fails', err);
+            process.exit(1);
+        });
+    }
+
+    private async shutdownWorker (w: cluster.Worker, src: string, timeoutMillis: number) {
+        if (w.isConnected()) {
+            const timer = setTimeout( () => { w.kill(); }, timeoutMillis);
+            w.on('disconnect', () => {
+                clearTimeout(timer);
+            });
+            w.send('shutdown');
+        }
+    }
+
+
+    private async init () {
+        cluster.on('exit', (worker: cluster.Worker, code: number, signal: string) => {
+            for (const id of Object.getOwnPropertyNames(this._workers)) {
+                const x = <IWorker>(<any>this._workers)[id];
+                if (worker === x.worker) {
+                    if (x.restartCount < 0) {
+                        x.state = 'exit';
+                        debug.info('worker %s exit (%d): %s', id, code, signal);
+                    } else {
+                        x.restartCount++;
+                        debug.warn('worker %s exit (%d): %s\nRestart worker (%d)', id, code, signal, x.restartCount);
+                        x.worker = cluster.fork({ worker: id });
+                        x.state = 'starting';
+                    }
+                }
+            }
+        });
+        cluster.on('online', (worker: cluster.Worker) => {
+            for (const id of Object.getOwnPropertyNames(this._workers)) {
+                const x = <IWorker>(<any>this._workers)[id];
+                if (worker === x.worker) {
+                    x.state = 'online';
+                    debug.info('worker %s is online', id);
+                }
+            }
+        });
+
+
+        const config = nconf.get('statistics');
+        if (!config || config.disabled) {
+            this._workers.statistics = { worker: null, state: 'disabled', restartCount: -1 };
+        } else {
+            this._workers.statistics = { worker: cluster.fork({ worker: 'statistics' }), state: 'starting', restartCount: 0 };
+            // this._workers.statistics.worker.on('message', (msg, handle) => debug.info('event message %s (%o)', msg, handle) );
+        }
+    }
+
 }
 
 
-// ***********************************************************
-// startup of application
-//   ... things to do before server can be started
-// ***********************************************************
+if (cluster.isMaster) {
+    Main.createInstance().then( () => {
 
-import { sprintf } from 'sprintf-js';
-import { Server } from './server';
-import { Auth } from './auth';
-import { DbUser } from './db-user';
-import { Monitor } from './monitor';
-import { Statistics } from './statistics';
-import { PiTechnik } from './devices/pi-technik';
-import { Nibe1155 } from './devices/nibe1155';
-import { HotWaterController } from './devices/hot-water-controller';
-import { FroniusSymo } from './devices/fronius-symo';
-import { ModbusDevice } from './devices/modbus-device';
-import { ModbusTcp } from './modbus/modbus-tcp';
-import { FroniusMeterTcp } from './devices/fronius-meter-tcp';
+        process.on('beforeExit',         (code)    => debug.info('event beforeExit: code = %d', code) );
+        process.on('disconnect',         ()        => debug.info('event disconnect') );
+        process.on('exit',               (code)    => debug.info('event exit with code %d', code) );
+        process.on('rejectionHandled',   (promise) => debug.info('event rejectionHandled') );
+        process.on('uncaughtException',  (error)   => debug.warn('event uncaughtException\n%e', error) );
+        // process.on('unhandledRejection', (reason, promise) => debug.warn('event unhandledRejection\n%d', reason) );
+        process.on('warning',            (warning) => debug.warn('event warning\n%e', warning) );
+        process.on('message',            (message, sendHandle) => debug.info('event message %s (%o)', message, sendHandle) );
+        // process.on('newListener',        (type, listener) => debug.info('event newListener type %s', type) );
+        process.on('removeListener',     (type, listener) => debug.info('event removeListener type %s', type) );
 
-doStartup();
-
-async function doStartup () {
-    // await delay(3000);
-    // debugger;
-    debug.info('Start of Home Control Server V' + VERSION);
-    try {
-        if (nconf.get('git')) {
-            const gitInfo = await git.getGitInfo();
-            startupPrintVersion(gitInfo);
-        }
-
-        await startupParallel();
-        await Statistics.createInstance(nconf.get('statistics'));
-        const piTechnik = await PiTechnik.createInstance(nconf.get('pi-technik'));
-        const monitor = await Monitor.createInstance(nconf.get('monitor'));
-        const nibe1155 = await Nibe1155.createInstance(nconf.get('nibe1155'));
-        const hwc = await HotWaterController.createInstance(nconf.get('hot-water-controller'));
-        const froniusSymo = new FroniusSymo(nconf.get('froniusSymo'));
-        const gridmeter = new FroniusMeterTcp(nconf.get('gridMeter'));
-        ModbusDevice.addInstance(froniusSymo);
-        ModbusDevice.addInstance(gridmeter);
-        await froniusSymo.start();
-        await gridmeter.start();
-        await nibe1155.start();
-        await hwc.start();
-        await piTechnik.start();
-        await monitor.start();
-
-        await startupServer();
-        doSomeTests();
+        MainApplication.createInstance();
         process.on('SIGINT', () => {
-            console.log('...caught interrupt signal');
-            shutdown('interrupt signal (CTRL + C)').catch( (err) => {
+            console.log('...caught interrupt signal...');
+            Main.getInstance().shutdown('interrupt signal (CTRL + C)').catch( (err) => {
                 console.log(err);
                 process.exit(1);
             });
         });
-        debug.info('startup finished, enter now normal running mode.');
-
-    } catch (err) {
+        MainApplication.getInstance().start();
+    }).catch( (err) => {
         console.log(err);
-        console.log('-----------------------------------------');
-        console.log('Error: exit program');
         process.exit(1);
-    }
-}
-
-// setTimeout( () => { modbus.close(); }, 5000);
-
-// ***********************************************************
-// startup and shutdown functions
-// ***********************************************************
-
-async function shutdown (src: string): Promise<void> {
-    debug.info('starting shutdown ... (caused by %s)', src || '?');
-    const shutdownMillis = +nconf.get('shutdownMillis');
-    const timer = setTimeout( () => {
-        console.log('Some jobs hanging? End program with exit code 1!');
-        process.exit(1);
-    }, shutdownMillis > 0 ? shutdownMillis : 500);
-    let rv = 0;
-
-    try { await Server.Instance.stop(); } catch (err) { rv++; console.log(err); }
-    debug.fine('monitor shutdown done');
-
-    clearTimeout(timer);
-    debug.info('shutdown successfully finished');
-    process.exit(rv);
-}
-
-function startupPrintVersion (info?: git.GitInfo) {
-    console.log('main.ts Version ' + VERSION);
-    if (info) {
-        console.log('GIT: ' + info.branch + ' (' + info.hash + ')');
-        const cnt = info.modified.length;
-        console.log('     ' + (cnt === 0 ? 'No files modified' : cnt + ' files modified'));
-    }
-}
-
-async function startupParallel (): Promise<any []> {
-    debug.info('startupParallel finished');
-    return [];
-}
-
-async function startupServer (): Promise<void> {
-    const configServer = nconf.get('server');
-    const configAuth = nconf.get('auth');
-    const configUsers = nconf.get('database-users');
-    if (configServer && configServer.start) {
-        await DbUser.createInstance(configUsers);
-        await Auth.createInstance(configAuth);
-        await Server.Instance.start();
-    }
-}
-
-async function startupShutdown (src?: string): Promise<void> {
-    const shutdownMillis = +nconf.get('shutdownMillis');
-    if (shutdownMillis > 0) {
-        setTimeout( () => {
-            shutdown(src ? src : 'startupShutdown').then( () => {
-                console.log('shutdown successful');
-                process.exit(0);
-            }).catch( err => {
-                console.log(err);
-                console.log('shutdown fails');
-                process.exit(1);
-            });
-        }, shutdownMillis);
-        debug.info('startupShutdown finished, shutdown in ' + (shutdownMillis / 1000) + ' seconds.');
-    }
-}
-
-
-async function delay (ms: number) {
-    return new Promise<void>( (res, rej) => {
-        setTimeout( () => {
-            res();
-        }, ms);
     });
+
+} else {
+    switch (process.env.worker) {
+        case 'statistics': {
+            debug.info('statistics worker is starting...');
+            Statistics.createInstance(nconf.get('statistics')).then( (statistics => {
+                statistics.start().then( () => {
+                    process.send({ started: true });
+                }).catch ( (err) => process.send({ error: err }));
+            })).catch( (err) => process.send({ error: err }));
+            break;
+        }
+        default: {
+            console.log('Error: unknown worker ist starting');
+            break;
+        }
+    }
 }
 
-
-async function doSomeTests () {
-    return;
+interface IWorker {
+    worker: cluster.Worker;
+    state: 'disabled' | 'starting' | 'online' | 'exit';
+    restartCount: number;
 }

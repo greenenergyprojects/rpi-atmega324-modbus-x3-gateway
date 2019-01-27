@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Subject } from 'rxjs';
-import { Observable, Subscriber, TeardownLogic, of } from 'rxjs';
+import { Subject, Observable, Subscriber, TeardownLogic } from 'rxjs';
 
 import { ServerService } from './server.service';
 import * as serverHttp from '../data/common/home-control/server-http';
@@ -12,6 +11,7 @@ import { INibe1155Controller, Nibe1155Controller } from '../data/common/nibe1155
 import { ControllerParameter } from '../data/common/hot-water-controller/controller-parameter';
 import { IMonitorRecord as IBoilerMonitorRecord } from '../data/common/hot-water-controller/monitor-record';
 import { IControllerStatus } from '../data/common/hot-water-controller/controller-status';
+import { HistoryService } from './history.service';
 
 
 @Injectable({ providedIn: 'root' })
@@ -28,12 +28,11 @@ export class DataService {
     private _monitorSubject: Subject<MonitorRecord>;
     private _monitorObservers: Subscriber<MonitorRecord> [] = [];
     private _monitorTimer: any;
-    private _monitorValues: MonitorRecord [] = [];
 
     private _nibe1155: IHeatpumpData;
 
 
-    constructor (private _serverService: ServerService) {
+    constructor (private _serverService: ServerService, private _historyService: HistoryService) {
         this.froniusMeterObservable = new Observable((s) => this.froniusMeterSubscriber(s));
         this.monitorObservable = new Observable((s) => this.monitorSubscriber(s));
         this._nibe1155 = null;
@@ -227,7 +226,6 @@ export class DataService {
             if (thiz._monitorObservers.length === 0) {
                 clearInterval(thiz._monitorTimer);
                 thiz._monitorTimer = null;
-                thiz._monitorValues = [];
             }
         } };
     }
@@ -248,16 +246,14 @@ export class DataService {
             if (!Array.isArray(v) || v.length !== 1) {
                 console.log(new Error('unexpected response'));
                 this._monitorObservers.forEach( (o) => o.next(null));
+                this._historyService.refresh(null);
                 return;
             }
             // this.handleNibe1155Values(v[0].nibe1155);
             // console.log(v[0]);
             const r = new MonitorRecord(v[0]);
             this._monitorObservers.forEach( (o) => o.next(r));
-            this._monitorValues.push(r);
-            if (this._monitorValues.length > 60) {
-                this._monitorValues.splice(0, 1);
-            }
+            this._historyService.refresh(r);
         }, (error) => {
             console.log(error);
             this._monitorObservers.forEach( (o) => o.next(null));

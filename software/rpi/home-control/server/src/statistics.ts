@@ -1,6 +1,6 @@
 
 import * as debugsx from 'debug-sx';
-const debug: debugsx.IFullLogger = debugsx.createFullLogger('statistics');
+const debug: debugsx.IFullLogger = debugsx.createFullLogger('statistics-old');
 
 const debugSpy: debugsx.IFullLogger = debugsx.createFullLogger('spy');
 
