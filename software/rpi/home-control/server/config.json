@@ -1,5 +1,5 @@
 {
-    "shutdownMillis": 1000,
+    "shutdownMillis": 2000,
     "server": {
         "start": true,
         "port": 8080,
@@ -22,6 +22,13 @@
             { "userid": "manfred", "isAdmin": true, "passwordType": "sha-256", "password": "ec53103cc64f4c2e1a97450d835e1e19c81b68cdd4ea8d48863ed232f73c916d" },
             { "userid": "sabine", "passwordType": "sha-256", "password": "def5c2d284e33ab044b533c719523ef394b9f113250e88aabd97e7ddf6555c5d" }
         ]
+    },
+    "gateway": {
+        "disabled": false,
+        "user": { "userid": "test", "passwordType": "raw", "password": "geheim" },
+         "master": { "host": "192.168.1.201", "port": 8081 },
+         "timeoutMillis": 700,
+         "pollingPeriodMillis": 2000
     },
     "froniusSymo": {
         "disabled": true,
@@ -64,7 +71,14 @@
         "csvfile": { "filename": "/var/lib/home-control/home-control-data_%Y-%M-%D.csv" }
     },
     "statistics": {
-        "disabled": false
+        "disabled": false,
+        "data": [{
+            "ids":   [ "pGrid", "eIn", "eOut" ],
+            "range": "minute"
+        },{
+            "ids":   [ "pGrid" ],
+            "range": "hour"
+        }]
     },
     "pi-technik": {
         "disabled": true,

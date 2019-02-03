@@ -1,4 +1,4 @@
-export const VERSION = '1.3.0';
+export const VERSION = '1.3.1';
 
 import * as cluster from 'cluster';
 import * as fs from 'fs';
@@ -58,7 +58,7 @@ if (cluster.isMaster) {
 // class Main, start point of program
 // ***********************************************************
 
-export type WorkerIds = 'statistics';
+export type WorkerId = 'statistics';
 
 export class Main {
 
@@ -78,11 +78,11 @@ export class Main {
 
     // *****************************************************************
 
-    private _workers: { [ key in WorkerIds ]?: IWorker } = {};
+    private _workers: { [ key in WorkerId ]?: IWorker } = {};
 
     private constructor () {}
 
-    public getRunningWorker(id: WorkerIds): cluster.Worker {
+    public getRunningWorker(id: WorkerId): cluster.Worker {
         const x = this._workers[id];
         if (!x || !x.worker || x.state !== 'online') {
             return null;
@@ -95,8 +95,7 @@ export class Main {
         waiting.push(MainApplication.getInstance().shutdown(src));
         const to = nconf.get('shutdownMillis');
         for (const id of Object.getOwnPropertyNames(this._workers)) {
-            const x = <IWorker>(<any>this._workers)[id];
-            waiting.push(this.shutdownWorker(x.worker, src, to > 0 ? to : 500));
+            waiting.push(this.shutdownWorker(id, src, to > 0 ? to : 2000));
         }
         Promise.all(waiting).then( () => {
             console.log('shutdown successful');
@@ -107,16 +106,34 @@ export class Main {
         });
     }
 
-    private async shutdownWorker (w: cluster.Worker, src: string, timeoutMillis: number) {
-        if (w.isConnected()) {
-            const timer = setTimeout( () => { w.kill(); }, timeoutMillis);
-            w.on('disconnect', () => {
-                clearTimeout(timer);
+    private async shutdownWorker (id: string, src: string, timeoutMillis: number) {
+        const x = <IWorker>(<any>this._workers)[id];
+        if (!x || !x.worker) {
+            Promise.resolve();
+        } else {
+            const w = x.worker;
+            return new Promise<void>( (res, rej) => {
+                if (w.isConnected()) {
+                    const timer = setTimeout( () => { w.kill(); rej(new Error('worker ' + id + ' hanging')); }, timeoutMillis);
+                    w.on('disconnect', () => {
+                        clearTimeout(timer);
+                        res();
+                    });
+                    w.send({ shutdown: src });
+                } else {
+                    res();
+                }
             });
-            w.send('shutdown');
         }
     }
 
+    private async delay (ms: number) {
+        return new Promise<void>( (res, rej) => {
+            setTimeout( () => {
+                res();
+            }, ms);
+        });
+    }
 
     private async init () {
         cluster.on('exit', (worker: cluster.Worker, code: number, signal: string) => {

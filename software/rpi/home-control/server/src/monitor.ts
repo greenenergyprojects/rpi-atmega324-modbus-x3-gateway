@@ -21,6 +21,7 @@ import { ICalculated } from './data/common/home-control/calculated';
 import { FroniusMeterTcp } from './devices/fronius-meter-tcp';
 import { IEnergyDaily, EnergyDaily } from './data/common/home-control/energy-daily';
 import { Main } from './main';
+import { Gateway } from './devices/gateway';
 
 interface IMonitorConfig {
     disabled?:            boolean;
@@ -242,144 +243,157 @@ export class Monitor {
             const now = new Date();
             const oldLastTimerEvent = this._lastTimerEvent || now;
             const dayHasChanged =  oldLastTimerEvent.getDay() !==  now.getDay();
+            let mr: MonitorRecord;
+            let mrObj: IMonitorRecord;
 
-            const boiler = HotWaterController.getInstance();
-            const nibe1155 = Nibe1155.getInstance();
-            const saiameter = PiTechnik.getInstance().getSaiamater('PV Ost/West');
-            const gridmeter = this._froniusmeter ? this._froniusmeter.toEnergyMeter('?') : null;
+            if (Gateway.getInstance().isEnabled()) {
+                mr = await Gateway.getInstance().getMonitorRecord();
+                mrObj = mr.toObject();
 
-            const x: IMonitorRecord = {
-                createdAt: now
-            };
-            if (this._symo)   { x.froniussymo = this._symo.toObject(); }
-            if (gridmeter)    {
-                x.gridmeter = gridmeter.toObject();
-            }
+            } else {
+                const boiler = HotWaterController.getInstance();
+                const nibe1155 = Nibe1155.getInstance();
+                const saiameter = PiTechnik.getInstance().getSaiamater('PV Ost/West');
+                const gridmeter = this._froniusmeter ? this._froniusmeter.toEnergyMeter('?') : null;
 
-            if (nibe1155)     {
-                try {
-                    x.nibe1155 = nibe1155.toObject();
-                    // debug.info('===> NIB1155 controller:\n%o', x.nibe1155.controller);
-                    // debug.info('===> NIB1155 %s f=%dHz, P=%dW, tVorlauf=%d°C  tPuffer=%d°C %s %s', nibe1155.controller.currentMode,
-                    //             nibe1155.getCompressorFrequencyAsNumber(), nibe1155.getCompressorInPowerAsNumber(),
-                    //             nibe1155.getSupplyS1TempAsNumber(), nibe1155.getSupplyTempAsNumber(),
-                    //             nibe1155.getOutdoorTemp().valueAsString(true), nibe1155.getDegreeMinutesAsNumber());
-                } catch (err) {
-                    debug.warn('%e', err);
+                const x: IMonitorRecord = {
+                    createdAt: now
+                };
+                if (this._symo)   { x.froniussymo = this._symo.toObject(); }
+                if (gridmeter)    {
+                    x.gridmeter = gridmeter.toObject();
                 }
-            }
 
-            if (boiler) {
-                const r = boiler.toObject();
-                if (r) {
-                    x.boiler = r;
-                }
-            }
-
-            if (saiameter)    {
-                x.extPvMeter = { pveastwest: saiameter.toEnergyMeter()};
-                this._pvEastWestEnergyDaily.setTotalEnergy(saiameter.e1, saiameter.createdAt);
-                // debug.info('  pvE/W ---> %dW ==> %dWh', saiameter.p, this._pvEastWestEnergyDaily.dailyEnergy);
-            }
-
-            if (gridmeter) {
-                if (gridmeter.energyTotalImported >= 0) {
-                    this._eInDaily.setTotalEnergy(gridmeter.energyTotalImported, gridmeter.createdAt);
-                    // debug.info('  eIn  ---> %dW ==> %dWh', gridmeter.energyTotalImported, this._eInDaily.dailyEnergy);
-                } else if (gridmeter.energyTotal >= 0) {
-                    this._eInDaily.setTotalEnergy(gridmeter.activePower, gridmeter.createdAt);
-                }
-                if (gridmeter.energyTotalExported >= 0) {
-                    this._eOutDaily.setTotalEnergy(gridmeter.energyTotalExported, gridmeter.createdAt);
-                    // debug.info('  eOut ---> %dW ==> %dWh', gridmeter.activePower, this._eOutDaily.dailyEnergy);
-                }
-            }
-
-            const pPvS: { at: Date, value: number } = this._symo ? this._symo.getPvSouthActivePower() : { at: new Date(), value: 0 };
-            if (pPvS) {
-                const ie = this._symo.inverterExtension;
-                const dcw_1 = ie.registerValues.getValue(40275);
-                const dcst_1 = ie.registerValues.getValue(40281);
-                if (Array.isArray(this._pvsPBugSpy) && dcst_1 && dcw_1 && dcst_1.value >= 0 && dcw_1.value >= 0) {
-                    this._pvsPBugSpy.push({ dcst_1: dcst_1, dcw_1: dcw_1 });
-                    while (this._pvsPBugSpy.length > 10) {
-                        this._pvsPBugSpy.splice(0, 1);
+                if (nibe1155)     {
+                    try {
+                        x.nibe1155 = nibe1155.toObject();
+                        // debug.info('===> NIB1155 controller:\n%o', x.nibe1155.controller);
+                        // debug.info('===> NIB1155 %s f=%dHz, P=%dW, tVorlauf=%d°C  tPuffer=%d°C %s %s', nibe1155.controller.currentMode,
+                        //             nibe1155.getCompressorFrequencyAsNumber(), nibe1155.getCompressorInPowerAsNumber(),
+                        //             nibe1155.getSupplyS1TempAsNumber(), nibe1155.getSupplyTempAsNumber(),
+                        //             nibe1155.getOutdoorTemp().valueAsString(true), nibe1155.getDegreeMinutesAsNumber());
+                    } catch (err) {
+                        debug.warn('%e', err);
                     }
-                    if (this._pvsPBugSpy.length > 6 && dcw_1.value === 65535 && dcst_1.value === 4) {
-                        for (const o of this._pvsPBugSpy) {
-                            if (o.dcst_1.value !== dcst_1.value || o.dcw_1.value !== dcw_1.value) {
-                                debug.fine(sprintf('PV-S Spy --> %s: dcw_1=%dW  dcst_1=%d', dcst_1.at.toISOString(), dcw_1.value, dcst_1.value));
+                }
+
+                if (boiler) {
+                    const r = boiler.toObject();
+                    if (r) {
+                        x.boiler = r;
+                    }
+                }
+
+                if (saiameter)    {
+                    x.extPvMeter = { pveastwest: saiameter.toEnergyMeter()};
+                    this._pvEastWestEnergyDaily.setTotalEnergy(saiameter.e1, saiameter.createdAt);
+                    // debug.info('  pvE/W ---> %dW ==> %dWh', saiameter.p, this._pvEastWestEnergyDaily.dailyEnergy);
+                }
+
+                if (gridmeter) {
+                    if (gridmeter.energyTotalImported >= 0) {
+                        this._eInDaily.setTotalEnergy(gridmeter.energyTotalImported, gridmeter.createdAt);
+                        // debug.info('  eIn  ---> %dW ==> %dWh', gridmeter.energyTotalImported, this._eInDaily.dailyEnergy);
+                    } else if (gridmeter.energyTotal >= 0) {
+                        this._eInDaily.setTotalEnergy(gridmeter.activePower, gridmeter.createdAt);
+                    }
+                    if (gridmeter.energyTotalExported >= 0) {
+                        this._eOutDaily.setTotalEnergy(gridmeter.energyTotalExported, gridmeter.createdAt);
+                        // debug.info('  eOut ---> %dW ==> %dWh', gridmeter.activePower, this._eOutDaily.dailyEnergy);
+                    }
+                }
+
+                const pPvS: { at: Date, value: number } = this._symo ? this._symo.getPvSouthActivePower() : { at: new Date(), value: 0 };
+                if (pPvS) {
+                    const ie = this._symo.inverterExtension;
+                    const dcw_1 = ie.registerValues.getValue(40275);
+                    const dcst_1 = ie.registerValues.getValue(40281);
+                    if (Array.isArray(this._pvsPBugSpy) && dcst_1 && dcw_1 && dcst_1.value >= 0 && dcw_1.value >= 0) {
+                        this._pvsPBugSpy.push({ dcst_1: dcst_1, dcw_1: dcw_1 });
+                        while (this._pvsPBugSpy.length > 10) {
+                            this._pvsPBugSpy.splice(0, 1);
+                        }
+                        if (this._pvsPBugSpy.length > 6 && dcw_1.value === 65535 && dcst_1.value === 4) {
+                            for (const o of this._pvsPBugSpy) {
+                                if (o.dcst_1.value !== dcst_1.value || o.dcw_1.value !== dcw_1.value) {
+                                    debug.fine(sprintf('PV-S Spy --> %s: dcw_1=%dW  dcst_1=%d', dcst_1.at.toISOString(), dcw_1.value, dcst_1.value));
+                                }
+                            }
+                        }
+                        if (this._pvsPBugSpy.length > 6 && dcw_1.value === 65535 && dcst_1.value === 4) {
+                            const pbs0 = this._pvsPBugSpy[0];
+                            if (pbs0.dcst_1.value === 3 && pbs0.dcw_1.value === 65535) {
+                                debug.warn('Fronius Inverter Exetension Bug, set pvs power to zero');
+                                pPvS.value = 0;
                             }
                         }
                     }
-                    if (this._pvsPBugSpy.length > 6 && dcw_1.value === 65535 && dcst_1.value === 4) {
-                        const pbs0 = this._pvsPBugSpy[0];
-                        if (pbs0.dcst_1.value === 3 && pbs0.dcw_1.value === 65535) {
-                            debug.warn('Fronius Inverter Exetension Bug, set pvs power to zero');
+                }
+                if (this._symo) {
+                    const pBatt = this._symo.getBatteryActivePower();
+
+                    if (pPvS && pPvS.value >= 0) {
+                        // Fronius Bug, Battery (string 2) leads to wrong PV power (string 1)
+                        if (pPvS.value > 0 && pPvS.value < 10 && pBatt && pBatt.value > 100) {
+                            debug.finer('Fronius Bug string2/string1 pBatt=%dW pPvS: %sW -> 0W', pBatt.value, pPvS.value);
                             pPvS.value = 0;
                         }
+                        this._pvSouthEnergy.accumulateTotalEnergy(pPvS.value, pPvS.at);
+                        const before = this._pvSouthEnergyDaily.dailyEnergy;
+                        this._pvSouthEnergyDaily.accumulateDailyEnergy(pPvS.value, pPvS.at);
+                    } else {
+
+                    }
+
+                    if (pBatt) {
+                        if (pBatt.value === 0) {
+                            this._batInDaily.accumulateDailyEnergy(0, pBatt.at);
+                            this._batOutDaily.accumulateDailyEnergy(0, pBatt.at);
+                        } else if (pBatt.value < 0) {
+                            this._batInDaily.accumulateDailyEnergy(-pBatt.value, pBatt.at);
+                            this._batOutDaily.accumulateDailyEnergy(0, pBatt.at);
+                        } else if (pBatt.value > 0) {
+                            this._batInDaily.accumulateDailyEnergy(0, pBatt.at);
+                            this._batOutDaily.accumulateDailyEnergy(pBatt.value, pBatt.at);
+                        }
+                        // debug.info(sprintf('  pBatt ---> %.2fW ==> in=%.2fWh / out=%.2fWh',
+                        //           pBatt.value, this._batInDaily.dailyEnergy, this._batOutDaily.dailyEnergy ));
                     }
                 }
+
+                const froniusSiteDaily = this._symo ? this._symo.getFroniusSiteDaily() : null;
+                x.calculated = {
+                    createdAt:             new Date(),
+                    eOutDaily:             this._eOutDaily.dailyEnergy,
+                    eInDaily:              this._eInDaily.dailyEnergy,
+                    batOutDaily:           this._batOutDaily.dailyEnergy,
+                    batInDaily:            this._batInDaily.dailyEnergy,
+                    pvSouthEnergy:         this._pvSouthEnergy.totalEnergy,
+                    pvSouthEnergyDaily:    this._pvSouthEnergyDaily.dailyEnergy,
+                    pvEastWestEnergyDaily: this._pvEastWestEnergyDaily.dailyEnergy,
+                    froniusSiteDaily:      froniusSiteDaily ? froniusSiteDaily.value : null,
+                    pPvSouth:              pPvS ? pPvS.value : null
+                };
+
+                mr = new MonitorRecord(x);
+                mrObj = x;
             }
-            if (this._symo) {
-                const pBatt = this._symo.getBatteryActivePower();
 
-                if (pPvS && pPvS.value >= 0) {
-                    // Fronius Bug, Battery (string 2) leads to wrong PV power (string 1)
-                    if (pPvS.value > 0 && pPvS.value < 10 && pBatt && pBatt.value > 100) {
-                        debug.finer('Fronius Bug string2/string1 pBatt=%dW pPvS: %sW -> 0W', pBatt.value, pPvS.value);
-                        pPvS.value = 0;
-                    }
-                    this._pvSouthEnergy.accumulateTotalEnergy(pPvS.value, pPvS.at);
-                    const before = this._pvSouthEnergyDaily.dailyEnergy;
-                    this._pvSouthEnergyDaily.accumulateDailyEnergy(pPvS.value, pPvS.at);
-                    // debug.info(sprintf('---> pvSouth=%7.2f pvSouthEnergyDaily %7.2f ==> %7.2f', pPvS.value, before, this._pvSouthEnergyDaily.dailyEnergy));
-                    // debug.info('  pvSouth ---> %dW ==> %dWh', pPvS.value, this._pvSouthEnergyDaily.dailyEnergy);
-                } else {
-                    // debug.info('  pvSouth ---> ??W ==> %dWh', this._pvSouthEnergyDaily.dailyEnergy);
-                }
-
-                if (pBatt) {
-                    if (pBatt.value === 0) {
-                        this._batInDaily.accumulateDailyEnergy(0, pBatt.at);
-                        this._batOutDaily.accumulateDailyEnergy(0, pBatt.at);
-                    } else if (pBatt.value < 0) {
-                        this._batInDaily.accumulateDailyEnergy(-pBatt.value, pBatt.at);
-                        this._batOutDaily.accumulateDailyEnergy(0, pBatt.at);
-                    } else if (pBatt.value > 0) {
-                        this._batInDaily.accumulateDailyEnergy(0, pBatt.at);
-                        this._batOutDaily.accumulateDailyEnergy(pBatt.value, pBatt.at);
-                    }
-                    // debug.info(sprintf('  pBatt ---> %.2fW ==> in=%.2fWh / out=%.2fWh',
-                    //           pBatt.value, this._batInDaily.dailyEnergy, this._batOutDaily.dailyEnergy ));
-                }
+            if (debug.finest.enabled) {
+                debug.finest('new monitorrecord\n%O', mr);
+            } else {
+                debug.finer('new monitorrecord');
             }
 
-            const froniusSiteDaily = this._symo ? this._symo.getFroniusSiteDaily() : null;
-            x.calculated = {
-                createdAt:             new Date(),
-                eOutDaily:             this._eOutDaily.dailyEnergy,
-                eInDaily:              this._eInDaily.dailyEnergy,
-                batOutDaily:           this._batOutDaily.dailyEnergy,
-                batInDaily:            this._batInDaily.dailyEnergy,
-                pvSouthEnergy:         this._pvSouthEnergy.totalEnergy,
-                pvSouthEnergyDaily:    this._pvSouthEnergyDaily.dailyEnergy,
-                pvEastWestEnergyDaily: this._pvEastWestEnergyDaily.dailyEnergy,
-                froniusSiteDaily:      froniusSiteDaily ? froniusSiteDaily.value : null,
-                pPvSouth:              pPvS ? pPvS.value : null
-            };
-
-            const mr = new MonitorRecord(x);
             const w = Main.getInstance().getRunningWorker('statistics');
             if (w) {
-                w.send({ monitorRecord: x}, null, (err) => {
+                w.send({ monitorRecord: mrObj}, null, (err) => {
                     if (err) {
                         debug.warn('sending monitor record to statistics process fails\n%e', err);
                     }
                 });
             }
             this.saveTemp(mr);
-            // debug.info('%o', mr.toObject());
             this._history.push(mr);
             if (this._history.length > 60) {
                 this._history.splice(0, 1);

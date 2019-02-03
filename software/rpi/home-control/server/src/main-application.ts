@@ -21,6 +21,7 @@ import { FroniusSymo } from './devices/fronius-symo';
 import { ModbusDevice } from './devices/modbus-device';
 import { ModbusTcp } from './modbus/modbus-tcp';
 import { FroniusMeterTcp } from './devices/fronius-meter-tcp';
+import { Gateway } from './devices/gateway';
 
 
 export class MainApplication {
@@ -64,6 +65,7 @@ export class MainApplication {
             const hwc = await HotWaterController.createInstance(nconf.get('hot-water-controller'));
             const froniusSymo = new FroniusSymo(nconf.get('froniusSymo'));
             const gridmeter = new FroniusMeterTcp(nconf.get('gridMeter'));
+            const gateway = await Gateway.createInstance(nconf.get('gateway'));
             ModbusDevice.addInstance(froniusSymo);
             ModbusDevice.addInstance(gridmeter);
             await froniusSymo.start();
@@ -72,6 +74,7 @@ export class MainApplication {
             await hwc.start();
             await piTechnik.start();
             await monitor.start();
+            await gateway.start();
 
             await this.startupServer();
             this.doSomeTests();
@@ -117,6 +120,7 @@ export class MainApplication {
         const rv: { job: string, promise: Promise<any> } [] = [];
 
         let p: Promise<any>;
+
         try {
             p =  Server.Instance.stop();
             await p;
@@ -124,6 +128,24 @@ export class MainApplication {
             errCnt++;
             debug.warn('stop server fails\n%e', err);
             rv.push({ job: 'server', promise: p });
+        }
+
+        try {
+            p =  Gateway.getInstance().stop();
+            await p;
+        } catch (err) {
+            errCnt++;
+            debug.warn('stop gateway fails\n%e', err);
+            rv.push({ job: 'gateway', promise: p });
+        }
+
+        try {
+            p =  Monitor.getInstance().stop();
+            await p;
+        } catch (err) {
+            errCnt++;
+            debug.warn('stop monitor fails\n%e', err);
+            rv.push({ job: 'monitor', promise: p });
         }
 
         return rv;

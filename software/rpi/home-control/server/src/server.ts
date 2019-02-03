@@ -8,6 +8,7 @@ import * as http from 'http';
 
 import * as nconf from 'nconf';
 import * as cors from 'cors';
+import * as compression from 'compression';
 import * as morgan from 'morgan';
 import * as express from 'express';
 import * as bodyParser from 'body-parser';
@@ -76,6 +77,7 @@ export class Server {
         if (this._config.morgan && this._config.morgan.disabled !== true) {
             this._express.use(morgan(this._config.morgan.config || 'tiny'));
         }
+        this._express.use(compression({ chunkSize: 1024, filter: (req, res) => this.shouldCompress(req, res) }));
         this._express.use(bodyParser.json());
         this._express.use(bodyParser.urlencoded({ extended: true }) );
 
@@ -109,6 +111,16 @@ export class Server {
             debug.warn(err);
         });
         this._server = server;
+    }
+
+    private shouldCompress (req: express.Request, res: express.Response): boolean {
+        const h = req.headers['accept-encoding'];
+        debug.info('--> %o: %s (Headers: %s)', req.socket.remoteAddress, h, Object.getOwnPropertyNames(req.headers) );
+        if (h && h.indexOf('gzip') >= 0) {
+            debug.info('----> compress');
+            return true;
+        }
+        return false;
     }
 
     private async handleVersion (req: express.Request, res: express.Response, next: express.NextFunction) {
