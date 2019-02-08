@@ -69,8 +69,10 @@ export class Statistics {
         //     }
         // });
 
-        for (const cfg of config.data) {
-            this._data.push(new StatisticsData(cfg));
+        if (!config.disabled) {
+            for (const cfg of config.data) {
+                this._data.push(new StatisticsData(cfg));
+            }
         }
     }
 

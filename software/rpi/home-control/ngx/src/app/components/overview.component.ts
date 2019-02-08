@@ -284,7 +284,15 @@ export class OverviewComponent implements OnInit, OnDestroy {
             } else {
                 v1 = { value: Math.round(x1 * 10000) / 10 + 'kWh' };
             }
-            nibe.values.push({ key: 'E-Wärme', values: [ v1 ]});
+            x2 = v.getHeatpumpEnergyDailyAsNumber();
+            if (x2 === null) {
+                console.log('getHeatpumpEnergyDailyAsNumber', x2);
+                v2 = { value: '?' };
+            } else {
+                v2 = { value: (Math.round(x2 / 10) / 100) + 'kWh' };
+            }
+
+            nibe.values.push({ key: 'E-In/Wärme', values: [ v2, v1 ]});
 
             this.show.push(nibe);
 

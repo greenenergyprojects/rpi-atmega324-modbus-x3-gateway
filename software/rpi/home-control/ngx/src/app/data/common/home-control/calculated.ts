@@ -6,6 +6,7 @@ export interface ICalculated {
     createdAt:             Date | number | string;
     eOutDaily:             number;
     eInDaily:              number;
+    eHeatPumpDaily:        number;
     batOutDaily:           number;
     batInDaily:            number;
     pvSouthEnergy:         number;
@@ -18,13 +19,14 @@ export interface ICalculated {
 export class Calculated extends DataRecord<ICalculated> implements ICalculated {
 
     public static ATTRIBUTES = [
-        'createdAt', 'eOutDaily', 'eInDaily', 'batOutDaily', 'batInDaily', 'pvSouthEnergy', 'pvSouthEnergyDaily', 'pvEastWestEnergyDaily', 'froniusSiteDaily',
+        'createdAt', 'eOutDaily', 'eInDaily', 'eHeatPumpDaily', 'batOutDaily', 'batInDaily', 'pvSouthEnergy', 'pvSouthEnergyDaily', 'pvEastWestEnergyDaily', 'froniusSiteDaily',
         'pPvSouth'
     ];
 
     private _createdAt:             Date;
     private _eOutDaily:             number;
     private _eInDaily:              number;
+    private _eHeatPumpDaily:        number;
     private _batOutDaily:           number;
     private _batInDaily:            number;
     private _pvSouthEnergy:         number;
@@ -64,6 +66,7 @@ export class Calculated extends DataRecord<ICalculated> implements ICalculated {
             createdAt:              preserveDate ? this._createdAt : this._createdAt.getTime(),
             eOutDaily:              this._eOutDaily,
             eInDaily:               this._eInDaily,
+            eHeatPumpDaily:         this._eHeatPumpDaily,
             batOutDaily:            this._batOutDaily,
             batInDaily:             this._batInDaily,
             pvSouthEnergy:          this._pvSouthEnergy,
@@ -85,6 +88,10 @@ export class Calculated extends DataRecord<ICalculated> implements ICalculated {
 
     public get eInDaily (): number {
         return this._eInDaily;
+    }
+
+    public get eHeatPumpDaily (): number {
+        return this._eHeatPumpDaily;
     }
 
     public get batOutDaily (): number {

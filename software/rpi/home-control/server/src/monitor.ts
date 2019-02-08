@@ -41,6 +41,7 @@ interface ITempFileRecord {
     pvEastWestEnergyDaily: IEnergyDaily;
     eInDaily: IEnergyDaily;
     eOutDaily: IEnergyDaily;
+    eHeatPumpDaily: IEnergyDaily;
     batInDaily: IEnergyDaily;
     batOutDaily: IEnergyDaily;
 }
@@ -77,6 +78,7 @@ export class Monitor {
     private _pvEastWestEnergyDaily: EnergyDaily;
     private _eInDaily: EnergyDaily;
     private _eOutDaily: EnergyDaily;
+    private _eHeatPumpDaily: EnergyDaily;
     private _batInDaily: EnergyDaily;
     private _batOutDaily: EnergyDaily;
     private _lastTempCnt = 0;
@@ -160,6 +162,16 @@ export class Monitor {
                         debug.warn('reading eOutDaily fails...');
                     }
                     try {
+                        if (!this._eHeatPumpDaily && o.eHeatPumpDaily) {
+                            this._eHeatPumpDaily = new EnergyDaily(o.eHeatPumpDaily);
+                            debug.info('found eHeatPumpDaily in temp file %s (%o)', fn, this._eHeatPumpDaily);
+                        } else {
+                            debug.warn('missing eHeatPumpDaily from temp file %s', fn);
+                        }
+                    } catch (err) {
+                        debug.warn('reading eHeatPumpDaily fails...');
+                    }
+                    try {
                         if (!this._batInDaily && o.batInDaily) {
                             this._batInDaily = new EnergyDaily(o.batInDaily);
                             debug.info('found batInDaily in temp file %s (%o)', fn, this._batInDaily);
@@ -184,7 +196,7 @@ export class Monitor {
                     debug.warn('reading temp file fails', err);
                 }
                 if (this._pvEastWestEnergyDaily && this._pvSouthEnergy && this._pvSouthEnergyDaily &&
-                    this._eInDaily && this._eOutDaily && this._batInDaily && this._batOutDaily) {
+                    this._eInDaily && this._eOutDaily && this._batInDaily && this._batOutDaily && this._eHeatPumpDaily) {
                     break;
                 }
             }
@@ -194,6 +206,7 @@ export class Monitor {
         if (!this._pvSouthEnergyDaily) { this._pvSouthEnergyDaily = new EnergyDaily({ totalEnergy: 0 }); }
         if (!this._eInDaily) { this._eInDaily = new EnergyDaily({ totalEnergy: 0 }); }
         if (!this._eOutDaily) { this._eOutDaily = new EnergyDaily({ totalEnergy: 0 }); }
+        if (!this._eHeatPumpDaily) { this._eHeatPumpDaily = new EnergyDaily({ totalEnergy: 0 }); }
         if (!this._batInDaily) { this._batInDaily = new EnergyDaily({ totalEnergy: 0 }); }
         if (!this._batOutDaily) { this._batOutDaily = new EnergyDaily({ totalEnergy: 0 }); }
 
@@ -248,7 +261,9 @@ export class Monitor {
 
             if (Gateway.getInstance().isEnabled()) {
                 mr = await Gateway.getInstance().getMonitorRecord();
-                mrObj = mr.toObject();
+                if (mr instanceof MonitorRecord) {
+                    mrObj = mr.toObject();
+                }
 
             } else {
                 const boiler = HotWaterController.getInstance();
@@ -267,6 +282,10 @@ export class Monitor {
                 if (nibe1155)     {
                     try {
                         x.nibe1155 = nibe1155.toObject();
+                        const pElHeater = nibe1155.getElectricHeaterPowerAsNumber();
+                        const pCompressor = nibe1155.getCompressorInPowerAsNumber();
+                        const p = (pElHeater >= 0 ? pElHeater : 0) + (pCompressor >=0 ? pCompressor : 0);
+                        this._eHeatPumpDaily.accumulateTotalEnergy(p, nibe1155.controller.createdAt);
                         // debug.info('===> NIB1155 controller:\n%o', x.nibe1155.controller);
                         // debug.info('===> NIB1155 %s f=%dHz, P=%dW, tVorlauf=%d°C  tPuffer=%d°C %s %s', nibe1155.controller.currentMode,
                         //             nibe1155.getCompressorFrequencyAsNumber(), nibe1155.getCompressorInPowerAsNumber(),
@@ -366,6 +385,7 @@ export class Monitor {
                     createdAt:             new Date(),
                     eOutDaily:             this._eOutDaily.dailyEnergy,
                     eInDaily:              this._eInDaily.dailyEnergy,
+                    eHeatPumpDaily:        this._eHeatPumpDaily.dailyEnergy,
                     batOutDaily:           this._batOutDaily.dailyEnergy,
                     batInDaily:            this._batInDaily.dailyEnergy,
                     pvSouthEnergy:         this._pvSouthEnergy.totalEnergy,
@@ -418,6 +438,7 @@ export class Monitor {
                 pvEastWestEnergyDaily: this._pvEastWestEnergyDaily.toObject(),
                 eInDaily: this._eInDaily.toObject(),
                 eOutDaily: this._eOutDaily.toObject(),
+                eHeatPumpDaily: this._eHeatPumpDaily.toObject(),
                 batInDaily: this._batInDaily.toObject(),
                 batOutDaily: this._batOutDaily.toObject()
             };

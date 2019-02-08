@@ -115,9 +115,7 @@ export class Server {
 
     private shouldCompress (req: express.Request, res: express.Response): boolean {
         const h = req.headers['accept-encoding'];
-        debug.info('--> %o: %s (Headers: %s)', req.socket.remoteAddress, h, Object.getOwnPropertyNames(req.headers) );
         if (h && h.indexOf('gzip') >= 0) {
-            debug.info('----> compress');
             return true;
         }
         return false;
@@ -185,7 +183,7 @@ export class Server {
         if (req.url === '/favicon.ico') {
             const fileName = path.join(__dirname, '..', 'assets/public/favicon.ico');
             console.log(fileName);
-            debug.info(fileName);
+            // debug.info(fileName);
             res.sendFile(fileName);
             return;
         }

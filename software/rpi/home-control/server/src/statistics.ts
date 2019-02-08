@@ -402,9 +402,9 @@ class StatisticsRecordFactory extends StatisticsRecord {
                 case 'e-site-daily':    this.handleValue(v, this._valueCount, r.getFroniusSiteDailyEnergyAsNumber()); break;
                 case 'e-in-daily':      this.handleValue(v, this._valueCount, r.getEInDailyAsNumber()); break;
                 case 'e-out-daily':     this.handleValue(v, this._valueCount, r.getEOutDailyAsNumber()); break;
-                case 'boiler-p':        this.handleValue(v, this._valueCount, r.getBoilerActivePower()); break;
-                case 'boiler-e-daily':  this.handleValue(v, this._valueCount, r.getBoilerEnergyDaily()); break;
-                case 'boiler-e':        this.handleValue(v, this._valueCount, r.getBoilerEnergyTotal()); break;
+                case 'boiler-p':        this.handleValue(v, this._valueCount, r.getBoilerActivePowerAsNumber()); break;
+                case 'boiler-e-daily':  this.handleValue(v, this._valueCount, r.getBoilerEnergyDailyAsNumber()); break;
+                case 'boiler-e':        this.handleValue(v, this._valueCount, r.getBoilerEnergyTotalAsNumber()); break;
                 default: debug.warn('unsupported id %s', h.id); break;
             }
         }

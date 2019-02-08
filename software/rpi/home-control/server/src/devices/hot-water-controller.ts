@@ -118,7 +118,7 @@ export class HotWaterController {
         const pBat = mr && mr.getBatteryPowerAsNumber();
         const pGrid = mr && mr.getGridActivePowerAsNumber();
         options.path = '/monitor?eBat=' + Math.round(eBat) + '&pBat=' + Math.round(pBat) + '&pGrid=' + Math.round(pGrid);
-        debug.fine('--> path = %s', options.path);
+        debug.finer('--> path = %s', options.path);
         // if (eBat !== null && pGrid !== null) {
         //     options.path = '/monitor?eBat=' + Math.round(eBat) + '&pBat=' + Math.round(pBat) + '&pGrid=' + Math.round(pGrid);
         // } else {

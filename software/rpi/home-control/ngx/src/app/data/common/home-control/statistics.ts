@@ -1,8 +1,25 @@
 
 export interface IStatisticDefinition {
-    pGrid:  IStatisticItemDefinition;
-    eOut:   IStatisticItemDefinition;
-    eIn:    IStatisticItemDefinition;
+    pPv:            IStatisticItemDefinition;
+    pPvS:           IStatisticItemDefinition;
+    pPvEW:          IStatisticItemDefinition;
+    pBat:           IStatisticItemDefinition;
+    pGrid:          IStatisticItemDefinition;
+    pBoiler:        IStatisticItemDefinition;
+    pHeatPump:      IStatisticItemDefinition;
+    eOut:           IStatisticItemDefinition;
+    eIn:            IStatisticItemDefinition;
+    eOutDaily:      IStatisticItemDefinition;
+    eInDaily:       IStatisticItemDefinition;
+    eBoilerDaily:   IStatisticItemDefinition;
+    eHeatPumpDaily: IStatisticItemDefinition;
+    ePvDaily:       IStatisticItemDefinition;
+    ePvSDaily:      IStatisticItemDefinition;
+    ePvEWDaily:     IStatisticItemDefinition;
+    capBatPercent:  IStatisticItemDefinition;
+    tOutdoor:       IStatisticItemDefinition;
+    tHeatSupply:    IStatisticItemDefinition;
+    tHeatBuffer:    IStatisticItemDefinition;
 }
 
 export type StatisticAttribute = keyof IStatisticDefinition;
@@ -34,6 +51,62 @@ export class Statistics {
 
     // tslint:disable:max-line-length
     static defById: { [ id in StatisticAttribute ]: IStatisticItemDefinition } =  {
+        pPv: {
+            id: 'pPv',
+            shortLabel: 'pv-p',
+            label: { en: 'active power from photovoltaik', de: 'Wirkleistung Photovoltaik' },
+            format: { format: '%.0f', unit: 'W', func: (v) => Math.round(v) },
+            type: {
+                second: { value: true },
+                minute: { min: true, avg: true, max: true, twa: true },
+                hour:   { min: true, max: true },
+                day:    { min: true, max: true },
+                month:  { min: true, max: true },
+                year:   { min: true, max: true }
+            }
+        },
+        pPvS: {
+            id: 'pPvS',
+            shortLabel: 'pv-s-p',
+            label: { en: 'active power from photovoltaik south', de: 'Wirkleistung Photovoltaik Süd' },
+            format: { format: '%.0f', unit: 'W', func: (v) => Math.round(v) },
+            type: {
+                second: { value: true },
+                minute: { min: true, avg: true, max: true, twa: true },
+                hour:   { min: true, max: true },
+                day:    { min: true, max: true },
+                month:  { min: true, max: true },
+                year:   { min: true, max: true }
+            }
+        },
+        pPvEW: {
+            id: 'pPvEW',
+            shortLabel: 'pv-ew-p',
+            label: { en: 'active power from photovoltaik east/west', de: 'Wirkleistung Photovoltaik Ost/West' },
+            format: { format: '%.0f', unit: 'W', func: (v) => Math.round(v) },
+            type: {
+                second: { value: true },
+                minute: { min: true, avg: true, max: true, twa: true },
+                hour:   { min: true, max: true },
+                day:    { min: true, max: true },
+                month:  { min: true, max: true },
+                year:   { min: true, max: true }
+            }
+        },
+        pBat: {
+            id: 'pBat',
+            shortLabel: 'bat-p',
+            label: { en: 'active power from battery', de: 'Wirkleistung von Battery (Lieferung P>0)' },
+            format: { format: '%.0f', unit: 'W', func: (v) => Math.round(v) },
+            type: {
+                second: { value: true },
+                minute: { min: true, avg: true, max: true, twa: true },
+                hour:   { min: true, max: true },
+                day:    { min: true, max: true },
+                month:  { min: true, max: true },
+                year:   { min: true, max: true }
+            }
+        },
         pGrid: {
             id: 'pGrid',
             shortLabel: 'grid-p',
@@ -43,6 +116,34 @@ export class Statistics {
                 second: { value: true },
                 minute: { min: true, avg: true, max: true},
                 hour:   { min: true, max: true },
+                day:    { min: true, max: true },
+                month:  { min: true, max: true },
+                year:   { min: true, max: true }
+            }
+        },
+        pBoiler: {
+            id: 'pBoiler',
+            shortLabel: 'boiler-p',
+            label: { en: 'active power to boiler', de: 'Boiler Wirkleistung' },
+            format: { format: '%.0f', unit: 'W', func: (v) => Math.round(v) },
+            type: {
+                second: { value: true },
+                minute: { min: true, twa: true, max: true},
+                hour:   { min: true, twa: true, max: true },
+                day:    { min: true, max: true },
+                month:  { min: true, max: true },
+                year:   { min: true, max: true }
+            }
+        },
+        pHeatPump: {
+            id: 'pHeatPump',
+            shortLabel: 'heatPump-p',
+            label: { en: 'active power to heat-pump', de: 'Wärmepumpe Wirkleistung' },
+            format: { format: '%.0f', unit: 'W', func: (v) => Math.round(v) },
+            type: {
+                second: { value: true },
+                minute: { min: true, twa: true, max: true},
+                hour:   { min: true, twa: true, max: true },
                 day:    { min: true, max: true },
                 month:  { min: true, max: true },
                 year:   { min: true, max: true }
@@ -75,9 +176,151 @@ export class Statistics {
                 year:   { max:   { format: { format: '%.0f',  unit: 'kWh', func: (e) => Math.round(e / 1000) } } },
                 total:  { max:   { format: { format: '%.0f',  unit: 'kWh', func: (e) => Math.round(e / 1000) } } }
             }
+        },
+        eOutDaily: {
+            id: 'eOutDaily',
+            shortLabel: 'grid-e-out',
+            label: { en: 'active dayily energy to grid', de: 'Wirkenergie Tageslieferung an Netz' },
+            type: {
+                second: { value: { format: { format: '%.02f', unit: 'Wh',  func: (e) => Math.round(e * 10) / 10 } } } ,
+                minute: { max:   { format: { format: '%.02f', unit: 'Wh',  func: (e) => Math.round(e * 10) / 10 } } },
+                hour:   { max:   { format: { format: '%.02f', unit: 'kWh', func: (e) => Math.round(e / 10) / 100 } } },
+                day:    { max:   { format: { format: '%.02f', unit: 'kWh', func: (e) => Math.round(e / 10) / 100 } } },
+                month:  { max:   { format: { format: '%.01f', unit: 'kWh', func: (e) => Math.round(e / 100) / 10 } } },
+                year:   { max:   { format: { format: '%.0f',  unit: 'kWh', func: (e) => Math.round(e / 1000) } } },
+                total:  { max:   { format: { format: '%.0f',  unit: 'kWh', func: (e) => Math.round(e / 1000) } } }
+            }
+        },
+        eInDaily: {
+            id: 'eInDaily',
+            shortLabel: 'grid-e-in',
+            label: { en: 'active daily energy from grid', de: 'Wirkenergie Tagesbezug vom Netz' },
+            type: {
+                second: { value: { format: { format: '%.02f', unit: 'Wh',  func: (e) => Math.round(e * 10) / 10 } } } ,
+                minute: { max:   { format: { format: '%.02f', unit: 'Wh',  func: (e) => Math.round(e * 10) / 10 } } },
+                hour:   { max:   { format: { format: '%.02f', unit: 'kWh', func: (e) => Math.round(e / 10) / 100 } } },
+                day:    { max:   { format: { format: '%.02f', unit: 'kWh', func: (e) => Math.round(e / 10) / 100 } } },
+                month:  { max:   { format: { format: '%.01f', unit: 'kWh', func: (e) => Math.round(e / 100) / 10 } } },
+                year:   { max:   { format: { format: '%.0f',  unit: 'kWh', func: (e) => Math.round(e / 1000) } } },
+                total:  { max:   { format: { format: '%.0f',  unit: 'kWh', func: (e) => Math.round(e / 1000) } } }
+            }
+        },
+        eBoilerDaily: {
+            id: 'eBoilerDaily',
+            shortLabel: 'boiler-e-daily',
+            label: { en: 'active daily energy to boiler', de: 'Boiler Wirkenergie Tagesbezug' },
+            type: {
+                second: { value: { format: { format: '%.02f', unit: 'Wh',  func: (e) => Math.round(e * 10) / 10 } } } ,
+                minute: { max:   { format: { format: '%.02f', unit: 'Wh',  func: (e) => Math.round(e * 10) / 10 } } },
+                hour:   { max:   { format: { format: '%.02f', unit: 'kWh', func: (e) => Math.round(e / 10) / 100 } } },
+                day:    { max:   { format: { format: '%.02f', unit: 'kWh', func: (e) => Math.round(e / 10) / 100 } } },
+                month:  { max:   { format: { format: '%.01f', unit: 'kWh', func: (e) => Math.round(e / 100) / 10 } } },
+                year:   { max:   { format: { format: '%.0f',  unit: 'kWh', func: (e) => Math.round(e / 1000) } } },
+                total:  { max:   { format: { format: '%.0f',  unit: 'kWh', func: (e) => Math.round(e / 1000) } } }
+            }
+        },
+        eHeatPumpDaily: {
+            id: 'eHeatPumpDaily',
+            shortLabel: 'heatpump-e-daily',
+            label: { en: 'active daily energy to heatpump', de: 'Wärmepumpe Wirkenergie Tagesbezug' },
+            type: {
+                second: { value: { format: { format: '%.02f', unit: 'Wh',  func: (e) => Math.round(e * 10) / 10 } } } ,
+                minute: { max:   { format: { format: '%.02f', unit: 'Wh',  func: (e) => Math.round(e * 10) / 10 } } },
+                hour:   { max:   { format: { format: '%.02f', unit: 'kWh', func: (e) => Math.round(e / 10) / 100 } } },
+                day:    { max:   { format: { format: '%.02f', unit: 'kWh', func: (e) => Math.round(e / 10) / 100 } } },
+                month:  { max:   { format: { format: '%.01f', unit: 'kWh', func: (e) => Math.round(e / 100) / 10 } } },
+                year:   { max:   { format: { format: '%.0f',  unit: 'kWh', func: (e) => Math.round(e / 1000) } } },
+                total:  { max:   { format: { format: '%.0f',  unit: 'kWh', func: (e) => Math.round(e / 1000) } } }
+            }
+        },
+        ePvDaily: {
+            id: 'ePvDaily',
+            shortLabel: 'pv-e-daily',
+            label: { en: 'active daily energy from photovoltaik', de: 'Tages-Wirkenergie von Photovoltaik' },
+            type: {
+                second: { value: { format: { format: '%.02f', unit: 'Wh',  func: (e) => Math.round(e * 10) / 10 } } } ,
+                minute: { max:   { format: { format: '%.02f', unit: 'Wh',  func: (e) => Math.round(e * 10) / 10 } } },
+                hour:   { max:   { format: { format: '%.02f', unit: 'kWh', func: (e) => Math.round(e / 10) / 100 } } },
+                day:    { max:   { format: { format: '%.02f', unit: 'kWh', func: (e) => Math.round(e / 10) / 100 } } },
+                month:  { max:   { format: { format: '%.01f', unit: 'kWh', func: (e) => Math.round(e / 100) / 10 } } },
+                year:   { max:   { format: { format: '%.0f',  unit: 'kWh', func: (e) => Math.round(e / 1000) } } },
+                total:  { max:   { format: { format: '%.0f',  unit: 'kWh', func: (e) => Math.round(e / 1000) } } }
+            }
+        },
+        ePvSDaily: {
+            id: 'ePvSDaily',
+            shortLabel: 'pv-s-e-daily',
+            label: { en: 'active daily energy from photovoltaik south', de: 'Tages-Wirkenergie von Photovoltaik Süd' },
+            type: {
+                second: { value: { format: { format: '%.02f', unit: 'Wh',  func: (e) => Math.round(e * 10) / 10 } } } ,
+                minute: { max:   { format: { format: '%.02f', unit: 'Wh',  func: (e) => Math.round(e * 10) / 10 } } },
+                hour:   { max:   { format: { format: '%.02f', unit: 'kWh', func: (e) => Math.round(e / 10) / 100 } } },
+                day:    { max:   { format: { format: '%.02f', unit: 'kWh', func: (e) => Math.round(e / 10) / 100 } } },
+                month:  { max:   { format: { format: '%.01f', unit: 'kWh', func: (e) => Math.round(e / 100) / 10 } } },
+                year:   { max:   { format: { format: '%.0f',  unit: 'kWh', func: (e) => Math.round(e / 1000) } } },
+                total:  { max:   { format: { format: '%.0f',  unit: 'kWh', func: (e) => Math.round(e / 1000) } } }
+            }
+        },
+        ePvEWDaily: {
+            id: 'ePvEWDaily',
+            shortLabel: 'pv-ew-e-daily',
+            label: { en: 'active daily energy from photovoltaik east/west', de: 'Tages-Wirkenergie von Photovoltaik Ost/West' },
+            type: {
+                second: { value: { format: { format: '%.02f', unit: 'Wh',  func: (e) => Math.round(e * 10) / 10 } } } ,
+                minute: { max:   { format: { format: '%.02f', unit: 'Wh',  func: (e) => Math.round(e * 10) / 10 } } },
+                hour:   { max:   { format: { format: '%.02f', unit: 'kWh', func: (e) => Math.round(e / 10) / 100 } } },
+                day:    { max:   { format: { format: '%.02f', unit: 'kWh', func: (e) => Math.round(e / 10) / 100 } } },
+                month:  { max:   { format: { format: '%.01f', unit: 'kWh', func: (e) => Math.round(e / 100) / 10 } } },
+                year:   { max:   { format: { format: '%.0f',  unit: 'kWh', func: (e) => Math.round(e / 1000) } } },
+                total:  { max:   { format: { format: '%.0f',  unit: 'kWh', func: (e) => Math.round(e / 1000) } } }
+            }
+        },
+        capBatPercent: {
+            id: 'capBatPercent',
+            shortLabel: 'bat-cap-percent',
+            label: { en: 'battery load as percent of nominal capacity', de: 'Batterieladezustand in % (von Nominalkapazität)' },
+            type: {
+                second: { value: true },
+                minute: { min: true, twa: true, max: true},
+                hour:   { min: true, twa: true, max: true },
+                day:    { min: true, twa: true, max: true },
+            }
+        },
+        tOutdoor: {
+            id: 'tOutdoor',
+            shortLabel: 'outdoor-t',
+            label: { en: 'outdoor temperature in °C', de: 'Außentemperatur in °C' },
+            type: {
+                second: { value: true },
+                minute: { min: true, twa: true, max: true},
+                hour:   { min: true, twa: true, max: true },
+                day:    { min: true, twa: true, max: true },
+                month:  { min: true, twa: true, max: true },
+                year:   { min: true, twa: true, max: true }
+            }
+        },
+        tHeatSupply: {
+            id: 'tHeatSupply',
+            shortLabel: 'heatpump-temp-supply-fwd',
+            label: { en: 'Heatpump supply temperature forward', de: 'Heizung Vorlauf zu Puffer' },
+            type: {
+                second: { value: true },
+                minute: { min: true, twa: true, max: true},
+                hour:   { min: true, twa: true, max: true },
+                day:    { min: true, twa: true, max: true },
+            }
+        },
+        tHeatBuffer: {
+            id: 'tHeatBuffer',
+            shortLabel: 'heatpump-temp-buffer',
+            label: { en: 'Heatpump buffer temperature', de: 'Heizung Puffer Temperatur' },
+            type: {
+                second: { value: true },
+                minute: { min: true, twa: true, max: true},
+                hour:   { min: true, twa: true, max: true },
+                day:    { min: true, twa: true, max: true },
+            }
         }
-
-
     };
     // tslint:enable:max-line-length
 

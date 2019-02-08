@@ -291,7 +291,6 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
     public getEInDailyAsNumber (maxAgeSeconds = 20): number | null {
         if (!this._calculated || typeof this._calculated.eInDaily !== 'number') { return null; }
         return this._calculated.eInDaily;
-
     }
 
     public getPvEastWestEnergyAsNumber (maxAgeSeconds = 20): number | null {
@@ -345,22 +344,51 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
         return x;
     }
 
-    public getBoilerActivePower (maxAgeSeconds = 20): number | null {
+    public getHeatpumpSupplyS1TempAsNumber (maxAgeSeconds = 20): number | null {
+        const nibe = this._nibe1155;
+        if (!nibe || !nibe.values) { return null; }
+        const x = nibe.getSupplyS1TempAsNumber(maxAgeSeconds);
+        if (x === null) { return null; }
+        return x;
+    }
+
+    public getHeatpumpSupplyTempAsNumber (maxAgeSeconds = 20): number | null {
+        const nibe = this._nibe1155;
+        if (!nibe || !nibe.values) { return null; }
+        const x = nibe.getSupplyTempAsNumber(maxAgeSeconds);
+        if (x === null) { return null; }
+        return x;
+    }
+
+    public getHeatpumpEnergyDailyAsNumber (maxAgeSeconds = 20): number | null {
+        if (!this._calculated || typeof this._calculated.eHeatPumpDaily !== 'number') { return null; }
+        return this._calculated.eHeatPumpDaily;
+    }
+
+    public getBoilerActivePowerAsNumber (maxAgeSeconds = 20): number | null {
         const boiler = this._boiler;
         if (!boiler) { return null; }
         return boiler.getActivePowerAsNumber(maxAgeSeconds);
     }
 
-    public getBoilerEnergyDaily (maxAgeSeconds = 20): number | null {
+    public getBoilerEnergyDailyAsNumber (maxAgeSeconds = 20): number | null {
         const boiler = this._boiler;
         if (!boiler) { return null; }
         return boiler.getEnergyDailyAsNumber(maxAgeSeconds);
     }
 
-    public getBoilerEnergyTotal (maxAgeSeconds = 20): number | null {
+    public getBoilerEnergyTotalAsNumber (maxAgeSeconds = 20): number | null {
         const boiler = this._boiler;
         if (!boiler) { return null; }
         return boiler.getEnergyTotalAsNumber(maxAgeSeconds);
+    }
+
+    public getOutdoorTempAsNumber (maxAgeSeconds = 20): number | null {
+        const nibe = this._nibe1155;
+        if (!nibe || !nibe.values) { return null; }
+        const x = nibe.getOutdoorTempAsNumber();
+        if (x === null) { return null; }
+        return x;
     }
 
 }
