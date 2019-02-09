@@ -1,4 +1,4 @@
-export const VERSION = '1.4.0';
+export const VERSION = '1.4.2';
 
 import * as cluster from 'cluster';
 import * as fs from 'fs';

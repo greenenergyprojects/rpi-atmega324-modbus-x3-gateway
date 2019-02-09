@@ -9,9 +9,11 @@ import { sprintf } from 'sprintf-js';
 import { MonitorRecord, IMonitorRecord } from '../data/common/home-control/monitor-record';
 import { StatisticsType, StatisticAttribute } from '../data/common/home-control/statistics';
 import { IStatisticsDataConfig, StatisticsData } from './statistics-data';
+import { StatisticsCache, StatisticsCacheConfig } from './statistics-cache';
 
 interface IStatisticsConfig {
     disabled?: boolean;
+    cache?: StatisticsCacheConfig;
     data: IStatisticsDataConfig [];
 }
 
@@ -33,6 +35,7 @@ export class Statistics {
         if (this._instance) { throw new Error('instance already created'); }
         const rv = new Statistics(config);
         await rv.init();
+        await StatisticsCache.createInstance(config.cache);
         this._instance = rv;
         return rv;
     }
@@ -79,17 +82,20 @@ export class Statistics {
     public async start () {
         if (this._timer) { throw new Error('already running'); }
         if (!this._config.disabled) {
+            await StatisticsCache.getInstance().start();
             this._timer = setInterval( () => this.handleTimer(), 1000);
         }
     }
 
     public async shutdown (cause: string) {
         debug.info('shutdown (%s)', cause);
-        await this.delay(1000);
+        // await this.delay(1000);
         if (this._timer) {
             clearInterval(this._timer);
             this._timer = null;
+            await StatisticsCache.getInstance().stop();
             process.send('shutdown');
+            await this.delay(100);
             process.exit(0);
         }
     }
@@ -135,6 +141,7 @@ export class Statistics {
         for (const d of this._data) {
             d.refresh(r);
         }
+        StatisticsCache.getInstance().refresh(r);
     }
 
 }

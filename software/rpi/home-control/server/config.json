@@ -1,5 +1,5 @@
 {
-    "shutdownMillis": 2000,
+    "shutdownMillis": 5000,
     "server": {
         "start": true,
         "port": 8080,
@@ -72,6 +72,11 @@
     },
     "statistics": {
         "disabled": false,
+        "cache": {
+            "disabled": false,
+            "init": true,
+            "backup": { "path": "/var/lib/home-control/statistics-cache.json", "periodSeconds": 10, "rotate": 2 }
+        },
         "data": [{
             "ids":   [ 
                 "tOutdoor", "tHeatSupply", "tHeatBuffer",

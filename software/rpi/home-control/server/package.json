@@ -26,7 +26,8 @@
     "rpi-gpio": "^2.1.0",
     "serialport": "^7.1.1",
     "sha256": "^0.2.0",
-    "sprintf-js": "^1.1.1"
+    "sprintf-js": "^1.1.1",
+    "tmp": "0.0.33"
   },
   "devDependencies": {
     "@types/body-parser": "^1.17.0",
@@ -39,6 +40,7 @@
     "@types/node": "^8.10.38",
     "@types/serialport": "^7.0.1",
     "@types/sprintf-js": "^1.1.1",
+    "@types/tmp": "0.0.33",
     "del": "^3.0.0",
     "gulp": "^4.0.0",
     "gulp-changed": "^3.2.0",

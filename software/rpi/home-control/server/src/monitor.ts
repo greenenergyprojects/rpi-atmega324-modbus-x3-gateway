@@ -284,8 +284,8 @@ export class Monitor {
                         x.nibe1155 = nibe1155.toObject();
                         const pElHeater = nibe1155.getElectricHeaterPowerAsNumber();
                         const pCompressor = nibe1155.getCompressorInPowerAsNumber();
-                        const p = (pElHeater >= 0 ? pElHeater : 0) + (pCompressor >=0 ? pCompressor : 0);
-                        this._eHeatPumpDaily.accumulateTotalEnergy(p, nibe1155.controller.createdAt);
+                        const p = (pElHeater >= 0 ? pElHeater : 0) + (pCompressor >= 0 ? pCompressor : 0);
+                        this._eHeatPumpDaily.accumulateDailyEnergy(p, nibe1155.controller.createdAt);
                         // debug.info('===> NIB1155 controller:\n%o', x.nibe1155.controller);
                         // debug.info('===> NIB1155 %s f=%dHz, P=%dW, tVorlauf=%d°C  tPuffer=%d°C %s %s', nibe1155.controller.currentMode,
                         //             nibe1155.getCompressorFrequencyAsNumber(), nibe1155.getCompressorInPowerAsNumber(),

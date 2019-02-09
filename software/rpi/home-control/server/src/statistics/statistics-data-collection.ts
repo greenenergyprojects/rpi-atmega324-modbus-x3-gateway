@@ -4,11 +4,14 @@ const debug: debugsx.IFullLogger = debugsx.createFullLogger('StatisticsDataColle
 
 import { sprintf } from 'sprintf-js';
 
-import { StatisticsType, StatisticsOptions, IStatisticItemDefinition, StatisticAttribute, ValueType } from '../data/common/home-control/statistics';
+import { StatisticsType, StatisticsOptions, IStatisticItemDefinition, StatisticAttribute, ValueType, Statistics } from '../data/common/home-control/statistics';
+import { MonitorRecord } from '../data/common/home-control/monitor-record';
 
 export type CollectionType = 'fromTime' | 'toTime' | 'count' | 'value' | 'min' | 'max' | 'avg' | 'twa' | 'ewa';
 
 export interface IStatisticsDataCollection {
+    id: StatisticAttribute;
+    type: StatisticsType;
     start: Date | number | string;
     last: Date | number | string;
     cnt: number;
@@ -18,9 +21,33 @@ export interface IStatisticsDataCollection {
     avg?: number;
     twa?: number;
     ewa?: number;
+    ewaStart?: { at: Date, value: number };
+    ewaTau?: number;
 }
 
 export class StatisticsDataCollection {
+
+    public static createInstance (d: IStatisticsDataCollection) {
+        const def = Statistics.defById[d.id];
+        const rv = new StatisticsDataCollection(d.id, d.type, def);
+        if (d.start) { rv._start = new Date(d.start); }
+        if (d.last) { rv._last = new Date(d.last); }
+        if (d.cnt >= 0) { rv._cnt = d.cnt; }
+        if (d.value !== undefined) { rv._value = d.value; }
+        if (d.min !== undefined) { rv._min = d.min; }
+        if (d.max !== undefined) { rv._max = d.max; }
+        if (d.avg !== undefined) { rv._avg = d.avg; }
+        if (d.twa !== undefined) { rv._twa = d.twa; }
+        if (d.ewa !== undefined) { rv._ewa = d.ewa; }
+        if (d.ewaStart !== undefined && d.ewaStart.at && typeof d.ewaStart.at === 'number') {
+            rv._ewaStart = { at: new Date(d.ewaStart.at), value: d.ewaStart.value };
+        }
+        if (d.ewaTau !== undefined) { rv._ewaTau = d.ewaTau; }
+        if (rv.cnt > 0 && (!(rv.start instanceof Date) || !(rv.last instanceof Date) || rv.start > rv.last)) {
+            throw new Error('invalid arguments');
+        }
+        return rv;
+    }
 
     private _start: Date;
     private _last: Date;
@@ -39,6 +66,10 @@ export class StatisticsDataCollection {
     private _ewaTau: number;
 
     public constructor (id: StatisticAttribute, type: StatisticsType, def: IStatisticItemDefinition, ewaStart?: { at: Date, value: number }) {
+        if (!id || !type  || !def || def.id !== id) {
+            throw new Error('invalid arguments');
+        }
+
         this._id = id;
         this._type = type;
         this._def = def;
@@ -59,16 +90,20 @@ export class StatisticsDataCollection {
 
     public toObject (preserveDate = true): IStatisticsDataCollection {
         const rv: IStatisticsDataCollection = {
+            id:    this._id,
+            type:  this._type,
             start: preserveDate ? this._start : this._start.getTime(),
             last:  preserveDate ? this._last : this._last.getTime(),
             cnt:   this._cnt
         };
-        if (this._value !== undefined) { rv.value = this._value; }
-        if (this._min !== undefined)   { rv.min = this._min; }
-        if (this._max !== undefined)   { rv.max = this._max; }
-        if (this._avg !== undefined)   { rv.avg = this._avg; }
-        if (this._twa !== undefined)   { rv.twa = this._twa; }
-        if (this._ewa !== undefined)   { rv.ewa = this._ewa; }
+        if (this._value !== undefined)    { rv.value = this._value; }
+        if (this._min !== undefined)      { rv.min = this._min; }
+        if (this._max !== undefined)      { rv.max = this._max; }
+        if (this._avg !== undefined)      { rv.avg = Math.round(this._avg * 1000) / 1000; }
+        if (this._twa !== undefined)      { rv.twa = Math.round(this._twa * 1000) / 1000; }
+        if (this._ewa !== undefined)      { rv.ewa = Math.round(this._ewa * 1000) / 1000; }
+        if (this._ewaTau !== undefined)   { rv.ewaTau = this._ewaTau; }
+        if (this._ewaStart !== undefined) { rv.ewaStart = this._ewaStart; }
         return rv;
     }
 
@@ -90,13 +125,17 @@ export class StatisticsDataCollection {
         this._start = this._last;
         this._last = undefined;
         this._cnt = 0;
+        if (ewaStart) {
+            this._ewaStart = ewaStart;
+        } else if (this._ewa !== undefined) {
+            this._ewaStart = { at: this._last, value: this._ewa };
+        }
         if (this._value !== undefined)  { this._value = null; }
         if (this._min !== undefined)    { this._min = null; }
         if (this._max !== undefined)    { this._max = null; }
         if (this._avg !== undefined)    { this._avg = null; }
         if (this._twa !== undefined)    { this._twa = null; }
         if (this._ewa !== undefined)    { this._ewa = null; }
-        this._ewaStart = ewaStart;
     }
 
     public get id (): StatisticAttribute {
@@ -119,6 +158,10 @@ export class StatisticsDataCollection {
         return this._type;
     }
 
+    public get ewa (): number {
+        return this._ewa;
+    }
+
     public getValueByType (typ: ValueType, factor?: number, offset?: number): number | null {
         let rv: number;
         switch (typ) {
@@ -139,7 +182,7 @@ export class StatisticsDataCollection {
         return rv;
     }
 
-    public addValue (x: number, at?: Date): boolean {
+    public addRawValue (x: number, at?: Date): boolean {
         at = at || new Date();
         if (typeof x !== 'number' || this._last === at) {
             return false;
@@ -182,7 +225,101 @@ export class StatisticsDataCollection {
             }
         }
         this._last = at;
+        return true;
     }
 
+
+    public addValue (mr: MonitorRecord) {
+        this.addRawValue(this.getValue(this._id, mr), mr.createdAt);
+    }
+
+    public isCollectionFinished (now: Date): boolean {
+        if (this._type === 'second' && this._cnt > 0) { return this.hasSecondsChanged(now, this._last); }
+        if (this._type === 'minute' && this._cnt > 0) { return this.hasMinuteChanged(now, this._last); }
+        if (this._type === 'hour'   && this._cnt > 0) { return this.hasHourChanged(now, this._last); }
+        if (this._type === 'day'    && this._cnt > 0) { return this.hasDayChanged(now, this._last); }
+        if (this._type === 'month'  && this._cnt > 0) { return this.hasMonthChanged(now, this._last); }
+        if (this._type === 'year'   && this._cnt > 0) { return this.hasYearChanged(now, this._last); }
+        return false;
+    }
+
+
+    private getValue (id: StatisticAttribute, mr: MonitorRecord): number {
+        let rv: number;
+        switch (id) {
+            case 'pPv':            rv = Math.round(mr.getPvActivePowerAsNumber() * 100) / 100; break;
+            case 'pPvS':           rv = Math.round(mr.getPvSouthActivePowerAsNumber() * 100) / 100; break;
+            case 'pPvEW':          rv = Math.round(mr.getPvEastWestActivePowerAsNumber() * 100) / 100; break;
+            case 'pBat':           rv = Math.round(mr.getBatteryPowerAsNumber() * 100) / 100; break;
+            case 'pGrid':          rv = Math.round(mr.getGridActivePowerAsNumber() * 100) / 100; break;
+            case 'pBoiler':        rv = Math.round(mr.getBoilerActivePowerAsNumber() * 100) / 100; break;
+            case 'pHeatPump':      rv = Math.round(mr.getHeatpumpPowerAsNumber() * 100) / 100; break;
+            case 'eIn':            rv = Math.round(mr.getEInAsNumber() * 100) / 100; break;
+            case 'eOut':           rv = Math.round(mr.getEOutAsNumber() * 100) / 100; break;
+            case 'eInDaily':       rv = Math.round(mr.getEInDailyAsNumber() * 100) / 100; break;
+            case 'eOutDaily':      rv = Math.round(mr.getEOutDailyAsNumber() * 100) / 100; break;
+            case 'eBoilerDaily':   rv = Math.round(mr.getBoilerEnergyDailyAsNumber() * 100) / 100; break;
+            case 'eHeatPumpDaily': rv = Math.round(mr.getHeatpumpEnergyDailyAsNumber() * 100) / 100; break;
+            case 'ePvDaily':       rv = Math.round(mr.getPvEnergyDailyAsNumber() * 100) / 100; break;
+            case 'ePvSDaily':      rv = Math.round(mr.getPvSouthEnergyDailyAsNumber() * 100) / 100; break;
+            case 'ePvEWDaily':     rv = Math.round(mr.getPvEastWestEnergyDailyAsNumber() * 100) / 100; break;
+            case 'capBatPercent':  rv = Math.round(mr.getBatteryEnergyInPercentAsNumber() * 100) / 100; break;
+            case 'tOutdoor':       rv = Math.round(mr.getOutdoorTempAsNumber() * 100) / 100; break;
+            case 'tHeatSupply':    rv = Math.round(mr.getHeatpumpSupplyS1TempAsNumber() * 100) / 100; break;
+            case 'tHeatBuffer':    rv = Math.round(mr.getHeatpumpSupplyTempAsNumber() * 100) / 100; break;
+
+            default: {
+                debug.warn('getValue(%s) - unsupported id -> return 0', id);
+                return 0;
+            }
+        }
+        return rv;
+    }
+
+
+    private hasSecondsChanged (t1: Date, t2: Date): boolean {
+        if (t1.getFullYear() !== t2.getFullYear()) { return true; }
+        if (t1.getMonth() !== t2.getMonth()) { return true; }
+        if (t1.getDate() !== t2.getDate()) { return true; }
+        if (t1.getHours() !== t2.getHours()) { return true; }
+        if (t1.getMinutes() !== t2.getMinutes()) { return true; }
+        if (t1.getSeconds() !== t2.getSeconds()) { return true; }
+        return false;
+    }
+
+    private hasMinuteChanged (t1: Date, t2: Date): boolean {
+        if (t1.getFullYear() !== t2.getFullYear()) { return true; }
+        if (t1.getMonth() !== t2.getMonth()) { return true; }
+        if (t1.getDate() !== t2.getDate()) { return true; }
+        if (t1.getHours() !== t2.getHours()) { return true; }
+        if (t1.getMinutes() !== t2.getMinutes()) { return true; }
+        return false;
+    }
+
+    private hasHourChanged (t1: Date, t2: Date): boolean {
+        if (t1.getFullYear() !== t2.getFullYear()) { return true; }
+        if (t1.getMonth() !== t2.getMonth()) { return true; }
+        if (t1.getDate() !== t2.getDate()) { return true; }
+        if (t1.getHours() !== t2.getHours()) { return true; }
+        return false;
+    }
+
+    private hasDayChanged (t1: Date, t2: Date): boolean {
+        if (t1.getFullYear() !== t2.getFullYear()) { return true; }
+        if (t1.getMonth() !== t2.getMonth()) { return true; }
+        if (t1.getDate() !== t2.getDate()) { return true; }
+        return false;
+    }
+
+    private hasMonthChanged (t1: Date, t2: Date): boolean {
+        if (t1.getFullYear() !== t2.getFullYear()) { return true; }
+        if (t1.getMonth() !== t2.getMonth()) { return true; }
+        return false;
+    }
+
+    private hasYearChanged (t1: Date, t2: Date): boolean {
+        if (t1.getFullYear() !== t2.getFullYear()) { return true; }
+        return false;
+    }
 
 }
