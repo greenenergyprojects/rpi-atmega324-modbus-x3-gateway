@@ -2,6 +2,7 @@
 
 import * as debugsx from 'debug-sx';
 import { IStatisticsDataCollection, StatisticsDataCollection } from './statistics-data-collection';
+import { catchClause } from 'babel-types';
 const debug: debugsx.IFullLogger = debugsx.createFullLogger('Backup');
 
 export interface IBackup {
@@ -25,10 +26,17 @@ export class Backup implements IBackup {
                 try {
                     this._data.push(StatisticsDataCollection.createInstance(data.data[i]));
                 } catch (err) {
-                    errMsg += ' ' + i;
+                    try {
+                        errMsg += ' ' + i + '(id=' + data.data[i].id + ',type=' + data.data[i].type + ')';
+                    } catch (err2) {
+                        debug.warn('error on data %o', data.data[i]);
+                        errMsg += ' ' + i + '(?)';
+                    }
                 }
             }
-            if (errMsg !== '') { throw new Error('errors on collection index ' + errMsg); }
+            if (errMsg !== '') {
+                debug.warn('errors on the collections: ' + errMsg); 
+            }
         } catch (err) {
             throw new BackupError('constructor fails', err);
         }

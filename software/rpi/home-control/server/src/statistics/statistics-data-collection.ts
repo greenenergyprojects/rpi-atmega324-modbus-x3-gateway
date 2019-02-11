@@ -44,6 +44,7 @@ export class StatisticsDataCollection {
         }
         if (d.ewaTau !== undefined) { rv._ewaTau = d.ewaTau; }
         if (rv.cnt > 0 && (!(rv.start instanceof Date) || !(rv.last instanceof Date) || rv.start > rv.last)) {
+            debug.warn('invalid arguments\n%o', d);
             throw new Error('invalid arguments');
         }
         return rv;
@@ -86,6 +87,7 @@ export class StatisticsDataCollection {
             if (!(options.ewa.ewaTau > 0)) { throw new Error('invalid/missing ewa tau'); }
             this._ewaTau = options.ewa.ewaTau;
         }
+
     }
 
     public toObject (preserveDate = true): IStatisticsDataCollection {
@@ -234,39 +236,51 @@ export class StatisticsDataCollection {
     }
 
     public isCollectionFinished (now: Date): boolean {
-        if (this._type === 'second' && this._cnt > 0) { return this.hasSecondsChanged(now, this._last); }
-        if (this._type === 'minute' && this._cnt > 0) { return this.hasMinuteChanged(now, this._last); }
-        if (this._type === 'hour'   && this._cnt > 0) { return this.hasHourChanged(now, this._last); }
-        if (this._type === 'day'    && this._cnt > 0) { return this.hasDayChanged(now, this._last); }
-        if (this._type === 'month'  && this._cnt > 0) { return this.hasMonthChanged(now, this._last); }
-        if (this._type === 'year'   && this._cnt > 0) { return this.hasYearChanged(now, this._last); }
-        return false;
+        if (this._cnt <= 0) { return false; }
+        switch (this._type) {
+            case 'second': return this.hasSecondsChanged(now, this._last);
+            case 'minute': return this.hasMinuteChanged(now, this._last);
+            case 'hour':   return this.hasHourChanged(now, this._last);
+            case 'day':    return this.hasDayChanged(now, this._last);
+            case 'week':   return this.hasWeekChanged(now, this._last);
+            case 'month':  return this.hasMonthChanged(now, this._last);
+            case 'year':   return this.hasYearChanged(now, this._last);
+            case 'total':  return false;
+            default: {
+                debug.warn('isCollectionFinished() => invalid type %o', this._type);
+                return true;
+            }
+        }
     }
 
 
     private getValue (id: StatisticAttribute, mr: MonitorRecord): number {
         let rv: number;
         switch (id) {
-            case 'pPv':            rv = Math.round(mr.getPvActivePowerAsNumber() * 100) / 100; break;
-            case 'pPvS':           rv = Math.round(mr.getPvSouthActivePowerAsNumber() * 100) / 100; break;
-            case 'pPvEW':          rv = Math.round(mr.getPvEastWestActivePowerAsNumber() * 100) / 100; break;
-            case 'pBat':           rv = Math.round(mr.getBatteryPowerAsNumber() * 100) / 100; break;
-            case 'pGrid':          rv = Math.round(mr.getGridActivePowerAsNumber() * 100) / 100; break;
-            case 'pBoiler':        rv = Math.round(mr.getBoilerActivePowerAsNumber() * 100) / 100; break;
-            case 'pHeatPump':      rv = Math.round(mr.getHeatpumpPowerAsNumber() * 100) / 100; break;
-            case 'eIn':            rv = Math.round(mr.getEInAsNumber() * 100) / 100; break;
-            case 'eOut':           rv = Math.round(mr.getEOutAsNumber() * 100) / 100; break;
-            case 'eInDaily':       rv = Math.round(mr.getEInDailyAsNumber() * 100) / 100; break;
-            case 'eOutDaily':      rv = Math.round(mr.getEOutDailyAsNumber() * 100) / 100; break;
-            case 'eBoilerDaily':   rv = Math.round(mr.getBoilerEnergyDailyAsNumber() * 100) / 100; break;
-            case 'eHeatPumpDaily': rv = Math.round(mr.getHeatpumpEnergyDailyAsNumber() * 100) / 100; break;
-            case 'ePvDaily':       rv = Math.round(mr.getPvEnergyDailyAsNumber() * 100) / 100; break;
-            case 'ePvSDaily':      rv = Math.round(mr.getPvSouthEnergyDailyAsNumber() * 100) / 100; break;
-            case 'ePvEWDaily':     rv = Math.round(mr.getPvEastWestEnergyDailyAsNumber() * 100) / 100; break;
-            case 'capBatPercent':  rv = Math.round(mr.getBatteryEnergyInPercentAsNumber() * 100) / 100; break;
-            case 'tOutdoor':       rv = Math.round(mr.getOutdoorTempAsNumber() * 100) / 100; break;
-            case 'tHeatSupply':    rv = Math.round(mr.getHeatpumpSupplyS1TempAsNumber() * 100) / 100; break;
-            case 'tHeatBuffer':    rv = Math.round(mr.getHeatpumpSupplyTempAsNumber() * 100) / 100; break;
+            case 'pPv':               rv = Math.round(mr.getPvActivePowerAsNumber() * 100) / 100; break;
+            case 'pPvS':              rv = Math.round(mr.getPvSouthActivePowerAsNumber() * 100) / 100; break;
+            case 'pPvEW':             rv = Math.round(mr.getPvEastWestActivePowerAsNumber() * 100) / 100; break;
+            case 'pBat':              rv = Math.round(mr.getBatteryPowerAsNumber() * 100) / 100; break;
+            case 'pGrid':             rv = Math.round(mr.getGridActivePowerAsNumber() * 100) / 100; break;
+            case 'pBoiler':           rv = Math.round(mr.getBoilerActivePowerAsNumber() * 100) / 100; break;
+            case 'pHeatPump':         rv = Math.round(mr.getHeatpumpPowerAsNumber() * 100) / 100; break;
+            case 'eIn':               rv = Math.round(mr.getEInAsNumber() * 100) / 100; break;
+            case 'eOut':              rv = Math.round(mr.getEOutAsNumber() * 100) / 100; break;
+            case 'eInDaily':          rv = Math.round(mr.getEInDailyAsNumber() * 100) / 100; break;
+            case 'eOutDaily':         rv = Math.round(mr.getEOutDailyAsNumber() * 100) / 100; break;
+            case 'eBoilerDaily':      rv = Math.round(mr.getBoilerEnergyDailyAsNumber() * 100) / 100; break;
+            case 'eHeatPumpDaily':    rv = Math.round(mr.getHeatpumpEnergyDailyAsNumber() * 100) / 100; break;
+            case 'ePvDaily':          rv = Math.round(mr.getPvEnergyDailyAsNumber() * 100) / 100; break;
+            case 'ePvSDaily':         rv = Math.round(mr.getPvSouthEnergyDailyAsNumber() * 100) / 100; break;
+            case 'ePvEWDaily':        rv = Math.round(mr.getPvEastWestEnergyDailyAsNumber() * 100) / 100; break;
+            case 'capBatPercent':     rv = Math.round(mr.getBatteryEnergyInPercentAsNumber() * 100) / 100; break;
+            case 'tOutdoor':          rv = Math.round(mr.getOutdoorTempAsNumber() * 100) / 100; break;
+            case 'tHeatSupply':       rv = Math.round(mr.getHeatpumpSupplyS1TempAsNumber() * 100) / 100; break;
+            case 'tHeatSupplyReturn': rv = Math.round(mr.getHeatpumpSupplyS1ReturnTempAsNumber() * 100) / 100; break;
+            case 'tHeatBuffer':       rv = Math.round(mr.getHeatpumpSupplyTempAsNumber() * 100) / 100; break;
+            case 'tHeatBrineIn':      rv = Math.round(mr.getBrineInTempAsNumber() * 100) / 100; break;
+            case 'tHeatBrineOut':     rv = Math.round(mr.getBrineOutTempAsNumber() * 100) / 100; break;
+            case 'fHeatCompressor':   rv = Math.round(mr.getCompressorFrequencyAsNumber() * 100) / 100; break;
 
             default: {
                 debug.warn('getValue(%s) - unsupported id -> return 0', id);
@@ -274,6 +288,17 @@ export class StatisticsDataCollection {
             }
         }
         return rv;
+    }
+
+
+    private getWeekNumber (d: Date): { year: number, week: number } {
+        // https://stackoverflow.com/questions/6117814
+        // every week starts on monday, week=1 is first week
+        d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+        d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        const weekNo = Math.ceil(( ( (d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+        return { year: d.getUTCFullYear(), week: weekNo };
     }
 
 
@@ -309,6 +334,16 @@ export class StatisticsDataCollection {
         if (t1.getMonth() !== t2.getMonth()) { return true; }
         if (t1.getDate() !== t2.getDate()) { return true; }
         return false;
+    }
+
+    private hasWeekChanged (t1: Date, t2: Date): boolean {
+        const w1 = this.getWeekNumber(t1);
+        const w2 = this.getWeekNumber(t2);
+        if (w1.year !== w2.year) {
+            debug.info('week/year change %o <-> %o', w1, w2);
+            return w1.week !== w2.week;
+        }
+        return w1.week !== w2.week;
     }
 
     private hasMonthChanged (t1: Date, t2: Date): boolean {

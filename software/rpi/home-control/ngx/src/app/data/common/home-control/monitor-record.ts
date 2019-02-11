@@ -352,10 +352,42 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
         return x;
     }
 
+    public getHeatpumpSupplyS1ReturnTempAsNumber (maxAgeSeconds = 20): number | null {
+        const nibe = this._nibe1155;
+        if (!nibe || !nibe.values) { return null; }
+        const x = nibe.getSupplyS1ReturnTempAsNumber(maxAgeSeconds);
+        if (x === null) { return null; }
+        return x;
+    }
+
     public getHeatpumpSupplyTempAsNumber (maxAgeSeconds = 20): number | null {
         const nibe = this._nibe1155;
         if (!nibe || !nibe.values) { return null; }
         const x = nibe.getSupplyTempAsNumber(maxAgeSeconds);
+        if (x === null) { return null; }
+        return x;
+    }
+
+    public getBrineInTempAsNumber (maxAgeSeconds = 20): number | null {
+        const nibe = this._nibe1155;
+        if (!nibe || !nibe.values) { return null; }
+        const x = nibe.getBrineInTempAsNumber(maxAgeSeconds);
+        if (x === null) { return null; }
+        return x;
+    }
+
+    public getBrineOutTempAsNumber (maxAgeSeconds = 20): number | null {
+        const nibe = this._nibe1155;
+        if (!nibe || !nibe.values) { return null; }
+        const x = nibe.getBrineOutTempAsNumber(maxAgeSeconds);
+        if (x === null) { return null; }
+        return x;
+    }
+
+    public getCompressorFrequencyAsNumber (maxAgeSeconds = 20): number | null {
+        const nibe = this._nibe1155;
+        if (!nibe || !nibe.values) { return null; }
+        const x = nibe.getCompressorFrequencyAsNumber(maxAgeSeconds);
         if (x === null) { return null; }
         return x;
     }

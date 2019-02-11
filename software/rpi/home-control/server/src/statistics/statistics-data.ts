@@ -88,103 +88,6 @@ export class StatisticsData {
 
     // *****************************************************
 
-    // private getValue (id: StatisticAttribute, mr: MonitorRecord): number {
-    //     let rv: number;
-    //     switch (id) {
-    //         case 'pPv':            rv = Math.round(mr.getPvActivePowerAsNumber() * 100) / 100; break;
-    //         case 'pPvS':           rv = Math.round(mr.getPvSouthActivePowerAsNumber() * 100) / 100; break;
-    //         case 'pPvEW':          rv = Math.round(mr.getPvEastWestActivePowerAsNumber() * 100) / 100; break;
-    //         case 'pBat':           rv = Math.round(mr.getBatteryPowerAsNumber() * 100) / 100; break;
-    //         case 'pGrid':          rv = Math.round(mr.getGridActivePowerAsNumber() * 100) / 100; break;
-    //         case 'pBoiler':        rv = Math.round(mr.getBoilerActivePowerAsNumber() * 100) / 100; break;
-    //         case 'pHeatPump':      rv = Math.round(mr.getHeatpumpPowerAsNumber() * 100) / 100; break;
-    //         case 'eIn':            rv = Math.round(mr.getEInAsNumber() * 100) / 100; break;
-    //         case 'eOut':           rv = Math.round(mr.getEOutAsNumber() * 100) / 100; break;
-    //         case 'eInDaily':       rv = Math.round(mr.getEInDailyAsNumber() * 100) / 100; break;
-    //         case 'eOutDaily':      rv = Math.round(mr.getEOutDailyAsNumber() * 100) / 100; break;
-    //         case 'eBoilerDaily':   rv = Math.round(mr.getBoilerEnergyDailyAsNumber() * 100) / 100; break;
-    //         case 'eHeatPumpDaily': rv = Math.round(mr.getHeatpumpEnergyDailyAsNumber() * 100) / 100; break;
-    //         case 'ePvDaily':       rv = Math.round(mr.getPvEnergyDailyAsNumber() * 100) / 100; break;
-    //         case 'ePvSDaily':      rv = Math.round(mr.getPvSouthEnergyDailyAsNumber() * 100) / 100; break;
-    //         case 'ePvEWDaily':     rv = Math.round(mr.getPvEastWestEnergyDailyAsNumber() * 100) / 100; break;
-    //         case 'capBatPercent':  rv = Math.round(mr.getBatteryEnergyInPercentAsNumber() * 100) / 100; break;
-    //         case 'tOutdoor':       rv = Math.round(mr.getOutdoorTempAsNumber() * 100) / 100; break;
-    //         case 'tHeatSupply':    rv = Math.round(mr.getHeatpumpSupplyS1TempAsNumber() * 100) / 100; break;
-    //         case 'tHeatBuffer':    rv = Math.round(mr.getHeatpumpSupplyTempAsNumber() * 100) / 100; break;
-
-    //         default: {
-    //             debug.warn('getValue(%s) - unsupported id -> return 0', id);
-    //             return 0;
-    //         }
-    //     }
-    //     return rv;
-    // }
-
-    // private isCollectionFinished (coll: StatisticsDataCollection, at: Date): boolean {
-    //     if (coll.type === 'minute' && coll.cnt > 0 && this.hasMinuteChanged(at, this._lastAt) ||
-    //         coll.type === 'hour'   && coll.cnt > 0 && this.hasHourChanged(at, this._lastAt) ||
-    //         coll.type === 'day'    && coll.cnt > 0 && this.hasDayChanged(at, this._lastAt) ||
-    //         coll.type === 'month'  && coll.cnt > 0 && this.hasMonthChanged(at, this._lastAt) ||
-    //         coll.type === 'year'   && coll.cnt > 0 && this.hasYearChanged(at, this._lastAt)) {
-    //         return true;
-    //     } else {
-    //         return false;
-    //     }
-
-    // }
-
-    // private hasSecondsChanged (t1: Date, t2: Date): boolean {
-    //     if (t1.getFullYear() !== t2.getFullYear()) { return true; }
-    //     if (t1.getMonth() !== t2.getMonth()) { return true; }
-    //     if (t1.getDate() !== t2.getDate()) { return true; }
-    //     if (t1.getHours() !== t2.getHours()) { return true; }
-    //     if (t1.getMinutes() !== t2.getMinutes()) { return true; }
-    //     if (t1.getSeconds() !== t2.getSeconds()) { return true; }
-    //     return false;
-    // }
-
-    // private hasMinuteChanged (t1: Date, t2: Date): boolean {
-    //     if (t1.getFullYear() !== t2.getFullYear()) { return true; }
-    //     if (t1.getMonth() !== t2.getMonth()) { return true; }
-    //     if (t1.getDate() !== t2.getDate()) { return true; }
-    //     if (t1.getHours() !== t2.getHours()) { return true; }
-    //     if (t1.getMinutes() !== t2.getMinutes()) { return true; }
-    //     return false;
-    // }
-
-    // private hasHourChanged (t1: Date, t2: Date): boolean {
-    //     if (t1.getFullYear() !== t2.getFullYear()) { return true; }
-    //     if (t1.getMonth() !== t2.getMonth()) { return true; }
-    //     if (t1.getDate() !== t2.getDate()) { return true; }
-    //     if (t1.getHours() !== t2.getHours()) { return true; }
-    //     return false;
-    // }
-
-    // private hasDayChanged (t1: Date, t2: Date): boolean {
-    //     if (t1.getFullYear() !== t2.getFullYear()) { return true; }
-    //     if (t1.getMonth() !== t2.getMonth()) { return true; }
-    //     if (t1.getDate() !== t2.getDate()) { return true; }
-    //     return false;
-    // }
-
-    // private hasMonthChanged (t1: Date, t2: Date): boolean {
-    //     if (t1.getFullYear() !== t2.getFullYear()) { return true; }
-    //     if (t1.getMonth() !== t2.getMonth()) { return true; }
-    //     return false;
-    // }
-
-    // private hasYearChanged (t1: Date, t2: Date): boolean {
-    //     if (t1.getFullYear() !== t2.getFullYear()) { return true; }
-    //     return false;
-    // }
-
-    // private checkNumber (x: number, invalidReturnValue: any): number {
-    //     if (typeof (x) === 'number') {
-    //         return x;
-    //     } else {
-    //         return invalidReturnValue;
-    //     }
-    // }
 
     private replaceControls (s: string, at?: Date): string {
         at = at || new Date();
@@ -200,9 +103,6 @@ export class StatisticsData {
         return s;
     }
 
-    // private createFileName (path: string, at: Date): string {
-    //     return this.replaceControls(path, at);
-    // }
 
     private createCsvLine (fields: ICsvFileField [], collections: { [id in StatisticAttribute]?: StatisticsDataCollection }): string {
         let rv = '';
@@ -248,7 +148,7 @@ export class StatisticsData {
                     } else {
                         const v = coll.getValueByType(f.typ, f.factor, f.offset);
                         if (typeof(v) !== 'number') {
-                            debug.warn('collection %s, no valid value on field %s', coll.id, f.id);
+                            debug.warn('collection %s, no valid value on field %s (%o, %o)', coll.id, f.id, v, f);
                             s = '?';
                         } else {
                             s = sprintf(f.format || '%.3f', v);

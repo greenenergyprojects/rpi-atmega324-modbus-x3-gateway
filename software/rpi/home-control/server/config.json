@@ -75,15 +75,22 @@
         "cache": {
             "disabled": false,
             "init": true,
-            "backup": { "path": "/var/lib/home-control/statistics-cache.json", "periodSeconds": 10, "rotate": 2 }
+            "backup": { "path": "/var/lib/home-control/statistics-cache.json", "periodSeconds": 10, "rotate": 2 },
+            "save": { 
+                "minute": { "path": "/var/lib/home-control/home-control-values_%YYYY-%MM-%DD_%hh%m.json.gzip", "options": { "pretty": true } },
+                "hour":   { "path": "/var/lib/home-control/home-control-values-hour_%YYYY-%MM-%DD_%hh.json.gzip", "options": { "pretty": true } },
+                "day":    { "path": "/var/lib/home-control/home-control-values-day_%YYYY-%MM-%DD.json.gzip", "options": { "pretty": true } },
+                "week":   { "path": "/var/lib/home-control/home-control-values-week_%WWW.json.gzip", "options": { "pretty": true } },
+                "month":  { "path": "/var/lib/home-control/home-control-values-month_%YYYY-%MM.json.gzip", "options": { "pretty": true } },
+                "year":   { "path": "/var/lib/home-control/home-control-values-year_%YYYY.json.gzip", "options": { "pretty": true } }
+            }
         },
         "data": [{
             "ids":   [ 
-                "tOutdoor", "tHeatSupply", "tHeatBuffer",
-                "eOutDaily", "eInDaily", "ePvDaily", "ePvSDaily", "ePvEWDaily",
+                "pPv", "pPvS", "pPvEW", "pBat", "pGrid", "pBoiler", "pHeatPump",
+                "eOut", "eIn", "eOutDaily", "eInDaily", "eBoilerDaily", "eHeatPumpDaily", "ePvDaily", "ePvSDaily", "ePvEWDaily", 
                 "capBatPercent",
-                "pGrid", "pBat", "pPv", "pPvS", "pPvEW", "pBoiler", "pHeatPump", 
-                "eBoilerDaily","eHeatPumpDaily", "eOut", "eIn"
+                "tOutdoor", "tHeatSupply", "tHeatBuffer", "tHeatSupplyReturn", "tHeatBrineIn", "tHeatBrineOut", "fHeatCompressor"
             ],
             "range": "minute",
             "file": {
@@ -101,7 +108,7 @@
                     { "id": "ePvSDaily", "title": "E-PV-S-Tag/kWh", "typ": "max", "factor": 0.001, "format": "%.02f" },
                     { "id": "ePvEWDaily", "title": "E-PV-EW-Tag/kWh", "typ": "max", "factor": 0.001, "format": "%.02f" },
                     { "id": "capBatPercent", "title": "Bat/%", "typ": "twa", "format": "%.1f" },
-                    { "id": "pGrid", "title": "P-Netz/W", "typ": "avg", "format": "%.0f" },
+                    { "id": "pGrid", "title": "P-Netz/W", "typ": "twa", "format": "%.0f" },
                     { "id": "pBat", "title": "P-Bat/W", "typ": "twa", "format": "%.0f" },
                     { "id": "pPv", "title": "P-PV/W", "typ": "twa", "format": "%.0f" },
                     { "id": "pPvS", "title": "P-PV-S/W", "typ": "twa", "format": "%.0f" },
@@ -116,9 +123,6 @@
                     { "id": "eIn", "title": "E-Bezug/kWh", "typ": "max", "factor": 0.001, "format": "%.1f" }
                 ]
             }
-        },{
-            "ids":   [ "pGrid" ],
-            "range": "hour"
         }]
     },
     "pi-technik": {
