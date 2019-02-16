@@ -77,12 +77,12 @@
             "init": true,
             "backup": { "path": "/var/lib/home-control/statistics-cache.json", "periodSeconds": 10, "rotate": 2 },
             "save": { 
-                "minute": { "path": "/var/lib/home-control/home-control-values_%YYYY-%MM-%DD_%hh%m.json.gzip", "options": { "pretty": true } },
-                "hour":   { "path": "/var/lib/home-control/home-control-values-hour_%YYYY-%MM-%DD_%hh.json.gzip", "options": { "pretty": true } },
-                "day":    { "path": "/var/lib/home-control/home-control-values-day_%YYYY-%MM-%DD.json.gzip", "options": { "pretty": true } },
-                "week":   { "path": "/var/lib/home-control/home-control-values-week_%WWW.json.gzip", "options": { "pretty": true } },
-                "month":  { "path": "/var/lib/home-control/home-control-values-month_%YYYY-%MM.json.gzip", "options": { "pretty": true } },
-                "year":   { "path": "/var/lib/home-control/home-control-values-year_%YYYY.json.gzip", "options": { "pretty": true } }
+                "minute": { "path": "/var/lib/home-control/home-control-values-minute_%YYYY-%MM-%DD_%hh%m.json.gz", "options": { "pretty": true } },
+                "hour":   { "path": "/var/lib/home-control/home-control-values-hour_%YYYY-%MM-%DD_%hh.json.gz", "options": { "pretty": true } },
+                "day":    { "path": "/var/lib/home-control/home-control-values-day_%YYYY-%MM-%DD.json.gz", "options": { "pretty": true } },
+                "week":   { "path": "/var/lib/home-control/home-control-values-week_%WWW.json.gz", "options": { "pretty": true } },
+                "month":  { "path": "/var/lib/home-control/home-control-values-month_%YYYY-%MM.json.gz", "options": { "pretty": true } },
+                "year":   { "path": "/var/lib/home-control/home-control-values-year_%YYYY.json.gz", "options": { "pretty": true } }
             }
         },
         "data": [{

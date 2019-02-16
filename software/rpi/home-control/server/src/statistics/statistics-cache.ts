@@ -3,6 +3,7 @@ import * as debugsx from 'debug-sx';
 const debug: debugsx.IFullLogger = debugsx.createFullLogger('StatisticsCache');
 
 import * as fs from 'fs';
+import * as zlib from 'zlib';
 
 import { sprintf } from 'sprintf-js';
 import * as tmp from 'tmp';
@@ -12,9 +13,9 @@ import { StatisticsDataCollection, IStatisticsDataCollection } from './statistic
 import { Statistics, StatisticAttribute, StatisticsType } from '../data/common/home-control/statistics';
 import { MonitorRecord } from '../data/common/home-control/monitor-record';
 import { Backup, IBackup } from './backup';
-import { thisExpression } from 'babel-types';
 
-export type StatisticsCacheSavePeriodType =  'never' | 'always' | 'minute' | 'hour' | 'day' | 'week' | 'month' | 'year';
+
+export type StatisticsCacheSavePeriodType =  StatisticsType | 'never' | 'always';
 export interface IStatisticsCacheSaveOptions {
     pretty?: boolean;
 }
@@ -51,7 +52,8 @@ export class StatisticsCache {
     private _ids: StatisticAttribute [];
     private _lastBackupAt: Date;
     private _lastSaveAt: Date;
-    private _lastSaveCheckedAt: { [ type in StatisticsType ]?: Date } = {};
+    private _lastSaveCheckedAt: Date;
+    private _collectionsToSave: { [ type in StatisticsType ]?: StatisticsDataCollection [] } = {};
 
     private constructor (config?: StatisticsCacheConfig) {
         this._config = config || { disabled: true };
@@ -87,14 +89,20 @@ export class StatisticsCache {
                     if (!d) { continue; }
                     const types = <StatisticsType []>Object.getOwnPropertyNames(d.type);
                     for (const t of types) {
-                        this.save(t, r.createdAt);
                         const coll = this._data[id][t];
                         if (coll.isCollectionFinished(r.createdAt)) {
+                            if (this._config.save[coll.type]) {
+                                if (!Array.isArray(this._collectionsToSave[coll.type])) {
+                                    this._collectionsToSave[coll.type] = [];
+                                }
+                                this._collectionsToSave[coll.type].push(coll.clone());
+                            }
                             coll.reset();
                         }
                         coll.addValue(r);
                     }
                 }
+                this.save(r.createdAt);
             }
         }
 
@@ -282,117 +290,173 @@ export class StatisticsCache {
 
     }
 
-    private save (type: StatisticsType, now: Date) {
-        const lastCheckedAt = this._lastSaveCheckedAt[type];
-        let tPeriod: { min: Date, max: Date };
-        if (lastCheckedAt) {
-            if (lastCheckedAt.getFullYear() !== now.getFullYear()) {
-                if (type !== 'total') {
-                    tPeriod = { min: null, max: null};
-                }
-            } else if (lastCheckedAt.getMonth() !== now.getMonth()) {
-                if (type !== 'total' && type !== 'year') {
-                    tPeriod = { min: null, max: null};
-                }
-            } else if (this.getWeekNumber(lastCheckedAt).week !== this.getWeekNumber(now).week) {
-                if (type !== 'total' && type !== 'year' && type !== 'month') {
-                    tPeriod = { min: null, max: null};
-                }
-            } else if (lastCheckedAt.getDate() !== now.getDate()) {
-                if (type === 'day' || type === 'hour' || type === 'minute') {
-                    tPeriod = { min: null, max: null};
-                }
-            } else if (lastCheckedAt.getHours() !== now.getHours()) {
-                if (type === 'hour' || type === 'minute') {
-                    tPeriod = { min: null, max: null};
-                }
-            } else if (lastCheckedAt.getMinutes() !== now.getMinutes()) {
-                if (type === 'minute') {
-                    tPeriod = { min: null, max: null};
-                }
-            }
+    private save (now: Date) {
+        const lastCheckedAt = this._lastSaveCheckedAt;
+        for (const t of Object.getOwnPropertyNames(Statistics.defaultEnergyType)) {
+            const type = <StatisticsType>t;
 
-            if (tPeriod) {
-                switch (type) {
-                    case 'year': {
-                        let t2 = new Date(now.getFullYear());
-                        t2 = new Date(t2.getTime() - 1);
-                        tPeriod.min = new Date(t2.getFullYear());
-                        tPeriod.max = t2;
-                        break;
+            let tPeriod: { min: Date, max: Date };
+            if (lastCheckedAt) {
+                if (lastCheckedAt.getFullYear() !== now.getFullYear()) {
+                    if (type !== 'total') {
+                        tPeriod = { min: null, max: null};
                     }
-                    case 'month': {
-                        let t2 = new Date(now.getFullYear(), now.getMonth());
-                        t2 = new Date(t2.getTime() - 1);
-                        tPeriod.min = new Date(t2.getFullYear(), t2.getMonth());
-                        tPeriod.max = t2;
-                        break;
+                } else if (lastCheckedAt.getMonth() !== now.getMonth()) {
+                    if (type !== 'total' && type !== 'year') {
+                        tPeriod = { min: null, max: null};
                     }
-                    case 'week': {
-                        let t2 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                        t2 = new Date(t2.getTime() - 1);
-                        tPeriod.min = new Date(t2.getTime() - 7 * 24 * 60 * 60 * 1000 + 1);
-                        tPeriod.max = t2;
-                        break;
+                } else if (this.getWeekNumber(lastCheckedAt).week !== this.getWeekNumber(now).week) {
+                    if (type !== 'total' && type !== 'year' && type !== 'month') {
+                        tPeriod = { min: null, max: null};
                     }
-                    case 'day': {
-                        let t2 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                        t2 = new Date(t2.getTime() - 1);
-                        tPeriod.min = new Date(t2.getFullYear(), t2.getMonth(), t2.getDate());
-                        tPeriod.max = t2;
-                        break;
+                } else if (lastCheckedAt.getDate() !== now.getDate()) {
+                    if (type === 'day' || type === 'hour' || type === 'minute') {
+                        tPeriod = { min: null, max: null};
                     }
-                    case 'hour': {
-                        let t2 = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours());
-                        t2 = new Date(t2.getTime() - 1);
-                        tPeriod.min = new Date(t2.getFullYear(), t2.getMonth(), t2.getDate(), t2.getHours());
-                        tPeriod.max = t2;
-                        break;
+                } else if (lastCheckedAt.getHours() !== now.getHours()) {
+                    if (type === 'hour' || type === 'minute') {
+                        tPeriod = { min: null, max: null};
                     }
-                    case 'minute': {
-                        let t2 = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), now.getMinutes());
-                        t2 = new Date(t2.getTime() - 1);
-                        tPeriod.min = new Date(t2.getFullYear(), t2.getMonth(), t2.getDate(), t2.getHours(), t2.getMinutes());
-                        tPeriod.max = t2;
-                        break;
+                } else if (lastCheckedAt.getMinutes() !== now.getMinutes()) {
+                    if (type === 'minute') {
+                        tPeriod = { min: null, max: null};
                     }
-                    default: {
-                        debug.warn('save() -> unsupported type %s', type);
-                        tPeriod = null;
-                        break;
+                } else if (lastCheckedAt.getSeconds() !== now.getSeconds()) {
+                    if (type === 'second') {
+                        tPeriod = { min: null, max: null};
                     }
                 }
+
+                if (tPeriod) {
+                    switch (type) {
+                        case 'year': {
+                            let t2 = new Date(now.getFullYear());
+                            t2 = new Date(t2.getTime() - 1);
+                            tPeriod.min = new Date(t2.getFullYear());
+                            tPeriod.max = t2;
+                            break;
+                        }
+                        case 'month': {
+                            let t2 = new Date(now.getFullYear(), now.getMonth());
+                            t2 = new Date(t2.getTime() - 1);
+                            tPeriod.min = new Date(t2.getFullYear(), t2.getMonth());
+                            tPeriod.max = t2;
+                            break;
+                        }
+                        case 'week': {
+                            let t2 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                            t2 = new Date(t2.getTime() - 1);
+                            tPeriod.min = new Date(t2.getTime() - 7 * 24 * 60 * 60 * 1000 + 1);
+                            tPeriod.max = t2;
+                            break;
+                        }
+                        case 'day': {
+                            let t2 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                            t2 = new Date(t2.getTime() - 1);
+                            tPeriod.min = new Date(t2.getFullYear(), t2.getMonth(), t2.getDate());
+                            tPeriod.max = t2;
+                            break;
+                        }
+                        case 'hour': {
+                            let t2 = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours());
+                            t2 = new Date(t2.getTime() - 1);
+                            tPeriod.min = new Date(t2.getFullYear(), t2.getMonth(), t2.getDate(), t2.getHours());
+                            tPeriod.max = t2;
+                            break;
+                        }
+                        case 'minute': {
+                            let t2 = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), now.getMinutes());
+                            t2 = new Date(t2.getTime() - 1);
+                            tPeriod.min = new Date(t2.getFullYear(), t2.getMonth(), t2.getDate(), t2.getHours(), t2.getMinutes());
+                            tPeriod.max = t2;
+                            break;
+                        }
+                        case 'second': {
+                            let t2 = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds());
+                            t2 = new Date(t2.getTime() - 1);
+                            tPeriod.min = new Date(t2.getFullYear(), t2.getMonth(), t2.getDate(), t2.getHours(), t2.getMinutes(), t2.getSeconds());
+                            tPeriod.max = t2;
+                            break;
+                        }
+
+                        default: {
+                            debug.warn('save() -> unsupported type %s', type);
+                            tPeriod = null;
+                            break;
+                        }
+                    }
+                }
+
+                if (tPeriod && this._config.save[type]) {
+                    const collections: IStatisticsDataCollection [] = [];
+                    try {
+                        const options = this._config.save[type].options || {};
+                        const path = this.replaceControls(this._config.save[type].path, now);
+
+                        if (Array.isArray(this._collectionsToSave[type])) {
+                            for (const c of this._collectionsToSave[type]) {
+                                if (c.start >= tPeriod.min && c.last <= tPeriod.max) {
+                                    collections.push(c.toObject(options.pretty === true));
+                                }
+                            }
+                        }
+                        debug.finer('save %s: %d / %d collections -> %o', type, collections.length, this._collectionsToSave[type].length, tPeriod);
+                        this._collectionsToSave[type] = [];
+                        const backup: IBackup = { createdAt: new Date(), data: collections };
+                        const s =  JSON.stringify(backup, null, options.pretty === true ? 2 : 0);
+                        this.saveFile(path, s).then( () => {
+                            debug.fine('---> file %s successful saved (%d collections)', path, collections.length);
+                        }).catch( (err) => {
+                            debug.warn('cannot save %s (1)\n%e', path, err);
+                        });
+                    } catch (err) {
+                        debug.warn('cannot save %d %s collections to %s', collections.length, type);
+                    }
+                }
+
             }
         }
 
-        this._lastSaveCheckedAt[type] = now;
+        this._lastSaveCheckedAt = now;
+    }
 
-        if (tPeriod) {
-            debug.info('---> save %s %o', type, tPeriod);
+    private async saveFile (path: string, content: string): Promise<void> {
+        try {
+            const gzIndex = path.indexOf('.gz');
+            if (gzIndex > 0 && (gzIndex + 3) === path.length ) {
+                const compressedContent = await this.gzip(content);
+                await this.writeFile(path, compressedContent);
+            } else {
+                await this.writeFile(path, content);
+            }
+            debug.fine('---> saveFile(%s) successful', path);
+        } catch (err) {
+            debug.warn('saveFile(%s) fails\n%e', path, err);
         }
+    }
 
-        //     if (lastCheckedAt.getFullYear() !== now.getFullYear()) {
-        //         doSave = true;
-        //         ts = new Date(now.getFullYear(), 0, 1, 0, 0, 0);
-        //     } else if (this._lastSaveAt.getMonth() !== now.getMonth()) {
-        //         diff = { year: false, month: true, week: true, day: true, hour: true, min: true };
-        //         ts = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
-        //     } else if (this.getWeekNumber(this._lastSaveAt).week !== this.getWeekNumber(now).week) {
-        //         diff = { year: false, month: false, week: true, day: true, hour: true, min: true };
-        //         ts = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-        //     } else if (this._lastSaveAt.getDay() !== now.getDay()) {
-        //         diff = { year: false, month: false, week: false, day: true, hour: true, min: true };
-        //         ts = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0);
-        //     } else if (this._lastSaveAt.getHours() !== now.getHours()) {
-        //         diff = { year: false, month: false, week: false, day: false, hour: true, min: true };
-        //         ts = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), 0);
-        //     } else if (this._lastSaveAt.getMinutes() !== now.getMinutes()) {
-        //         diff = { year: false, month: false, week: false, day: false, hour: false, min: true };
-        //         ts = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), now.getMinutes());
-        //     } else {
-        //         diff = { year: false, month: false, week: false, day: false, hour: false, min: false };
-        //     }
-        // }
+    private async gzip (content: string): Promise<Buffer> {
+        return new Promise<Buffer>( (resolve, reject) => {
+            zlib.gzip(content, (err, result) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(result);
+                }
+            });
+        });
+    }
+
+    private async writeFile (path: string, content: string | Buffer): Promise<void> {
+        return new Promise<void>( (resolve, reject) => {
+            fs.writeFile(path, content, (err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
     }
 
     private saveOld (refDate: Date, path: string, type: StatisticsCacheSavePeriodType, options: IStatisticsCacheSaveOptions) {
