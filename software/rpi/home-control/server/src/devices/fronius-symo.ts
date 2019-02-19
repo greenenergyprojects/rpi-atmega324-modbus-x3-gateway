@@ -225,7 +225,7 @@ export class FroniusSymo extends ModbusTcpDevice {
         if (!this._inverterExtension || !this._inverterExtension.regs) { return null; }
         if (!this._inverter || !this._inverter.regs) { return null; }
         const dt = this._inverter.regs.getMaxDeltaTimeMillis(this._inverterExtension.regs);
-        if (!(dt >= 0 && dt <= 2000)) {
+        if (!(dt >= 0 && dt <= 8000)) {
             debug.warn('getBatteryActivePower() fails, values out of sync (%d)', dt);
             return null;
         }

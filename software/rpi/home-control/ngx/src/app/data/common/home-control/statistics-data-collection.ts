@@ -1,11 +1,8 @@
 
-import * as debugsx from 'debug-sx';
-const debug: debugsx.IFullLogger = debugsx.createFullLogger('StatisticsDataCollection');
+import { CommonLogger } from '../../common-logger';
 
-import { sprintf } from 'sprintf-js';
-
-import { StatisticsType, StatisticsOptions, IStatisticItemDefinition, StatisticAttribute, ValueType, Statistics } from '../data/common/home-control/statistics';
-import { MonitorRecord } from '../data/common/home-control/monitor-record';
+import { StatisticsType, StatisticsOptions, IStatisticItemDefinition, StatisticAttribute, ValueType, Statistics } from './statistics';
+import { MonitorRecord } from './monitor-record';
 
 export type CollectionType = 'fromTime' | 'toTime' | 'count' | 'value' | 'min' | 'max' | 'avg' | 'twa' | 'ewa';
 
@@ -27,6 +24,7 @@ export interface IStatisticsDataCollection {
 
 export class StatisticsDataCollection {
 
+
     public static createInstance (d: IStatisticsDataCollection) {
         const def = Statistics.defById[d.id];
         const rv = new StatisticsDataCollection(d.id, d.type, def);
@@ -44,12 +42,12 @@ export class StatisticsDataCollection {
         }
         if (d.ewaTau !== undefined) { rv._ewaTau = d.ewaTau; }
         if (rv.cnt > 0 && (!(rv.start instanceof Date) || !(rv.last instanceof Date) || rv.start > rv.last)) {
-            debug.warn('invalid arguments\n%o', d);
+            CommonLogger.warn('invalid arguments\n%o', d);
             throw new Error('invalid arguments');
         }
         return rv;
     }
-
+    // tslint:disable
     private _start: Date;
     private _last: Date;
     private _cnt = 0;
@@ -65,6 +63,8 @@ export class StatisticsDataCollection {
     private _def: IStatisticItemDefinition;
     private _ewaStart: { at: Date, value: number };
     private _ewaTau: number;
+    // tslint:disable
+   
 
     public constructor (id: StatisticAttribute, type: StatisticsType, def: IStatisticItemDefinition, ewaStart?: { at: Date, value: number }) {
         if (!id || !type  || !def || def.id !== id) {
@@ -164,6 +164,10 @@ export class StatisticsDataCollection {
         return this._ewa;
     }
 
+    public get twa (): number {
+        return this._twa;
+    }
+
     public getValueByType (typ: ValueType, factor?: number, offset?: number): number | null {
         let rv: number;
         switch (typ) {
@@ -247,7 +251,7 @@ export class StatisticsDataCollection {
             case 'year':   return this.hasYearChanged(now, this._last);
             case 'total':  return false;
             default: {
-                debug.warn('isCollectionFinished() => invalid type %o', this._type);
+                CommonLogger.warn('isCollectionFinished() => invalid type %o', this._type);
                 return true;
             }
         }
@@ -264,6 +268,7 @@ export class StatisticsDataCollection {
             case 'pGrid':             rv = Math.round(mr.getGridActivePowerAsNumber() * 100) / 100; break;
             case 'pBoiler':           rv = Math.round(mr.getBoilerActivePowerAsNumber() * 100) / 100; break;
             case 'pHeatPump':         rv = Math.round(mr.getHeatpumpPowerAsNumber() * 100) / 100; break;
+            case 'pLoad':             rv = Math.round(mr.getLoadActivePowerAsNumber() * 100) / 100; break;
             case 'eIn':               rv = Math.round(mr.getEInAsNumber() * 100) / 100; break;
             case 'eOut':              rv = Math.round(mr.getEOutAsNumber() * 100) / 100; break;
             case 'eInDaily':          rv = Math.round(mr.getEInDailyAsNumber() * 100) / 100; break;
@@ -283,7 +288,7 @@ export class StatisticsDataCollection {
             case 'fHeatCompressor':   rv = Math.round(mr.getCompressorFrequencyAsNumber() * 100) / 100; break;
 
             default: {
-                debug.warn('getValue(%s) - unsupported id -> return 0', id);
+                CommonLogger.warn('getValue(%s) - unsupported id -> return 0', id);
                 return 0;
             }
         }
@@ -340,7 +345,7 @@ export class StatisticsDataCollection {
         const w1 = this.getWeekNumber(t1);
         const w2 = this.getWeekNumber(t2);
         if (w1.year !== w2.year) {
-            debug.info('week/year change %o <-> %o', w1, w2);
+            CommonLogger.info('week/year change %o <-> %o', w1, w2);
             return w1.week !== w2.week;
         }
         return w1.week !== w2.week;

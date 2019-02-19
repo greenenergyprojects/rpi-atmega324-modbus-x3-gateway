@@ -31,6 +31,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
             this.menuItems = [];
             this.menuItems.push({ label: 'Überblick', routerLink: 'app/overview' });
             this.menuItems.push({ label: 'Verlauf', routerLink: 'app/chart' });
+            this.menuItems.push({ label: 'Archiv', routerLink: 'app/archive' });
             this.menuItems.push({ label: 'Boiler', routerLink: 'app/boiler' });
             this.menuItems.push({ label: 'Heizung', routerLink: 'app/nibe1155' });
             if (this._auth.user.isAdmin) {

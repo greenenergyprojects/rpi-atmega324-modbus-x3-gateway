@@ -12,6 +12,8 @@ import { ControllerParameter } from '../data/common/hot-water-controller/control
 import { IMonitorRecord as IBoilerMonitorRecord } from '../data/common/hot-water-controller/monitor-record';
 import { IControllerStatus } from '../data/common/hot-water-controller/controller-status';
 import { HistoryService } from './history.service';
+import { ArchiveRequest } from '../data/common/home-control/archive-request';
+import { ArchiveResponse } from '../data/common/home-control/archive-response';
 
 
 @Injectable({ providedIn: 'root' })
@@ -175,6 +177,21 @@ export class DataService {
         console.log(p);
         const uri = '/control/boiler/controller/parameter';
         return this._serverService.httpPostAndGetJson(uri, p.toObject());
+    }
+
+    public async getArchiv (request: ArchiveRequest): Promise<ArchiveResponse> {
+        let query = '?';
+        query += 'id=' + request.id;
+        query += '&type=' + request.type;
+        for (const id of request.dataIds) {
+            query += '&dataIds=' + id;
+        }
+        query += '&from=' + request.from.toISOString();
+        query += '&to=' + request.to.toISOString();
+
+        const r = await this._serverService.httpGetJson('/data/archive' + query);
+        console.log(r);
+        return new ArchiveResponse(r);
     }
 
 

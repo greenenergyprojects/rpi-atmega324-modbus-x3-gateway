@@ -58,14 +58,13 @@ export class ChartComponent implements OnInit, OnDestroy {
     public ngOnInit () {
         this._monitorValuesSubsciption =
             this.dataService.monitorObservable.subscribe((value) => this.handleMonitorValues(value));
-        this.historyService.fromEvent('pgrid').subscribe( (pgrid) => {
-            console.log(pgrid);
-        });
+        // this.historyService.fromEvent('pgrid').subscribe( (pgrid) => {
+        //     console.log(pgrid);
+        // });
     }
 
     public ngOnDestroy() {
         this._monitorValuesSubsciption.unsubscribe();
-        this._monitorValuesSubsciption = null;
     }
 
 

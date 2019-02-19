@@ -7,6 +7,7 @@ export interface IStatisticDefinition {
     pGrid:             IStatisticItemDefinition;
     pBoiler:           IStatisticItemDefinition;
     pHeatPump:         IStatisticItemDefinition;
+    pLoad:             IStatisticItemDefinition;
     eOut:              IStatisticItemDefinition;
     eIn:               IStatisticItemDefinition;
     eOutDaily:         IStatisticItemDefinition;
@@ -56,13 +57,34 @@ export class Statistics {
 
     static defaultEnergyType: { [ key2 in StatisticsType ]?: { [ key3 in ValueType ]?: boolean | StatisticsOptions }} = {
         second: { value: { format: { format: '%.02f', unit: 'Wh',  func: (e) => Math.round(e * 10) / 10 } } } ,
-        minute: { max:   { format: { format: '%.02f', unit: 'Wh',  func: (e) => Math.round(e * 10) / 10 } } },
-        hour:   { max:   { format: { format: '%.02f', unit: 'kWh', func: (e) => Math.round(e / 10) / 100 } } },
-        day:    { max:   { format: { format: '%.02f', unit: 'kWh', func: (e) => Math.round(e / 10) / 100 } } },
-        month:  { max:   { format: { format: '%.01f', unit: 'kWh', func: (e) => Math.round(e / 100) / 10 } } },
-        week:   { max:   { format: { format: '%.01f', unit: 'kWh', func: (e) => Math.round(e / 100) / 10 } } },
-        year:   { max:   { format: { format: '%.0f',  unit: 'kWh', func: (e) => Math.round(e / 1000) } } },
-        total:  { max:   { format: { format: '%.0f',  unit: 'kWh', func: (e) => Math.round(e / 1000) } } }
+        minute: {
+            min: { format: { format: '%.02f', unit: 'Wh',  func: (e) => Math.round(e * 10) / 10 } },
+            max: { format: { format: '%.02f', unit: 'Wh',  func: (e) => Math.round(e * 10) / 10 } }
+        },
+        hour: {
+            min: { format: { format: '%.02f', unit: 'kWh', func: (e) => Math.round(e / 10) / 100 } },
+            max: { format: { format: '%.02f', unit: 'kWh', func: (e) => Math.round(e / 10) / 100 } }
+        },
+        day: {
+            min: { format: { format: '%.02f', unit: 'kWh', func: (e) => Math.round(e / 10) / 100 } },
+            max: { format: { format: '%.02f', unit: 'kWh', func: (e) => Math.round(e / 10) / 100 } }
+        },
+        month: {
+            min: { format: { format: '%.01f', unit: 'kWh', func: (e) => Math.round(e / 100) / 10 } },
+            max: { format: { format: '%.01f', unit: 'kWh', func: (e) => Math.round(e / 100) / 10 } }
+        },
+        week: {
+            min: { format: { format: '%.01f', unit: 'kWh', func: (e) => Math.round(e / 100) / 10 } },
+            max: { format: { format: '%.01f', unit: 'kWh', func: (e) => Math.round(e / 100) / 10 } }
+        },
+        year: {
+            min: { format: { format: '%.0f',  unit: 'kWh', func: (e) => Math.round(e / 1000) } },
+            max: { format: { format: '%.0f',  unit: 'kWh', func: (e) => Math.round(e / 1000) } }
+        },
+        total: {
+            min: { format: { format: '%.0f',  unit: 'kWh', func: (e) => Math.round(e / 1000) } },
+            max: { format: { format: '%.0f',  unit: 'kWh', func: (e) => Math.round(e / 1000) } }
+        }
     };
 
     // tslint:disable:max-line-length
@@ -144,6 +166,22 @@ export class Statistics {
             id: 'pBoiler',
             shortLabel: 'boiler-p',
             label: { en: 'active power to boiler', de: 'Boiler Wirkleistung' },
+            format: { format: '%.0f', unit: 'W', func: (v) => Math.round(v) },
+            type: {
+                second: { value: true },
+                minute: { min: true, max: true, twa: true },
+                hour:   { min: true, max: true, twa: true },
+                day:    { min: true, max: true, twa: true },
+                week:   { min: true, max: true, twa: true },
+                month:  { min: true, max: true, twa: true },
+                year:   { twa: true },
+                total:  { twa: true }
+            }
+        },
+        pLoad: {
+            id: 'pLoad',
+            shortLabel: 'load-p',
+            label: { en: 'active power to loads', de: 'Verbraucher Wirkleistung' },
             format: { format: '%.0f', unit: 'W', func: (v) => Math.round(v) },
             type: {
                 second: { value: true },
@@ -327,5 +365,24 @@ export class Statistics {
         }
     };
     // tslint:enable:max-line-length
+
+    public static toStatisticsType (type: string): StatisticsType {
+        for (const t of Object.getOwnPropertyNames(Statistics.defaultEnergyType)) {
+            if (type === t) {
+                return <StatisticsType>t;
+            }
+        }
+        throw new Error('invalid value');
+    }
+
+    public static toStatisticAttribute (attribute: string): StatisticAttribute {
+        for (const a of Object.getOwnPropertyNames(Statistics.defById)) {
+            if (attribute === a) {
+                return <StatisticAttribute>a;
+            }
+        }
+        throw new Error('invalid value');
+    }
+
 
 }

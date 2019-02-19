@@ -8,7 +8,7 @@ import { sprintf } from 'sprintf-js';
 
 import { Statistics, StatisticAttribute, StatisticsType, StatisticsOptions, ValueType } from '../data/common/home-control/statistics';
 import { MonitorRecord } from '../data/common/home-control/monitor-record';
-import { StatisticsDataCollection, CollectionType } from './statistics-data-collection';
+import { StatisticsDataCollection, CollectionType } from '../data/common/home-control/statistics-data-collection';
 import { CsvFile } from './csv-file';
 
 
@@ -62,8 +62,8 @@ export class StatisticsData {
                     const o = coll.toObject();
                     debug.finer('refresh: %o', o);
                     finishedCollections[coll.id] = coll.clone();
-                    // if (coll.id === 'pBoiler') {
-                    //     debug.info('%O', coll);
+                    // if (coll.id === 'pGrid') {
+                    //      debug.info('%O', coll);
                     // }
                     const ewaStart = o.ewa === undefined ? undefined : { at: coll.last, value: o.ewa };
                     coll.reset(ewaStart);

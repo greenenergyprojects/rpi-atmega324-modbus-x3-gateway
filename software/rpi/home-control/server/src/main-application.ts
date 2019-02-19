@@ -13,7 +13,7 @@ import { Auth } from './auth';
 import { DbUser } from './db-user';
 import { Monitor } from './monitor';
 import { Statistics as OldStatistics } from './statistics';
-import { Statistics as NewStatistics } from './statistics/statistics';
+import { StatisticsWorker } from './statistics/statistics-worker';
 import { PiTechnik } from './devices/pi-technik';
 import { Nibe1155 } from './devices/nibe1155';
 import { HotWaterController } from './devices/hot-water-controller';
@@ -58,7 +58,7 @@ export class MainApplication {
 
             await this.startupParallel();
             await OldStatistics.createInstance(nconf.get('statistics-old'));
-            const newStatistics = await NewStatistics.createInstance(nconf.get('statistics'));
+            const newStatistics = await StatisticsWorker.createInstance(nconf.get('statistics'));
             const piTechnik = await PiTechnik.createInstance(nconf.get('pi-technik'));
             const monitor = await Monitor.createInstance(nconf.get('monitor'));
             const nibe1155 = await Nibe1155.createInstance(nconf.get('nibe1155'));

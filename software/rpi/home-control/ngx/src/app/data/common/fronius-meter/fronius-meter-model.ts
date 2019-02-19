@@ -82,7 +82,8 @@ export class FroniusMeterModel extends FroniusSymoModel<IFroniusMeterModel, Fron
                 energyTotalImported: this.totwhimp.value,
             };
         } catch (err) {
-            CommonLogger.warn('toEnergyMeter() fails\n%e', err);
+            // CommonLogger.warn('toEnergyMeter() fails\n%e', err);
+            CommonLogger.warn('toEnergyMeter() fails (%s)', err.message);
             rv = {
                 createdAt:           new Date(),
                 manufacturer:        'Fronius',

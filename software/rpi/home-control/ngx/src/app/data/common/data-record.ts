@@ -160,6 +160,34 @@ export abstract class DataRecord<T> {
         }
     }
 
+    static parseStringArray (data: any, options: IParseStringArrayOptions): string [] {
+        if (!data || !options || !options.attribute) { throw new ParseStringError('missing options/attribute name'); }
+        if (!options.validate && (!data)) { return null; }
+
+        const a = data[options.attribute];
+        if (options.allowSingleString && typeof a === 'string') {
+            if (options.notEmpty && a === '') { throw new ParseStringError('data is empty'); }
+            return [ a ];
+        }
+        if (!options.validate && !Array.isArray(data[options.attribute])) { return null; }
+        try {
+            const rv: string [] = [];
+            if (!Array.isArray(a)) { throw new Error('is not an array'); }
+            if (options.notEmpty && a.length === 0) { throw new Error('empty array not allowed'); }
+            for (const value of a) {
+                if (typeof value === 'string') {
+                    if (!options.elementNotEmpty && value === '') { throw new Error('empty string elements not allowed'); }
+                    rv.push(value);
+                } else {
+                    throw new Error('array element has invalid type (' + typeof value + ')');
+                }
+            }
+            return rv;
+        } catch (err) {
+            throw new ParseStringArrayError(options.attribute + ' parse error', err);
+        }
+    }
+
     static parseBoolean (data: any, options: IParseBooleanOptions): string {
         if (!options || !options.attribute) { throw new ParseBooleanError('missing options/attribute name'); }
         if (!data || !data[options.attribute]) { throw new ParseBooleanError('missing data/attribute name'); }
@@ -236,11 +264,24 @@ export interface IParseStringOptions {
     notEmpty?: boolean;
 }
 
+export interface IParseStringOptions {
+    attribute: string;
+    validate?: boolean;
+    notEmpty?: boolean;
+}
+
+export interface IParseStringArrayOptions {
+    attribute: string;
+    validate?: boolean;
+    notEmpty?: boolean;
+    allowSingleString?: boolean;
+    elementNotEmpty?: boolean;
+}
+
 export interface IParseBooleanOptions {
     attribute: string;
     validate?: boolean;
 }
-
 
 export class ParseDateError extends Error {
     constructor (msg: string, public cause?: Error) { super(msg); }
@@ -259,6 +300,10 @@ export class ParseNumberArrayError extends Error {
 }
 
 export class ParseStringError extends Error {
+    constructor (msg: string, public cause?: Error) { super(msg); }
+}
+
+export class ParseStringArrayError extends Error {
     constructor (msg: string, public cause?: Error) { super(msg); }
 }
 

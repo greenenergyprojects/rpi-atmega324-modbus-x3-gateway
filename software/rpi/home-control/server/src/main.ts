@@ -1,4 +1,4 @@
-export const VERSION = '1.4.3';
+export const VERSION = '1.5.0';
 
 import * as cluster from 'cluster';
 import * as fs from 'fs';
@@ -8,9 +8,10 @@ import * as nconf from 'nconf';
 
 import * as debugsx from 'debug-sx';
 import * as git from './utils/git';
-import { MainApplication } from './main-application';
-import { Statistics } from './statistics/statistics';
 
+import { MainApplication } from './main-application';
+import { StatisticsWorker } from './statistics/statistics-worker';
+import { ArchiveWorker } from './statistics/archive-worker';
 
 process.on('unhandledRejection', (reason, p) => {
     const now = new Date();
@@ -58,7 +59,7 @@ if (cluster.isMaster) {
 // class Main, start point of program
 // ***********************************************************
 
-export type WorkerId = 'statistics';
+export type WorkerId = 'statistics' | 'archive';
 
 export class Main {
 
@@ -79,6 +80,7 @@ export class Main {
     // *****************************************************************
 
     private _workers: { [ key in WorkerId ]?: IWorker } = {};
+    private _shutDownStarted = false;
 
     private constructor () {}
 
@@ -91,6 +93,7 @@ export class Main {
     }
 
     public async shutdown (src: string) {
+        this._shutDownStarted = true;
         const waiting: Promise<any> [] = [];
         waiting.push(MainApplication.getInstance().shutdown(src));
         const to = nconf.get('shutdownMillis');
@@ -103,6 +106,28 @@ export class Main {
         }).catch ( (err) => {
             console.log('shutdown fails', err);
             process.exit(1);
+        });
+    }
+
+    public async sendToWorker (workerId: WorkerId, message: any, timeoutMillis = 500): Promise<any> {
+        const w = this.getRunningWorker(workerId);
+        if (!w) { throw new Error('worker ' + workerId + ' not running'); }
+        if (this._workers[workerId].messageId < 0) { throw new Error('worker ' + workerId + ' not ready to get data'); }
+        return new Promise<any>( (res, rej) => {
+            const x = { messageId: this._workers[workerId].messageId++, res: res, rej: rej, timer: <any>null };
+            this._workers[workerId].waiting.push(x);
+            w.send({ id: x.messageId, request: message });
+            x.timer = setTimeout( () => {
+                x.timer = null;
+                if (x.rej) {
+                    x.rej(new Error('Timeout'));
+                }
+                x.rej = null, x.res = null;
+                const index = this._workers[workerId].waiting.findIndex( (item) => x === item);
+                if (index >= 0) {
+                    this._workers[workerId].waiting.splice(index, 1);
+                }
+            }, timeoutMillis);
         });
     }
 
@@ -139,6 +164,7 @@ export class Main {
         cluster.on('exit', (worker: cluster.Worker, code: number, signal: string) => {
             for (const id of Object.getOwnPropertyNames(this._workers)) {
                 const x = <IWorker>(<any>this._workers)[id];
+                if (this._shutDownStarted) { return; }
                 if (worker === x.worker) {
                     if (x.restartCount < 0) {
                         x.state = 'exit';
@@ -161,15 +187,54 @@ export class Main {
                 }
             }
         });
+        cluster.on('message', (worker: cluster.Worker, msg) => {
+            for (const id of Object.getOwnPropertyNames(this._workers)) {
+                const x = <IWorker>(<any>this._workers)[id];
+                if (worker === x.worker) {
+                    if (Array.isArray(x.waiting)) {
+                        for (let i = 0; i < x.waiting.length; i++) {
+                            const w = x.waiting[i];
+                            if (msg && msg.id === w.messageId) {
+                                if (w.timer) {
+                                    clearTimeout(w.timer);
+                                    w.timer = null;
+                                }
+                                if (msg.error) {
+                                    debug.warn('worker request fails\n%o', msg);
+                                    if (w.rej) {
+                                        w.rej(new Error('request fails'));
+                                    }
+                                } else {
+                                    if (w.res) {
+                                        w.res(msg.response);
+                                    }
+                                }
+                                w.res = null;
+                                w.rej = null;
+                                x.waiting.splice(i, 1);
+                            }
+                        }
+                    }
+                    debug.info('worker %s gets response', id);
+                }
+            }
+        });
 
 
         const config = nconf.get('statistics');
         if (!config || config.disabled) {
-            this._workers.statistics = { worker: null, state: 'disabled', restartCount: -1 };
+            this._workers.statistics = { worker: null, state: 'disabled', restartCount: -1, messageId: -1, waiting: [] };
         } else {
-            this._workers.statistics = { worker: cluster.fork({ worker: 'statistics' }), state: 'starting', restartCount: 0 };
-            // this._workers.statistics.worker.on('message', (msg, handle) => debug.info('event message %s (%o)', msg, handle) );
+            this._workers.statistics = { worker: cluster.fork({ worker: 'statistics' }), state: 'starting', restartCount: 0, messageId: 0, waiting: [] };
         }
+
+        const cfgArchive = nconf.get('archive');
+        if (!cfgArchive || cfgArchive.disabled) {
+            this._workers.archive = { worker: null, state: 'disabled', restartCount: -1, messageId: -1, waiting: [] };
+        } else {
+            this._workers.archive = { worker: cluster.fork({ worker: 'archive' }), state: 'starting', restartCount: 0, messageId: 0, waiting: [] };
+        }
+
     }
 
 }
@@ -207,13 +272,24 @@ if (cluster.isMaster) {
     switch (process.env.worker) {
         case 'statistics': {
             debug.info('statistics worker is starting...');
-            Statistics.createInstance(nconf.get('statistics')).then( (statistics => {
+            StatisticsWorker.createInstance(nconf.get('statistics')).then( (statistics) => {
                 statistics.start().then( () => {
                     process.send({ started: true });
                 }).catch ( (err) => process.send({ error: err }));
-            })).catch( (err) => process.send({ error: err }));
+            }).catch( (err) => process.send({ error: err }));
             break;
         }
+
+        case 'archive': {
+            debug.info('archive worker is starting...');
+            ArchiveWorker.createInstance(nconf.get('archive')).then( (archive) => {
+                archive.start().then( () => {
+                    process.send({ started: true });
+                }).catch ( (err) => process.send({ error: err }));
+            }).catch( (err) => process.send({ error: err }));
+            break;
+        }
+
         default: {
             console.log('Error: unknown worker ist starting');
             break;
@@ -225,4 +301,6 @@ interface IWorker {
     worker: cluster.Worker;
     state: 'disabled' | 'starting' | 'online' | 'exit';
     restartCount: number;
+    messageId: number;
+    waiting: { messageId: number, timer: NodeJS.Timer, res: (response: any) => void, rej: (error: any) => void } [];
 }

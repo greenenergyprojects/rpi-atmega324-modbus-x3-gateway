@@ -16,6 +16,11 @@ import * as serverHttp from '../data/common/home-control/server-http';
 import { Nibe1155MonitorRecord } from '../data/common/nibe1155/nibe1155-monitor-record';
 import { Nibe1155ModbusRegisters, Nibe1155ModbusIds } from '../data/common/nibe1155/nibe1155-modbus-registers';
 import { IMonitorRecord } from '../data/common/home-control/monitor-record';
+import { StatisticsWorker } from '../statistics/statistics-worker';
+import { IArchiveRequest, ArchiveRequest } from '../data/common/home-control/archive-request';
+import { ArchiveWorker } from '../statistics/archive-worker';
+import { Main } from '../main';
+import { ArchiveResponse } from '../data/common/home-control/archive-response';
 
 export class RouterData {
 
@@ -38,6 +43,7 @@ export class RouterData {
         this._router.get('/froniussymo', (req, res, next) => this.getFroniusSymoJson(req, res, next));
         this._router.get('/monitor', (req, res, next) => this.getMonitorJson(req, res, next));
         this._router.get('/nibe1155', (req, res, next) => this.getNibe1155Json(req, res, next));
+        this._router.get('/archive', (req, res, next) => this.getArchiveJson(req, res, next));
         // this._router.get('/*', (req, res, next) => this.getAll(req, res, next));
 
     }
@@ -250,5 +256,27 @@ export class RouterData {
         }
     }
 
+    private async getArchiveJson (req: express.Request, res: express.Response, next: express.NextFunction) {
+        try {
+            const r: IArchiveRequest = {
+                id:      req.query.id !== undefined ? +req.query.id : +req.body.id,
+                type:    req.query.type || req.body.type,
+                dataIds: req.query.dataIds || req.body.dataIds,
+                from:    req.query.from || req.body.from,
+                to:      req.query.to || req.body.to
+            };
+            let request: ArchiveRequest;
+            try {
+                request = new ArchiveRequest(r);
+            } catch (err) {
+                throw new BadRequestError('invalid ArchiveRequest', err);
+            }
+            const response = await Main.getInstance().sendToWorker('archive', request.toObject(), 10000);
+            const result = new ArchiveResponse(response);
+            res.json(result.toObject());
+        } catch (err) {
+            handleError(err, req, res, next, debug);
+        }
+    }
 
 }

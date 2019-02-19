@@ -1,7 +1,7 @@
 
 
 import * as debugsx from 'debug-sx';
-import { IStatisticsDataCollection, StatisticsDataCollection } from './statistics-data-collection';
+import { IStatisticsDataCollection, StatisticsDataCollection } from '../data/common/home-control/statistics-data-collection';
 import { catchClause } from 'babel-types';
 const debug: debugsx.IFullLogger = debugsx.createFullLogger('Backup');
 
@@ -35,7 +35,7 @@ export class Backup implements IBackup {
                 }
             }
             if (errMsg !== '') {
-                debug.warn('errors on the collections: ' + errMsg); 
+                debug.warn('errors on the collections: ' + errMsg);
             }
         } catch (err) {
             throw new BackupError('constructor fails', err);

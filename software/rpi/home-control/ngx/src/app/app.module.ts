@@ -18,6 +18,7 @@ import { Nibe1155ControllerComponent } from './components/nibe1155-controller.co
 import { FroniusSymoComponent } from './components/fronius-symo.component';
 import { Nibe1155Component } from './components/nibe1155.component';
 import { ChartComponent } from './components/chart.component';
+import { ArchiveComponent } from './components/archive.component';
 
 import { ConfigService } from './services/config.service';
 import { DataService } from './services/data.service';
@@ -37,6 +38,7 @@ library.add(faEye, faEyeSlash, faSpinner, faSync);
         ValidatorDirective, FilterPipe,
         NavbarComponent, AppComponent, ModalLoginComponent, SyncButtonComponent,
         OverviewComponent,
+        ArchiveComponent,
         ChartComponent,
         BoilerComponent, BoilerControllerComponent, Nibe1155ControllerComponent,
         FroniusSymoComponent,

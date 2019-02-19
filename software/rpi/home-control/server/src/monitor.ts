@@ -12,7 +12,7 @@ import { PiTechnik } from './devices/pi-technik';
 import { Nibe1155 } from './devices/nibe1155';
 import { ISaiaAle3Meter } from './data/common/saia-ale3-meter/saia-ale3-meter';
 import { Statistics as OldStatistics } from './statistics';
-import { Statistics as NewStatistics } from './statistics/statistics';
+import { StatisticsWorker } from './statistics/statistics-worker';
 import { HotWaterController } from './devices/hot-water-controller';
 import { Nibe1155ModbusRegisters, Nibe1155ModbusIds } from './data/common/nibe1155/nibe1155-modbus-registers';
 import { Nibe1155Value } from './data/common/nibe1155/nibe1155-value';
@@ -447,6 +447,9 @@ export class Monitor {
             const index = (this._lastTempCnt + 1) % backups;
             this._lastTempCnt = index;
             const fn = this._config.tempFile.path + '.' + index;
+            if (!tOut) {
+                throw new Error('no content to save');
+            }
             fs.writeFile(fn, tOut, { encoding: 'utf-8' }, (err) => {
                 if (err) {
                     debug.warn('tempFile error\n%e', err);

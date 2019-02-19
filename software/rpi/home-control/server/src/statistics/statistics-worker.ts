@@ -18,7 +18,7 @@ interface IStatisticsConfig {
 }
 
 
-export class Statistics {
+export class StatisticsWorker {
 
     // static SigNames = [ 'SIGABRT', 'SIGALRM', 'SIGBUS', 'SIGCHLD', 'SIGCONT', 'SIGFPE', 'SIGHUP', 'SIGILL', 'SIGINT', 'SIGIO',
     // 'SIGIOT', 'SIGPIPE', 'SIGPOLL', 'SIGPWR', 'SIGQUIT', 'SIGSEGV', 'SIGSTKFLT',
@@ -26,21 +26,21 @@ export class Statistics {
     // 'SIGUSR1', 'SIGUSR2', 'SIGVTALRM', 'SIGWINCH', 'SIGXCPU', 'SIGXFSZ', 'SIGBREAK', 'SIGLOST', 'SIGINFO' ];
     // 'SIGKILL', 'SIGSTOP', 'SIGPROF',
 
-    public static getInstance (): Statistics {
+    public static getInstance (): StatisticsWorker {
         if (!this._instance) { throw new Error('instance not created'); }
         return this._instance;
     }
 
-    public static async createInstance (config: IStatisticsConfig): Promise<Statistics> {
+    public static async createInstance (config: IStatisticsConfig): Promise<StatisticsWorker> {
         if (this._instance) { throw new Error('instance already created'); }
-        const rv = new Statistics(config);
+        const rv = new StatisticsWorker(config);
         await rv.init();
         await StatisticsCache.createInstance(config.cache);
         this._instance = rv;
         return rv;
     }
 
-    private static _instance: Statistics;
+    private static _instance: StatisticsWorker;
 
     // *****************************************************************************
 

@@ -70,6 +70,17 @@
         "dbtyp": "csvfile",
         "csvfile": { "filename": "/var/lib/home-control/home-control-data_%Y-%M-%D.csv" }
     },
+    "archive": {
+        "disabled": false,
+        "path": {
+            "minute": { "path": "/var/lib/home-control/%YYYY/%YYYY-%MM/%YYYY-%MM-%DD/home-control-values-minute_%YYYY-%MM-%DD_%hh%m.json.gz" },
+            "hour":   { "path": "/var/lib/home-control/%YYYY/%YYYY-%MM/%YYYY-%MM-%DD/home-control-values-hour_%YYYY-%MM-%DD_%hh.json.gz" },
+            "day":    { "path": "/var/lib/home-control/%YYYY/%YYYY-%MM/%YYYY-%MM-%DD/home-control-values-day_%YYYY-%MM-%DD.json.gz" },
+            "week":   { "path": "/var/lib/home-control/%YYYY/%YYYY-weeks/home-control-values-week_KW%WWW.json.gz" },
+            "month":  { "path": "/var/lib/home-control/%YYYY/%YYYY-%MM/home-control-values-month_%YYYY-%MM.json.gz" },
+            "year":   { "path": "/var/lib/home-control/%YYYY/home-control-values-year_%YYYY.json.gz" }
+        }
+    },
     "statistics": {
         "disabled": false,
         "cache": {
@@ -77,17 +88,17 @@
             "init": true,
             "backup": { "path": "/var/lib/home-control/statistics-cache.json", "periodSeconds": 10, "rotate": 2 },
             "save": { 
-                "minute": { "path": "/var/lib/home-control/home-control-values-minute_%YYYY-%MM-%DD_%hh%m.json.gz", "options": { "pretty": true } },
-                "hour":   { "path": "/var/lib/home-control/home-control-values-hour_%YYYY-%MM-%DD_%hh.json.gz", "options": { "pretty": true } },
-                "day":    { "path": "/var/lib/home-control/home-control-values-day_%YYYY-%MM-%DD.json.gz", "options": { "pretty": true } },
-                "week":   { "path": "/var/lib/home-control/home-control-values-week_%WWW.json.gz", "options": { "pretty": true } },
-                "month":  { "path": "/var/lib/home-control/home-control-values-month_%YYYY-%MM.json.gz", "options": { "pretty": true } },
-                "year":   { "path": "/var/lib/home-control/home-control-values-year_%YYYY.json.gz", "options": { "pretty": true } }
+                "minute": { "path": "/var/lib/home-control/%YYYY/%YYYY-%MM/%YYYY-%MM-%DD/home-control-values-minute_%YYYY-%MM-%DD_%hh%m.json.gz", "options": { "pretty": true } },
+                "hour":   { "path": "/var/lib/home-control/%YYYY/%YYYY-%MM/%YYYY-%MM-%DD/home-control-values-hour_%YYYY-%MM-%DD_%hh.json.gz", "options": { "pretty": true } },
+                "day":    { "path": "/var/lib/home-control/%YYYY/%YYYY-%MM/%YYYY-%MM-%DD/home-control-values-day_%YYYY-%MM-%DD.json.gz", "options": { "pretty": true } },
+                "week":   { "path": "/var/lib/home-control/%YYYY/%YYYY-weeks/home-control-values-week_KW%WWW.json.gz", "options": { "pretty": true } },
+                "month":  { "path": "/var/lib/home-control/%YYYY/%YYYY-%MM/home-control-values-month_%YYYY-%MM.json.gz", "options": { "pretty": true } },
+                "year":   { "path": "/var/lib/home-control/%YYYY/home-control-values-year_%YYYY.json.gz", "options": { "pretty": true } }
             }
         },
         "data": [{
             "ids":   [ 
-                "pPv", "pPvS", "pPvEW", "pBat", "pGrid", "pBoiler", "pHeatPump",
+                "pPv", "pPvS", "pPvEW", "pBat", "pGrid", "pBoiler", "pHeatPump", "pLoad",
                 "eOut", "eIn", "eOutDaily", "eInDaily", "eBoilerDaily", "eHeatPumpDaily", "ePvDaily", "ePvSDaily", "ePvEWDaily", 
                 "capBatPercent",
                 "tOutdoor", "tHeatSupply", "tHeatBuffer", "tHeatSupplyReturn", "tHeatBrineIn", "tHeatBrineOut", "fHeatCompressor"

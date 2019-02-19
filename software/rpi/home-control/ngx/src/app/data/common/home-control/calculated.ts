@@ -19,8 +19,8 @@ export interface ICalculated {
 export class Calculated extends DataRecord<ICalculated> implements ICalculated {
 
     public static ATTRIBUTES = [
-        'createdAt', 'eOutDaily', 'eInDaily', 'eHeatPumpDaily', 'batOutDaily', 'batInDaily', 'pvSouthEnergy', 'pvSouthEnergyDaily', 'pvEastWestEnergyDaily', 'froniusSiteDaily',
-        'pPvSouth'
+        'createdAt', 'eOutDaily', 'eInDaily', 'eHeatPumpDaily', 'batOutDaily', 'batInDaily', 'pvSouthEnergy', 'pvSouthEnergyDaily',
+        'pvEastWestEnergyDaily', 'froniusSiteDaily', 'pPvSouth'
     ];
 
     private _createdAt:             Date;

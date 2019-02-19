@@ -9,7 +9,7 @@ import { sprintf } from 'sprintf-js';
 import * as tmp from 'tmp';
 
 import { StatisticsData } from './statistics-data';
-import { StatisticsDataCollection, IStatisticsDataCollection } from './statistics-data-collection';
+import { StatisticsDataCollection, IStatisticsDataCollection } from '../data/common/home-control/statistics-data-collection';
 import { Statistics, StatisticAttribute, StatisticsType } from '../data/common/home-control/statistics';
 import { MonitorRecord } from '../data/common/home-control/monitor-record';
 import { Backup, IBackup } from './backup';
@@ -41,6 +41,34 @@ export class StatisticsCache {
     public static getInstance (): StatisticsCache {
         if (StatisticsCache._instance === undefined) { throw new Error('instance not created'); }
         return StatisticsCache._instance;
+    }
+
+    public static getWeekNumber (d: Date): { year: number, week: number } {
+        // https://stackoverflow.com/questions/6117814
+        // every week starts on monday, week=1 is first week
+        d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+        d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        const weekNo = Math.ceil(( ( (d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+        return { year: d.getUTCFullYear(), week: weekNo };
+    }
+
+    public static replaceControls (s: string, at?: Date): string {
+        at = at || new Date();
+        s = s.replace(/%YYYY/g, sprintf('%04d', at.getFullYear()));
+        s = s.replace(/%YY/g, sprintf('%02d', at.getFullYear() - Math.round((at.getFullYear() / 100)) * 100));
+        s = s.replace(/%WWW/g, sprintf('%04d-%02d', this.getWeekNumber(at).year, this.getWeekNumber(at).week));
+        s = s.replace(/%WW/g, sprintf('%02d', this.getWeekNumber(at).week));
+        s = s.replace(/%W/g, sprintf('%1d', this.getWeekNumber(at).week));
+        s = s.replace(/%MM/g, sprintf('%02d', at.getMonth() + 1));
+        s = s.replace(/%M/g, sprintf('%d', at.getMonth() + 1));
+        s = s.replace(/%DD/g, sprintf('%02d', at.getDate()));
+        s = s.replace(/%D/g, sprintf('%d', at.getDate()));
+        s = s.replace(/%hh/g, sprintf('%02d', at.getHours()));
+        s = s.replace(/%ms/g, sprintf('%02d', at.getMilliseconds()));
+        s = s.replace(/%m/g, sprintf('%02d', at.getMinutes()));
+        s = s.replace(/%s/g, sprintf('%02d', at.getSeconds()));
+        return s;
     }
 
     private static _instance: StatisticsCache;
@@ -111,60 +139,6 @@ export class StatisticsCache {
                 this.backup();
             }
         }
-
-        // if (this._config.save) {
-        //     for (const period of Object.getOwnPropertyNames(this._config.save)) {
-        //         const p = <StatisticsCacheSavePeriodType> period;
-        //         const cfg = this._config.save[p];
-        //         if (!cfg.path || typeof cfg.path !== 'string') {
-        //             debug.warn('invalid config.save, missing path (%o)', cfg);
-        //             continue;
-        //         }
-        //         const now = Array.isArray(records) ? records[records.length - 1].createdAt : new Date();
-        //         let ts: Date;
-        //         let diff: { year: boolean, month: boolean, week: boolean, day: boolean, hour: boolean, min: boolean };
-        //         if (!this._lastSaveAt) {
-        //             diff = { year: false, month: false, week: false, day: false, hour: false, min: false };
-        //         } else {
-        //             if (this._lastSaveAt.getFullYear() !== now.getFullYear()) {
-        //                 diff = { year: true, month: true, week: true, day: true, hour: true, min: true };
-        //                 ts = new Date(now.getFullYear(), 0, 1, 0, 0, 0);
-        //             } else if (this._lastSaveAt.getMonth() !== now.getMonth()) {
-        //                 diff = { year: false, month: true, week: true, day: true, hour: true, min: true };
-        //                 ts = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
-        //             } else if (this.getWeekNumber(this._lastSaveAt).week !== this.getWeekNumber(now).week) {
-        //                 diff = { year: false, month: false, week: true, day: true, hour: true, min: true };
-        //                 ts = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-        //             } else if (this._lastSaveAt.getDay() !== now.getDay()) {
-        //                 diff = { year: false, month: false, week: false, day: true, hour: true, min: true };
-        //                 ts = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0);
-        //             } else if (this._lastSaveAt.getHours() !== now.getHours()) {
-        //                 diff = { year: false, month: false, week: false, day: false, hour: true, min: true };
-        //                 ts = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), 0);
-        //             } else if (this._lastSaveAt.getMinutes() !== now.getMinutes()) {
-        //                 diff = { year: false, month: false, week: false, day: false, hour: false, min: true };
-        //                 ts = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), now.getMinutes());
-        //             } else {
-        //                 diff = { year: false, month: false, week: false, day: false, hour: false, min: false };
-        //             }
-        //         }
-        //         this._lastSaveAt = now;
-
-        //         const options = cfg.options || {};
-        //         const path = this.replaceControls(cfg.path, ts);
-        //         switch (p) {
-        //             case 'never': break;
-        //             case 'year':   if (diff.year)  { this.saveOld(ts, path, p, options); } break;
-        //             case 'month':  if (diff.month) { this.saveOld(ts, path, p, options); } break;
-        //             case 'week':   if (diff.week)  { this.saveOld(ts, path, p, options); } break;
-        //             case 'day':    if (diff.day)   { this.saveOld(ts, path, p, options); } break;
-        //             case 'hour':   if (diff.hour)  { this.saveOld(ts, path, p, options); } break;
-        //             case 'minute': if (diff.min)   { this.saveOld(ts, path, p, options); } break;
-        //             case 'always': this.saveOld(ts, path, p, options); break;
-        //             default: debug.warn('invalid config save period %s -> skipping save', p);
-        //         }
-        //     }
-        // }
     }
 
     private async init () {
@@ -208,33 +182,6 @@ export class StatisticsCache {
         }
     }
 
-    private replaceControls (s: string, at?: Date): string {
-        at = at || new Date();
-        s = s.replace(/%YYYY/g, sprintf('%04d', at.getFullYear()));
-        s = s.replace(/%YY/g, sprintf('%02d', at.getFullYear() - Math.round((at.getFullYear() / 100)) * 100));
-        s = s.replace(/%WWW/g, sprintf('%04d-%02d', this.getWeekNumber(at).year, this.getWeekNumber(at).week));
-        s = s.replace(/%WW/g, sprintf('%02d', this.getWeekNumber(at).week));
-        s = s.replace(/%W/g, sprintf('%1d', this.getWeekNumber(at).week));
-        s = s.replace(/%MM/g, sprintf('%02d', at.getMonth() + 1));
-        s = s.replace(/%M/g, sprintf('%d', at.getMonth() + 1));
-        s = s.replace(/%DD/g, sprintf('%02d', at.getDate()));
-        s = s.replace(/%D/g, sprintf('%d', at.getDate()));
-        s = s.replace(/%hh/g, sprintf('%02d', at.getHours()));
-        s = s.replace(/%ms/g, sprintf('%02d', at.getMilliseconds()));
-        s = s.replace(/%m/g, sprintf('%02d', at.getMinutes()));
-        s = s.replace(/%s/g, sprintf('%02d', at.getSeconds()));
-        return s;
-    }
-
-    private getWeekNumber (d: Date): { year: number, week: number } {
-        // https://stackoverflow.com/questions/6117814
-        // every week starts on monday, week=1 is first week
-        d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-        d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-        const weekNo = Math.ceil(( ( (d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-        return { year: d.getUTCFullYear(), week: weekNo };
-    }
 
     private backup () {
         this._lastBackupAt = new Date();
@@ -305,7 +252,7 @@ export class StatisticsCache {
                     if (type !== 'total' && type !== 'year') {
                         tPeriod = { min: null, max: null};
                     }
-                } else if (this.getWeekNumber(lastCheckedAt).week !== this.getWeekNumber(now).week) {
+                } else if (StatisticsCache.getWeekNumber(lastCheckedAt).week !== StatisticsCache.getWeekNumber(now).week) {
                     if (type !== 'total' && type !== 'year' && type !== 'month') {
                         tPeriod = { min: null, max: null};
                     }
@@ -391,7 +338,7 @@ export class StatisticsCache {
                     const collections: IStatisticsDataCollection [] = [];
                     try {
                         const options = this._config.save[type].options || {};
-                        const path = this.replaceControls(this._config.save[type].path, now);
+                        const path = StatisticsCache.replaceControls(this._config.save[type].path, tPeriod.min);
 
                         if (Array.isArray(this._collectionsToSave[type])) {
                             for (const c of this._collectionsToSave[type]) {
@@ -421,6 +368,35 @@ export class StatisticsCache {
     }
 
     private async saveFile (path: string, content: string): Promise<void> {
+        if (path.substr(0, 1) !== '/') {
+            throw new Error(path + ' not an absolut path');
+        }
+        try {
+            const dirs: string [] = [];
+            let index = 1;
+            while (true) {
+                const next = path.indexOf('/', index);
+                if (next < 0 || next === index) { break; }
+                dirs.push(path.substr(index, next - index));
+                index = next + 1;
+            }
+            let dn = '';
+            for (const d of dirs) {
+                dn = dn + '/' + d;
+                if (!fs.existsSync(dn)) {
+                    fs.mkdirSync(dn);
+                }
+                const dStat = fs.lstatSync(dn);
+                if (!dStat.isDirectory()) {
+                    debug.warn('%s is not a a directory', dn);
+                    break;
+                }
+            }
+        } catch (err) {
+            debug.warn('saveFile(%s) fails (1)\n%e', path, err);
+            return;
+        }
+
         try {
             const gzIndex = path.indexOf('.gz');
             if (gzIndex > 0 && (gzIndex + 3) === path.length ) {
@@ -431,9 +407,10 @@ export class StatisticsCache {
             }
             debug.fine('---> saveFile(%s) successful', path);
         } catch (err) {
-            debug.warn('saveFile(%s) fails\n%e', path, err);
+            debug.warn('saveFile(%s) fails (2)\n%e', path, err);
         }
     }
+
 
     private async gzip (content: string): Promise<Buffer> {
         return new Promise<Buffer>( (resolve, reject) => {
@@ -459,69 +436,6 @@ export class StatisticsCache {
         });
     }
 
-    private saveOld (refDate: Date, path: string, type: StatisticsCacheSavePeriodType, options: IStatisticsCacheSaveOptions) {
-        try {
-            let ts: { min: Date, max: Date };
-            switch (type) {
-                case 'minute': {
-                    refDate = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate(), refDate.getHours(), refDate.getMinutes());
-                    ts = { min: new Date(refDate.getTime() - 60000), max: new Date(refDate.getTime() - 1 )};
-                    debug.fine('--> save %s, %o', type, ts);
-                    break;
-                }
-                case 'hour': {
-                    refDate = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate(), refDate.getHours(), 0);
-                    ts = { min: new Date(refDate.getTime() - 60 * 60000), max: new Date(refDate.getTime() - 1 )};
-                    debug.fine('--> save %s, %o', type, ts);
-                    break;
-                }
-                case 'day': {
-                    refDate = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate(), 0, 0);
-                    ts = { min: new Date(refDate.getTime() - 24 * 60 * 60000), max: new Date(refDate.getTime() - 1 )};
-                    debug.fine('--> save %s, %o', type, ts);
-                    break;
-                }
-            }
-
-            const collections: IStatisticsDataCollection [] = [];
-            for (const id of this._ids) {
-                const d = Statistics.defById[id];
-                if (!d) { continue; }
-                const types = <StatisticsType []>Object.getOwnPropertyNames(d.type);
-                for (const t of types) {
-                    const coll = this._data[id][t];
-                    if (coll.start >= ts.min && coll.last <= ts.max) {
-                        collections.push(coll.toObject(options.pretty === true ? true : false));
-                    }
-                }
-            }
-            debug.fine('---> %s save %s -> %s collections', type, path, collections.length);
-        } catch (err) {
-            debug.warn('cannot save %s (2)\n%e', path, err);
-        }
-        //     const collections: IStatisticsDataCollection [] = [];
-        //     for (const id of this._ids) {
-        //         const d = Statistics.defById[id];
-        //         if (!d) { continue; }
-        //         const types = <StatisticsType []>Object.getOwnPropertyNames(d.type);
-        //         for (const t of types) {
-        //             const coll = this._data[id][t];
-        //             collections.push(coll.toObject(pretty === true ? true : false));
-        //         }
-        //     }
-        //     const backup: IBackup = { createdAt: new Date(), data: collections };
-        //     const s =  JSON.stringify(backup, null, pretty === true ? 2 : 0);
-        //     fs.writeFile(path, s, (err) => {
-        //         if (err) {
-        //             debug.warn('cannot save %s (1)\n%e', path, err);
-        //         } else {
-        //             debug.fine('---> file %s successful saved (%d collections)', path, collections.length);
-        //         }
-        //     });
-        // } catch (err) {
-        //     debug.warn('cannot save %s (2)\n%e', path, err);
-        // }
-    }
 }
 
 export class StatisticsCacheError extends Error {

@@ -169,14 +169,55 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
         const pGrid = this.gridmeter.activePower;
 
         const pPvEastWest = this.getPvEastWestActivePowerAsNumber();
-        if (pInv === null || pPvEastWest === null || pGrid === null) {
-            return null;
+        const pBoiler = this.getBoilerActivePowerAsNumber();
+        const pHeating = this.getHeatpumpPowerAsNumber();
+
+        let rv = 0;
+        let missing = '';
+
+        if (typeof pInv === 'number') {
+            rv += pInv;
+        } else {
+            missing += ',pInv';
+        }
+
+        if (pPvEastWest >= 0) {
+            rv += pPvEastWest;
+        } else {
+            missing += ',pPvEastWest';
+        }
+
+        if (typeof pGrid === 'number') {
+            rv += pGrid;
+        } else {
+            missing += ',pGrid';
+        }
+
+        if (pBoiler >= 0) {
+            rv -= pBoiler;
+        } else {
+            missing += ',pBoiler';
+        }
+
+        if (pHeating >= 0) {
+            rv -= pHeating;
+        } else {
+            missing += ',pHeating';
+        }
+
+        if (missing) {
+            CommonLogger.warn('uncomplete value set for pLoad (missing: %s)', missing.substr(1));
+        }
+
+        if (rv < 0) {
+            // CommonLogger.warn('pLoad = %s < 0W, force to 0W', rv);
+            rv = 0;
         }
 
         // pGrid      > 0 --> get energy from net
         // pInv       > 0 --> inverter feeds power to net (from battery or pv-south)
         // pvEastWest > 0 --> pv feeds power ot net
-        const rv = pGrid + pInv + pPvEastWest;
+        // const rv = pGrid + pInv + pPvEastWest;
         // CommonLogger.info(sprintf('--> load: Grid = %7.1fW  Inv=%7.1f  PV-E/W=%7.1fW   ==>  Load = %.1fW', pGrid, pInv, pPvEastWest, rv));
         return rv; // >= 0W
     }

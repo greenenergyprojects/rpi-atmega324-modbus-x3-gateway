@@ -145,12 +145,12 @@ export class HotWaterController {
                                 this._getPendingSince = null;
                                 rej(new Error('invalid response'));
                             } else {
-                                const mr = new MonitorRecord(r[0]);
+                                const mr2 = new MonitorRecord(r[0]);
                                 debug.finer('reading successful: %o', r);
-                                this._lastValidResponse = { at: new Date(), value: mr };
+                                this._lastValidResponse = { at: new Date(), value: mr2 };
                                 // debug.fine('--> HWC _lastValidResponse:\n%o', this._lastValidResponse);
                                 this._getPendingSince = null;
-                                res(mr);
+                                res(mr2);
                             }
                         } catch (err) {
                             this._getPendingSince = null;
