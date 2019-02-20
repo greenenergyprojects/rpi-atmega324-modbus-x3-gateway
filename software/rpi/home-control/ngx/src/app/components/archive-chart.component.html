@@ -1,0 +1,45 @@
+<div>
+    <form #controlForm="ngForm">
+        <div class="form-row">
+            <div class="col-auto">
+                <app-sync-button [config]="buttonConfigRefreshNow">+</app-sync-button>
+            </div>
+            <div *ngFor="let cfg of showInputs" class="col-auto">
+                <select *ngIf="!cfg.disabled" class="custom-select" id="inlineFormCustomSelect"
+                        app-validator [element]="cfg.validator" [(ngModel)]="cfg.validator.value" name="{{cfg.id}}" >
+                    <option *ngIf="cfg.firstLine" value="{{cfg.firstLine}}">{{cfg.firstLine}}</option>    
+                    <option *ngFor="let opt of cfg.options" value="{{opt}}" [selected]="opt===cfg.value">{{opt}}</option>
+                </select>
+            </div>
+        </div>
+    </form>
+
+    <canvas baseChart id="childChart"
+        [datasets]="chart.datasets"
+        [labels]="chart.labels"
+        [options]="chart.options"
+        [legend]="chart.legend"
+        [chartType]="chart.type"
+        [colors]="chart.colors"
+        (chartHover)="chart.hovered($event)"
+        (chartClick)="chart.clicked($event)">
+    </canvas>
+    
+    <form #controlForm="ngForm" style="margin-top: 1em">
+        <div class="form-row">
+            <div class="col-auto">
+                    <app-sync-button [config]="buttonConfigXLeft">+</app-sync-button>
+            </div>
+            <div class="col-auto">
+                <app-sync-button [config]="buttonConfigXZoomPlus">+</app-sync-button>
+            </div>
+            <div class="col-auto">
+                <app-sync-button [config]="buttonConfigXZoomMinus">-</app-sync-button>
+            </div>
+            <div class="col-auto">
+                    <app-sync-button [config]="buttonConfigXRight">+</app-sync-button>
+            </div>
+        </div>
+    </form>
+
+</div>

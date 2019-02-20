@@ -1,56 +1,6 @@
 <div style="margin-top: 4.5em" class="container">
-    <form #controlForm="ngForm">
-        <div class="form-row">
-            <!-- <div class="col-auto">
-                    <label  for="idModeTyp">Typ</label>
-            </div> -->
-
-            <div class="col-auto">
-                 <app-sync-button [config]="refreshNowButtonConfig">Aktualisieren</app-sync-button>
-            </div>
     
-            <!-- <div class="col-auto">
-                <select class="custom-select" id="inlineFormCustomSelect"
-                        app-validator [element]="validatorTyp" [(ngModel)]="validatorTyp.value" name="typ">
-                    <option value='power' selected>Leistung</option>
-                    <option value="energy">Energie</option>
-                </select>
-            </div> -->
-    
-            <!-- <div class="col-auto">
-                <select class="custom-select" id="inlineFormCustomSelect"
-                        app-validator [element]="validatorAvg" [(ngModel)]="validatorAvg.value" name="avg">
-                    <option value='minute' selected>Minutenmittel</option>
-                    <option value="hour">Stundenmittel</option>
-                    <option value="display">Tagesmittel</option>
-                    <option value="week">Wochenmittel</option>
-                    <option value="month">Monatsmittel</option>
-                    <option value="year">Jahresmittel</option>
-                </select>
-            </div> -->
-
-            <div *ngFor="let cfg of showInputs" class="col-auto">
-                <select *ngIf="!cfg.disabled" class="custom-select" id="inlineFormCustomSelect"
-                        app-validator [element]="cfg.validator" [(ngModel)]="cfg.validator.value" name="{{cfg.id}}" >
-                    <option *ngIf="cfg.firstLine" value="{{cfg.firstLine}}">{{cfg.firstLine}}</option>    
-                    <option *ngFor="let opt of cfg.options" value="{{opt}}" [selected]="opt===cfg.value">{{opt}}</option>
-                </select>
-            </div>
-            
-            
-    
-        </div>
-    </form>
-    <div *ngFor="let chart of charts" style="display: block">
-        <canvas baseChart
-            [datasets]="chart.datasets"
-            [labels]="chart.labels"
-            [options]="chart.options"
-            [legend]="chart.legend"
-            [chartType]="chart.type"
-            [colors]="chart.colors"
-            (chartHover)="chart.hovered($event)"
-            (chartClick)="chart.clicked($event)">
-        </canvas>
+    <div *ngFor="let chart of charts" style="display: block; border: 1px solid black; margin-top: 1em; padding: 5px">
+        <app-archive-chart></app-archive-chart>
     </div>
 </div>
