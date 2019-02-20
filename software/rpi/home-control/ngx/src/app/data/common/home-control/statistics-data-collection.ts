@@ -6,6 +6,23 @@ import { MonitorRecord } from './monitor-record';
 
 export type CollectionType = 'fromTime' | 'toTime' | 'count' | 'value' | 'min' | 'max' | 'avg' | 'twa' | 'ewa';
 
+export interface IMinimalStatisticsDataCollection {
+    id: StatisticAttribute;
+    type?: StatisticsType;
+    start?: Date | number | string;
+    last?: Date | number | string;
+    cnt: number;
+    value?: number;
+    min?: number;
+    max?: number;
+    avg?: number;
+    twa?: number;
+    ewa?: number;
+    ewaStart?: { at: Date, value: number };
+    ewaTau?: number;
+}
+
+
 export interface IStatisticsDataCollection {
     id: StatisticAttribute;
     type: StatisticsType;
@@ -244,6 +261,7 @@ export class StatisticsDataCollection {
         switch (this._type) {
             case 'second': return this.hasSecondsChanged(now, this._last);
             case 'minute': return this.hasMinuteChanged(now, this._last);
+            case 'min10':  return this.has10MinutesChanged(now, this._last);
             case 'hour':   return this.hasHourChanged(now, this._last);
             case 'day':    return this.hasDayChanged(now, this._last);
             case 'week':   return this.hasWeekChanged(now, this._last);
@@ -323,6 +341,17 @@ export class StatisticsDataCollection {
         if (t1.getDate() !== t2.getDate()) { return true; }
         if (t1.getHours() !== t2.getHours()) { return true; }
         if (t1.getMinutes() !== t2.getMinutes()) { return true; }
+        return false;
+    }
+    
+    private has10MinutesChanged (t1: Date, t2: Date): boolean {
+        if (t1.getFullYear() !== t2.getFullYear()) { return true; }
+        if (t1.getMonth() !== t2.getMonth()) { return true; }
+        if (t1.getDate() !== t2.getDate()) { return true; }
+        if (t1.getHours() !== t2.getHours()) { return true; }
+        const m1 = Math.floor(t1.getMinutes() / 10);
+        const m2 = Math.floor(t2.getMinutes() / 10);
+        if (m1 !== m2) { return true; }
         return false;
     }
 

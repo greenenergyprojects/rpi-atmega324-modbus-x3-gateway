@@ -31,7 +31,7 @@ export interface IStatisticDefinition {
 export type StatisticAttribute = keyof IStatisticDefinition;
 export type Languages = 'en' | 'de';
 export type ValueType = 'value' | 'avg' | 'min' | 'max' | 'twa' | 'ewa';
-export type StatisticsType = 'second' | 'minute' | 'hour' | 'day' | 'month' | 'week' | 'year' | 'total';
+export type StatisticsType = 'second' | 'minute' | 'min10' | 'hour' | 'day' | 'month' | 'week' | 'year' | 'total';
 
 export interface StatisticsFormat {
     format?: string;
@@ -55,9 +55,13 @@ export interface IStatisticItemDefinition {
 
 export class Statistics {
 
-    static defaultEnergyType: { [ key2 in StatisticsType ]?: { [ key3 in ValueType ]?: boolean | StatisticsOptions }} = {
+    static defaultEnergyType: { [ key2 in StatisticsType ]: { [ key3 in ValueType ]?: boolean | StatisticsOptions }} = {
         second: { value: { format: { format: '%.02f', unit: 'Wh',  func: (e) => Math.round(e * 10) / 10 } } } ,
         minute: {
+            min: { format: { format: '%.02f', unit: 'Wh',  func: (e) => Math.round(e * 10) / 10 } },
+            max: { format: { format: '%.02f', unit: 'Wh',  func: (e) => Math.round(e * 10) / 10 } }
+        },
+        min10: {
             min: { format: { format: '%.02f', unit: 'Wh',  func: (e) => Math.round(e * 10) / 10 } },
             max: { format: { format: '%.02f', unit: 'Wh',  func: (e) => Math.round(e * 10) / 10 } }
         },
@@ -97,6 +101,7 @@ export class Statistics {
             type: {
                 second: { value: true },
                 minute: { min: true, max: true, twa: true },
+                min10:  { min: true, max: true, twa: true },
                 hour:   { min: true, max: true, twa: true },
                 day:    { min: true, max: true, twa: true },
                 month:  { min: true, max: true, twa: true },
@@ -112,6 +117,7 @@ export class Statistics {
             type: {
                 second: { value: true },
                 minute: { min: true, max: true, twa: true },
+                min10:  { min: true, max: true, twa: true },
                 hour:   { min: true, max: true, twa: true },
                 day:    { min: true, max: true, twa: true },
                 month:  { min: true, max: true, twa: true },
@@ -127,6 +133,7 @@ export class Statistics {
             type: {
                 second: { value: true },
                 minute: { min: true, max: true, twa: true },
+                min10:  { min: true, max: true, twa: true },
                 hour:   { min: true, max: true, twa: true },
                 day:    { min: true, max: true, twa: true },
                 month:  { min: true, max: true, twa: true },
@@ -142,6 +149,7 @@ export class Statistics {
             type: {
                 second: { value: true },
                 minute: { min: true, max: true, twa: true },
+                min10:  { min: true, max: true, twa: true },
                 hour:   { min: true, max: true, twa: true },
                 day:    { min: true, max: true, twa: true }
             }
@@ -154,6 +162,7 @@ export class Statistics {
             type: {
                 second: { value: true },
                 minute: { min: true, max: true, twa: true },
+                min10:  { min: true, max: true, twa: true },
                 hour:   { min: true, max: true, twa: true },
                 day:    { min: true, max: true, twa: true },
                 week:   { min: true, max: true, twa: true },
@@ -170,6 +179,7 @@ export class Statistics {
             type: {
                 second: { value: true },
                 minute: { min: true, max: true, twa: true },
+                min10:  { min: true, max: true, twa: true },
                 hour:   { min: true, max: true, twa: true },
                 day:    { min: true, max: true, twa: true },
                 week:   { min: true, max: true, twa: true },
@@ -186,6 +196,7 @@ export class Statistics {
             type: {
                 second: { value: true },
                 minute: { min: true, max: true, twa: true },
+                min10:  { min: true, max: true, twa: true },
                 hour:   { min: true, max: true, twa: true },
                 day:    { min: true, max: true, twa: true },
                 week:   { min: true, max: true, twa: true },
@@ -202,6 +213,7 @@ export class Statistics {
             type: {
                 second: { value: true },
                 minute: { min: true, max: true, twa: true },
+                min10:  { min: true, max: true, twa: true },
                 hour:   { min: true, max: true, twa: true },
                 day:    { min: true, max: true, twa: true },
                 week:   { min: true, max: true, twa: true },
@@ -271,6 +283,7 @@ export class Statistics {
             type: {
                 second: { value: true },
                 minute: { min: true, twa: true, max: true},
+                min10:  { min: true, twa: true, max: true },
                 hour:   { min: true, twa: true, max: true },
                 day:    { min: true, twa: true, max: true },
             }
@@ -282,6 +295,7 @@ export class Statistics {
             type: {
                 second: { value: true },
                 minute: { min: true, twa: true, max: true},
+                min10:  { min: true, twa: true, max: true },
                 hour:   { min: true, twa: true, max: true },
                 day:    { min: true, twa: true, max: true },
                 week:   { min: true, twa: true, max: true },
@@ -297,6 +311,7 @@ export class Statistics {
             type: {
                 second: { value: true },
                 minute: { min: true, twa: true, max: true},
+                min10:  { min: true, twa: true, max: true },
                 hour:   { min: true, twa: true, max: true },
                 day:    { min: true, twa: true, max: true },
             }
@@ -308,6 +323,7 @@ export class Statistics {
             type: {
                 second: { value: true },
                 minute: { min: true, twa: true, max: true},
+                min10:  { min: true, twa: true, max: true },
                 hour:   { min: true, twa: true, max: true },
                 day:    { min: true, twa: true, max: true },
             }
@@ -319,6 +335,7 @@ export class Statistics {
             type: {
                 second: { value: true },
                 minute: { min: true, twa: true, max: true},
+                min10:  { min: true, twa: true, max: true },
                 hour:   { min: true, twa: true, max: true },
                 day:    { min: true, twa: true, max: true }
             }
@@ -330,6 +347,7 @@ export class Statistics {
             type: {
                 second: { value: true },
                 minute: { min: true, twa: true, max: true},
+                min10:  { min: true, twa: true, max: true },
                 hour:   { min: true, twa: true, max: true },
                 day:    { min: true, twa: true, max: true },
                 week:   { min: true, twa: true, max: true },
@@ -343,6 +361,7 @@ export class Statistics {
             type: {
                 second: { value: true },
                 minute: { min: true, twa: true, max: true},
+                min10:  { min: true, twa: true, max: true },
                 hour:   { min: true, twa: true, max: true },
                 day:    { min: true, twa: true, max: true },
                 week:   { min: true, twa: true, max: true },
@@ -356,6 +375,7 @@ export class Statistics {
             type: {
                 second: { value: true },
                 minute: { min: true, twa: true, max: true},
+                min10:  { min: true, twa: true, max: true },
                 hour:   { min: true, twa: true, max: true },
                 day:    { min: true, twa: true, max: true },
                 week:   { min: true, twa: true, max: true },

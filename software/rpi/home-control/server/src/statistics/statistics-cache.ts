@@ -13,6 +13,7 @@ import { StatisticsDataCollection, IStatisticsDataCollection } from '../data/com
 import { Statistics, StatisticAttribute, StatisticsType } from '../data/common/home-control/statistics';
 import { MonitorRecord } from '../data/common/home-control/monitor-record';
 import { Backup, IBackup } from './backup';
+import { CompactBackup } from './compact-backup';
 
 
 export type StatisticsCacheSavePeriodType =  StatisticsType | 'never' | 'always';
@@ -257,11 +258,15 @@ export class StatisticsCache {
                         tPeriod = { min: null, max: null};
                     }
                 } else if (lastCheckedAt.getDate() !== now.getDate()) {
-                    if (type === 'day' || type === 'hour' || type === 'minute') {
+                    if (type === 'day' || type === 'hour' || type === 'minute' || type === 'min10') {
                         tPeriod = { min: null, max: null};
                     }
                 } else if (lastCheckedAt.getHours() !== now.getHours()) {
-                    if (type === 'hour' || type === 'minute') {
+                    if (type === 'hour' || type === 'minute' || type === 'min10') {
+                        tPeriod = { min: null, max: null};
+                    }
+                } else if (Math.floor(lastCheckedAt.getMinutes() / 10) !== Math.floor(now.getMinutes() / 10) ) {
+                    if (type === 'minute' || type === 'min10') {
                         tPeriod = { min: null, max: null};
                     }
                 } else if (lastCheckedAt.getMinutes() !== now.getMinutes()) {
@@ -311,6 +316,14 @@ export class StatisticsCache {
                             tPeriod.max = t2;
                             break;
                         }
+                        case 'min10': {
+                            let t2 = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), Math.floor(now.getMinutes() / 10) * 10);
+                            t2 = new Date(t2.getTime() - 1);
+                            tPeriod.min = new Date(t2.getTime() - 10 * 60 * 1000 + 1);
+                            tPeriod.max = t2;
+                            debug.fine('---> min10 %o', tPeriod);
+                            break;
+                        }
                         case 'minute': {
                             let t2 = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), now.getMinutes());
                             t2 = new Date(t2.getTime() - 1);
@@ -336,9 +349,10 @@ export class StatisticsCache {
 
                 if (tPeriod && this._config.save[type]) {
                     const collections: IStatisticsDataCollection [] = [];
+                    let path: string;
                     try {
                         const options = this._config.save[type].options || {};
-                        const path = StatisticsCache.replaceControls(this._config.save[type].path, tPeriod.min);
+                        path = StatisticsCache.replaceControls(this._config.save[type].path, tPeriod.min);
 
                         if (Array.isArray(this._collectionsToSave[type])) {
                             for (const c of this._collectionsToSave[type]) {
@@ -350,14 +364,15 @@ export class StatisticsCache {
                         debug.finer('save %s: %d / %d collections -> %o', type, collections.length, this._collectionsToSave[type].length, tPeriod);
                         this._collectionsToSave[type] = [];
                         const backup: IBackup = { createdAt: new Date(), data: collections };
-                        const s =  JSON.stringify(backup, null, options.pretty === true ? 2 : 0);
+                        const compactBackup = new CompactBackup(backup);
+                        const s =  JSON.stringify(compactBackup.toObject(), null, options.pretty === true ? 2 : 0);
                         this.saveFile(path, s).then( () => {
                             debug.fine('---> file %s successful saved (%d collections)', path, collections.length);
                         }).catch( (err) => {
                             debug.warn('cannot save %s (1)\n%e', path, err);
                         });
                     } catch (err) {
-                        debug.warn('cannot save %d %s collections to %s', collections.length, type);
+                        debug.warn('cannot save %d %s collections to %s', collections.length, type, path);
                     }
                 }
 
@@ -398,7 +413,7 @@ export class StatisticsCache {
         }
 
         try {
-            const gzIndex = path.indexOf('.gz');
+            const gzIndex = path.lastIndexOf('.gz');
             if (gzIndex > 0 && (gzIndex + 3) === path.length ) {
                 const compressedContent = await this.gzip(content);
                 await this.writeFile(path, compressedContent);

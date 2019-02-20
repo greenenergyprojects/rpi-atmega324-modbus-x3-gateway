@@ -14,7 +14,8 @@ import { StatisticsDataCollection } from '../data/common/home-control/statistics
 import { IArchiveResponse } from '../data/common/home-control/archive-response';
 import { StatisticsCache } from './statistics-cache';
 import { reverse } from 'dns';
-import { IBackup } from './backup';
+import { IBackup, Backup } from './backup';
+import { ICompactBackup, CompactBackup } from './compact-backup';
 
 export class Archive {
 
@@ -57,7 +58,7 @@ export class Archive {
         if (!cfg || !cfg.path)  {
             return [];
         }
-        const rv: StatisticsDataCollection [] = [];
+        let rv: StatisticsDataCollection [] = [];
         while (from < to) {
             const path = StatisticsCache.replaceControls(cfg.path, from);
             if (fs.existsSync(path)) {
@@ -67,12 +68,14 @@ export class Archive {
                         content = zlib.gunzipSync(content);
                     }
                     const x = content.toString('utf-8');
-                    const o: IBackup = JSON.parse(x);
-                    if (o.createdAt && Array.isArray(o.data)) {
-                        for (const d of o.data) {
-                            rv.push(StatisticsDataCollection.createInstance(d));
-                        }
-                    }
+                    const o: ICompactBackup = JSON.parse(x);
+                    const compactBackup = new CompactBackup(o);
+                    rv = rv.concat(compactBackup.data);
+                    // if (o.createdAt && Array.isArray(o.data)) {
+                    //     for (const d of o.data) {
+                    //         rv.push(StatisticsDataCollection.createInstance(d));
+                    //     }
+                    // }
                 } catch (err) {
                     debug.warn('loadData(): cannot parse %s', path);
                 }
@@ -80,6 +83,7 @@ export class Archive {
             switch (t) {
                 case 'second': from.setTime(from.getTime() + 1000); break;
                 case 'minute': from.setTime(from.getTime() + 60 * 1000); break;
+                case 'min10' : from.setTime(from.getTime() + 10 * 60 * 1000); break;
                 case 'hour':   from.setTime(from.getTime() + 60 * 60 * 1000); break;
                 case 'day':    from.setTime(from.getTime() + 24 * 60 * 60 * 1000); break;
                 case 'week':   from.setTime(from.getTime() + 7 * 24 * 60 * 60 * 1000); break;

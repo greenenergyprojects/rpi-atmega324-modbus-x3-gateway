@@ -3,6 +3,7 @@
 import * as debugsx from 'debug-sx';
 import { IStatisticsDataCollection, StatisticsDataCollection } from '../data/common/home-control/statistics-data-collection';
 import { catchClause } from 'babel-types';
+import { StatisticsType } from '../data/common/home-control/statistics';
 const debug: debugsx.IFullLogger = debugsx.createFullLogger('Backup');
 
 export interface IBackup {
