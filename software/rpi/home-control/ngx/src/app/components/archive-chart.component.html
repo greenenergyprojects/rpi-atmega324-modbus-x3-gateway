@@ -13,8 +13,8 @@
             </div>
         </div>
     </form>
-
-    <canvas baseChart id="childChart"
+    
+    <canvas *ngIf="chart" baseChart id="childChart"
         [datasets]="chart.datasets"
         [labels]="chart.labels"
         [options]="chart.options"
@@ -28,16 +28,22 @@
     <form #controlForm="ngForm" style="margin-top: 1em">
         <div class="form-row">
             <div class="col-auto">
-                    <app-sync-button [config]="buttonConfigXLeft">+</app-sync-button>
+                <app-sync-button [config]="buttonConfigXPageLeft">+</app-sync-button>
             </div>
             <div class="col-auto">
-                <app-sync-button [config]="buttonConfigXZoomPlus">+</app-sync-button>
+                <app-sync-button [config]="buttonConfigXLeft">+</app-sync-button>
             </div>
             <div class="col-auto">
-                <app-sync-button [config]="buttonConfigXZoomMinus">-</app-sync-button>
+                <app-sync-button [config]="buttonConfigXZoomIn">+</app-sync-button>
             </div>
             <div class="col-auto">
-                    <app-sync-button [config]="buttonConfigXRight">+</app-sync-button>
+                <app-sync-button [config]="buttonConfigXZoomOut">-</app-sync-button>
+            </div>
+            <div class="col-auto">
+                <app-sync-button [config]="buttonConfigXRight">+</app-sync-button>
+            </div>
+            <div class="col-auto">
+                <app-sync-button [config]="buttonConfigXPageRight">+</app-sync-button>
             </div>
         </div>
     </form>
