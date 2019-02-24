@@ -31,8 +31,13 @@ import { FilterPipe } from './pipes/filter-pipe';
 
 import { ChartsModule } from 'ng4-charts/ng4-charts';
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faEye, faEyeSlash, faSpinner, faSync } from '@fortawesome/free-solid-svg-icons';
-library.add(faEye, faEyeSlash, faSpinner, faSync);
+import * as fa from '@fortawesome/free-solid-svg-icons';
+
+library.add(
+    fa.faEye, fa.faEyeSlash, fa.faSpinner, fa.faSync,
+    fa.faAngleLeft, fa.faAngleDoubleLeft, fa.faAngleRight, fa.faAngleDoubleRight,
+    fa.faSearchPlus, fa.faSearchMinus, fa.faHandPointLeft, fa.faHandPointRight
+);
 
 @NgModule({
     declarations: [

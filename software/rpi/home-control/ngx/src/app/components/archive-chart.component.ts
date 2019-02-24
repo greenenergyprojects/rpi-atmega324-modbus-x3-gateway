@@ -36,6 +36,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
 
     private static dayNames = [ 'Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag' ];
 
+
     private static chartTypNames: { [ key in TChartTyp ]: string } = {
         power: 'Leistung',
         energy: 'Energie'
@@ -68,12 +69,14 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
     public chart: INg4Chart;
     public showInputs: IInputConfig<any> [] = [];
     public buttonConfigRefreshNow: ISyncButtonConfig;
+    public buttonConfigXDayBack: ISyncButtonConfig;
     public buttonConfigXZoomIn: ISyncButtonConfig;
     public buttonConfigXZoomOut: ISyncButtonConfig;
     public buttonConfigXLeft: ISyncButtonConfig;
     public buttonConfigXRight: ISyncButtonConfig;
     public buttonConfigXPageLeft: ISyncButtonConfig;
     public buttonConfigXPageRight: ISyncButtonConfig;
+    public buttonConfigXDayNext: ISyncButtonConfig;
 
     private _locked: IChartParams = null;
     private _requestCnt: number;
@@ -92,17 +95,22 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
 
         this.buttonConfigRefreshNow = {
             text: 'Jetzt',
-            classes: { default: 'btn btn-primary', onSuccess: 'btn btn-success', onError: 'btn btn-danger' },
+            classes: { default: 'btn-sm btn-primary', onSuccess: 'btn-sm btn-success', onError: 'btn-sm btn-danger' },
+            onSuccessTimeoutMillis: 2000,
+            onErrorTimeoutMillis: 2000,
             handler: {
                 onClick: (cfg) => this.onButtonClick(cfg),
                 onCancel: (cfg) => this.onButtonCancel(cfg)
             }
         };
 
-
-        this.buttonConfigXLeft = {
-            text: '<===',
+        this.buttonConfigXDayBack = {
+            text: 'Tag ',
+            icon: 'hand-point-left',
             classes: { default: 'btn-sm btn-primary', onSuccess: 'btn-sm btn-success', onError: 'btn-sm btn-danger' },
+            hideSyncIcon: true,
+            onSuccessTimeoutMillis: 2000,
+            onErrorTimeoutMillis: 2000,
             handler: {
                 onClick: (cfg) => this.onButtonClick(cfg),
                 onCancel: (cfg) => this.onButtonCancel(cfg)
@@ -110,17 +118,36 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         };
 
         this.buttonConfigXPageLeft = {
-            text: 'Vorher',
+            icon: 'angle-double-left',
             classes: { default: 'btn-sm btn-primary', onSuccess: 'btn-sm btn-success', onError: 'btn-sm btn-danger' },
+            hideSyncIcon: true,
+            onSuccessTimeoutMillis: 2000,
+            onErrorTimeoutMillis: 2000,
             handler: {
                 onClick: (cfg) => this.onButtonClick(cfg),
                 onCancel: (cfg) => this.onButtonCancel(cfg)
             }
         };
 
-        this.buttonConfigXRight = {
-            text: '===>',
+        this.buttonConfigXLeft = {
+            icon: 'angle-left',
             classes: { default: 'btn-sm btn-primary', onSuccess: 'btn-sm btn-success', onError: 'btn-sm btn-danger' },
+            hideSyncIcon: true,
+            onSuccessTimeoutMillis: 2000,
+            onErrorTimeoutMillis: 2000,
+            handler: {
+                onClick: (cfg) => this.onButtonClick(cfg),
+                onCancel: (cfg) => this.onButtonCancel(cfg)
+            }
+        };
+
+
+        this.buttonConfigXRight = {
+            icon: 'angle-right',
+            classes: { default: 'btn-sm btn-primary', onSuccess: 'btn-sm btn-success', onError: 'btn-sm btn-danger' },
+            onSuccessTimeoutMillis: 2000,
+            onErrorTimeoutMillis: 2000,
+            hideSyncIcon: true,
             handler: {
                 onClick: (cfg) => this.onButtonClick(cfg),
                 onCancel: (cfg) => this.onButtonCancel(cfg)
@@ -128,8 +155,11 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         };
 
         this.buttonConfigXPageRight = {
-            text: 'Nachher',
+            icon: 'angle-double-right',
             classes: { default: 'btn-sm btn-primary', onSuccess: 'btn-sm btn-success', onError: 'btn-sm btn-danger' },
+            onSuccessTimeoutMillis: 2000,
+            onErrorTimeoutMillis: 2000,
+            hideSyncIcon: true,
             handler: {
                 onClick: (cfg) => this.onButtonClick(cfg),
                 onCancel: (cfg) => this.onButtonCancel(cfg)
@@ -137,8 +167,11 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         };
 
         this.buttonConfigXZoomIn = {
-            text: 'Zoom in',
+            icon: 'search-plus',
             classes: { default: 'btn-sm btn-primary', onSuccess: 'btn-sm btn-success', onError: 'btn-sm btn-danger' },
+            onSuccessTimeoutMillis: 2000,
+            onErrorTimeoutMillis: 2000,
+            hideSyncIcon: true,
             handler: {
                 onClick: (cfg) => this.onButtonClick(cfg),
                 onCancel: (cfg) => this.onButtonCancel(cfg)
@@ -147,13 +180,30 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
 
 
         this.buttonConfigXZoomOut = {
-            text: 'Zoom out',
+            icon: 'search-minus',
             classes: { default: 'btn-sm btn-primary', onSuccess: 'btn-sm btn-success', onError: 'btn-sm btn-danger' },
+            onSuccessTimeoutMillis: 2000,
+            onErrorTimeoutMillis: 2000,
+            hideSyncIcon: true,
             handler: {
                 onClick: (cfg) => this.onButtonClick(cfg),
                 onCancel: (cfg) => this.onButtonCancel(cfg)
             }
         };
+
+        this.buttonConfigXDayNext = {
+            text: 'Tag ',
+            icon: 'hand-point-right',
+            classes: { default: 'btn-sm btn-primary', onSuccess: 'btn-sm btn-success', onError: 'btn-sm btn-danger' },
+            hideSyncIcon: true,
+            onSuccessTimeoutMillis: 2000,
+            onErrorTimeoutMillis: 2000,
+            handler: {
+                onClick: (cfg) => this.onButtonClick(cfg),
+                onCancel: (cfg) => this.onButtonCancel(cfg)
+            }
+        };
+
 
 
         const typOptions: string [] = [];
@@ -236,6 +286,14 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 this._currentZoomIndex = 0;
                 this.refresh(+this._zoomOptions[this._currentZoomIndex]);
 
+            } else if (cfg === this.buttonConfigXDayBack) {
+                const p = Object.assign({}, this.chart.params);
+                p.options.start = new Date(p.options.start.getTime() - 24 * 60 * 60 * 1000);
+                p.options.end = new Date(p.options.end.getTime() - 24 * 60 * 60 * 1000);
+                this.updateValidators(p.options.end);
+                this.refreshChart(p);
+
+
             } else if (cfg === this.buttonConfigXPageLeft) {
                 const p = Object.assign({}, this.chart.params);
                 const dt = p.options.end.getTime() - p.options.start.getTime();
@@ -282,7 +340,16 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 const nextParams = this.createChartParameter(this.chart.params.typ, this.chart.params.options.end, this._zoomOptions[this._currentZoomIndex]);
                 this.updateValidators(nextParams.options.end);
                 this.refreshChart(nextParams);
+
+            } else if (cfg === this.buttonConfigXDayNext) {
+                const p = Object.assign({}, this.chart.params);
+                p.options.start = new Date(p.options.start.getTime() + 24 * 60 * 60 * 1000);
+                p.options.end = new Date(p.options.end.getTime() + 24 * 60 * 60 * 1000);
+                this.updateValidators(p.options.end);
+                this.refreshChart(p);
             }
+
+
         }
     }
 
@@ -889,9 +956,13 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                             const t = new Date(+value);
                             const tPrev = new Date(+value - res * kms);
                             let rv: string;
-                            rv =  sprintf('%d:%02d', t.getHours(), t.getMinutes());
+
                             if (t.getDate() !== tPrev.getDate()) {
-                                rv = sprintf('%d.%d./%s', t.getDate(), t.getMonth() + 1, rv);
+                                rv = sprintf('%d.%d./%d:%02d', t.getDate(), t.getMonth() + 1, t.getHours(), t.getMinutes());
+                            } else if (t.getHours() === 12 && t.getMinutes() === 0) {
+                                rv =  sprintf('%s,%d:%02d', ArchiveChartComponent.dayNames[t.getDay()].substr(0, 2), t.getHours(), t.getMinutes());
+                            } else {
+                                rv =  sprintf('%d:%02d', t.getHours(), t.getMinutes());
                             }
                             return rv;
                         }

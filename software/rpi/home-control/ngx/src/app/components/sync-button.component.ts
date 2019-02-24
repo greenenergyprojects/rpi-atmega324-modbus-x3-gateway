@@ -6,13 +6,17 @@ import { NgbTooltip } from '@ng-bootstrap/ng-bootstrap';
 import { HttpErrorResponse } from '@angular/common/http';
 
 export interface ISyncButtonConfig {
-    text: string;
+    text?: string;
+    icon?: string;
     classes: {
         default: string;
         onBusy?: string;
         onSuccess?: string;
         onError?: string;
     };
+    hideSyncIcon?: boolean;
+    onSuccessTimeoutMillis?: number;
+    onErrorTimeoutMillis?: number;
     handler: {
         onClick?: (config: ISyncButtonConfig) => Promise<void>;
         onCancel?: (config: ISyncButtonConfig) => void;
@@ -23,8 +27,11 @@ export interface ISyncButtonConfig {
     selector: 'app-sync-button',
     template: `
         <button [ngClass]="classes" (click)="onClick()" placement="top" #tooltip="ngbTooltip" ngbTooltip triggers="manual">
-            <fa-icon [icon]="'sync'" [pulse]="isBusy"></fa-icon>
-            <span style="margin-left:10px">{{config.text}}</span>
+            <fa-icon *ngIf="!config.hideSyncIcon" [icon]="'sync'" [pulse]="isBusy"></fa-icon>
+            <span *ngIf="config.text" style="margin-left:10px">{{config.text}}</span>
+            <span *ngIf="config.icon">
+                <fa-icon [icon]="config.icon"></fa-icon>
+            </span>
         </button>`,
 })
 export class SyncButtonComponent implements OnInit {
@@ -67,6 +74,11 @@ export class SyncButtonComponent implements OnInit {
                     this._lastError = null;
                     if (this.config.classes.onSuccess) {
                         this.classes = this.config.classes.onSuccess;
+                        if (this.config.onSuccessTimeoutMillis > 0) {
+                            setTimeout( () => {
+                                this.classes = this.config.classes.default;
+                            }, this.config.onSuccessTimeoutMillis);
+                        }
                     } else {
                         this.classes = this.config.classes.default;
                     }
@@ -84,6 +96,12 @@ export class SyncButtonComponent implements OnInit {
                     this._lastError = err;
                     if (this.config.classes.onError) {
                         this.classes = this.config.classes.onError;
+                        if (this.config.onErrorTimeoutMillis > 0) {
+                            setTimeout( () => {
+                                this.classes = this.config.classes.default;
+                            }, this.config.onErrorTimeoutMillis);
+                        }
+
                     } else {
                         this.classes = this.config.classes.default;
                     }
