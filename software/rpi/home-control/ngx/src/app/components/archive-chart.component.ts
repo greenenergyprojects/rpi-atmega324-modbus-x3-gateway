@@ -100,6 +100,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         this.buttonConfigRefreshNow = {
             text: 'Reset',
             classes: { default: 'btn-sm btn-primary', onSuccess: 'btn-sm btn-success', onError: 'btn-sm btn-danger' },
+            hideSyncIcon: true,
             onSuccessTimeoutMillis: 2000,
             onErrorTimeoutMillis: 2000,
             handler: {
@@ -230,7 +231,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         this._inputDay = {
             id: 'day',
             disabled: false,
-            firstLine: 'Tag...',
+            firstLine: 'Tag',
             options: [ '1.', '31.' ],
             validator: new ValidatorElement<string>('1.', (e, n, v) => this.handleInputChange(e, n, v))
         };
@@ -238,7 +239,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         this._inputMonth = {
             id: 'month',
             disabled: false,
-            firstLine: 'Monat...',
+            firstLine: 'Monat',
             options: ArchiveChartComponent.monthNames,
             validator: new ValidatorElement<string>('Jänner', (e, n, v) => this.handleInputChange(e, n, v))
         };
@@ -246,7 +247,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         this._inputYear = {
             id: 'year',
             disabled: false,
-            firstLine: 'Jahr...',
+            firstLine: 'Jahr',
             options: [ '2019'],
             validator: new ValidatorElement<string>('2019', (e, n, v) => this.handleInputChange(e, n, v))
         };
@@ -256,7 +257,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         this._inputHour = {
             id: 'hour',
             disabled: false,
-            firstLine: 'Stunde...',
+            firstLine: 'Stunde',
             options: hourOptions,
             validator: new ValidatorElement<string>('12:00', (e, n, v) => this.handleInputChange(e, n, v))
         };
@@ -841,14 +842,14 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         const from = new Date(to.getTime() - dm10 * 10 * 60 * 1000);
         console.log('createChartPowerMinute()\n from=' + from.toISOString() + '\n   to=' + to.toISOString());
 
-        const x: IArchiveRequest = {
+        const archiveRequest: IArchiveRequest = {
             id:      this._requestCnt++,
             type:    'min10',
             dataIds: ids,
             from:    from,
             to:      to
         };
-        const r = await this.dataService.getArchiv(new ArchiveRequest(x));
+        const r = await this.dataService.getArchiv(new ArchiveRequest(archiveRequest));
         const values: { [ key in StatisticAttribute | 'pLoad' ]?: { x: string | Date, y: number}  [] } = {};
         for (let m10 = -dm10; m10 <= 0; m10++) {
             for (const id of ids) {
@@ -914,6 +915,25 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             }
         };
 
+        try {
+            const x = <any>this.childChart;
+            if (x && x.chart && x.chart.scales && x.chart.scales) {
+                // console.log(x.chart.scales);
+                const y = x.chart.scales['y-axis-0'];
+                if (y) {
+                    const min = y.min;
+                    const max = y.max;
+                    if (typeof min === 'number' && typeof max === 'number') {}
+                        if (this.checkboxYAuto && this.checkboxYAuto.nativeElement && !this.checkboxYAuto.nativeElement.checked) {
+                            chart1Options.scales.yAxes[0].ticks.min = min;
+                            chart1Options.scales.yAxes[0].ticks.max = max;
+                    }
+                }
+            }
+        } catch (err) {
+            console.log(err);
+        }
+
         const chart: INg4Chart = {
             params: p,
             datasets: [ ],
@@ -963,14 +983,14 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         const from = new Date(to.getTime() - dHrs * kms);
         console.log('createChartPowerHour()\n from=' + from.toISOString() + '\n   to=' + to.toISOString());
 
-        const x: IArchiveRequest = {
+        const archiveRequest: IArchiveRequest = {
             id:      this._requestCnt++,
             type:    'hour',
             dataIds: ids,
             from:    from,
             to:      to
         };
-        const r = await this.dataService.getArchiv(new ArchiveRequest(x));
+        const r = await this.dataService.getArchiv(new ArchiveRequest(archiveRequest));
         const values: { [ key in StatisticAttribute | 'pLoad' ]?: { x: string | Date, y: number}  [] } = {};
         for (let t = -dHrs; t <= 0; t++) {
             for (const id of ids) {
@@ -1036,6 +1056,25 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 }]
             }
         };
+
+        try {
+            const x = <any>this.childChart;
+            if (x && x.chart && x.chart.scales && x.chart.scales) {
+                // console.log(x.chart.scales);
+                const y = x.chart.scales['y-axis-0'];
+                if (y) {
+                    const min = y.min;
+                    const max = y.max;
+                    if (typeof min === 'number' && typeof max === 'number') {}
+                        if (this.checkboxYAuto && this.checkboxYAuto.nativeElement && !this.checkboxYAuto.nativeElement.checked) {
+                            chart1Options.scales.yAxes[0].ticks.min = min;
+                            chart1Options.scales.yAxes[0].ticks.max = max;
+                    }
+                }
+            }
+        } catch (err) {
+            console.log(err);
+        }
 
         const chart: INg4Chart = {
             params: p,

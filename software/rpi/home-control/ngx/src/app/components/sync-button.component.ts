@@ -27,8 +27,10 @@ export interface ISyncButtonConfig {
     selector: 'app-sync-button',
     template: `
         <button [ngClass]="classes" (click)="onClick()" placement="top" #tooltip="ngbTooltip" ngbTooltip triggers="manual">
-            <fa-icon *ngIf="!config.hideSyncIcon" [icon]="'sync'" [pulse]="isBusy"></fa-icon>
-            <span *ngIf="config.text" style="margin-left:10px">{{config.text}}</span>
+            <span *ngIf="!config.hideSyncIcon" style="margin-right:10px">
+                <fa-icon [icon]="'sync'" [pulse]="isBusy">{{config.text}}></fa-icon>
+            </span>
+            <span *ngIf="config.text">{{config.text}}</span>
             <span *ngIf="config.icon">
                 <fa-icon [icon]="config.icon"></fa-icon>
             </span>

@@ -2,7 +2,7 @@
     <form #controlForm="ngForm">
         <div class="form-row">
             <div class="col-auto">
-                <app-sync-button [config]="buttonConfigRefreshNow">+</app-sync-button>
+                <app-sync-button [config]="buttonConfigRefreshNow"></app-sync-button>
             </div>
             <div *ngFor="let cfg of showInputs" class="col-auto">
                 <select *ngIf="!cfg.disabled" class="form-control-sm"
