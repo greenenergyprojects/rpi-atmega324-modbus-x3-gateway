@@ -51,7 +51,7 @@ export class SyncButtonComponent implements OnInit {
 
     public ngOnInit () {
         this.classes = this.config.classes.default;
-        console.log(this.tooltip);
+        // console.log(this.tooltip);
     }
 
     public async onClick () {

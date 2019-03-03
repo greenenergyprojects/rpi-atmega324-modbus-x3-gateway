@@ -59,7 +59,7 @@ export class Archive {
             return [];
         }
         let rv: StatisticsDataCollection [] = [];
-        while (from < to) {
+        while (from <= to) {
             const path = StatisticsCache.replaceControls(cfg.path, from);
             if (fs.existsSync(path)) {
                 try {

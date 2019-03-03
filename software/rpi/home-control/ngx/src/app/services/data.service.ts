@@ -190,7 +190,7 @@ export class DataService {
         query += '&to=' + request.to.toISOString();
 
         const r = await this._serverService.httpGetJson('/data/archive' + query);
-        console.log(r);
+        // console.log(r);
         return new ArchiveResponse(r);
     }
 
