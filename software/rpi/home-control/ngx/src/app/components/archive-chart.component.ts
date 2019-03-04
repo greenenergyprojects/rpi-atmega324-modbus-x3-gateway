@@ -54,14 +54,14 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
     };
 
     private static defaultColors: { [ key in StatisticAttribute ]?: ngCharts.Color } = {
-        pBoiler:   { borderColor: 'blue', pointRadius: 0 },
-        pGrid:     { borderColor: 'black', pointRadius: 0 },
-        pBat:      { borderColor: 'orange', pointRadius: 0 },
-        pHeatPump: { borderColor: 'saddlebrown', pointRadius: 0 },
-        pLoad:     { borderColor: 'red', pointRadius: 0 },
-        pPv:       { borderColor: 'green', pointRadius: 3 },
-        pPvEW:     { borderColor: 'lightgreen', pointRadius: 0 },
-        pPvS:      { borderColor: 'darkgreen', pointRadius: 0 }
+        pBoiler:   { borderColor: 'blue',        backgroundColor: 'blue',        pointRadius: 0 },
+        pGrid:     { borderColor: 'black',       backgroundColor: 'black',       pointRadius: 0 },
+        pBat:      { borderColor: 'orange',      backgroundColor: 'orange',      pointRadius: 0 },
+        pHeatPump: { borderColor: 'saddlebrown', backgroundColor: 'saddlebrown', pointRadius: 0 },
+        pLoad:     { borderColor: 'red',         backgroundColor: 'red',         pointRadius: 0 },
+        pPv:       { borderColor: 'green',       backgroundColor: 'green',       pointRadius: 3 },
+        pPvEW:     { borderColor: 'lightgreen',  backgroundColor: 'lightgreen',  pointRadius: 0 },
+        pPvS:      { borderColor: 'darkgreen',   backgroundColor: 'darkgreen',   pointRadius: 0 }
     };
 
     @ViewChild(BaseChartDirective)
@@ -374,6 +374,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
     private createChartParameter (typ: TChartTyp, end: Date, zoom: number | string): IChartParams {
         let start: Date;
         // console.log('createChartParameter zoom=' + zoom);
+
         if (zoom >= 0.5) {
             const dHrs = +zoom;
             start = new Date(end.getTime() - dHrs * 60 * 60 * 1000);
@@ -390,6 +391,13 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 } else if (typeof dMonth !== 'number' || dMonth < 1) {
                     dMonth = null;
                 }
+                let year = end.getFullYear() - dYear;
+                let month = end.getMonth() - dMonth;
+                while (month < 0) {
+                    month += 12;
+                    year--;
+                }
+                start = new Date(year, month, 1);
 
             } else if (zoom.endsWith('y')) {
                 dYear = +zoom.substr(0, zoom.length - 1);
@@ -637,26 +645,27 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             if (p.typ !== null && average !== null) {
                 // console.log('2--->', this.chart, p);
                 this._locked = p;
+                let newChart: INg4Chart;
                 if (p.typ === 'power') {
                     switch (average) {
                         case 'minute': {
                             const cpMin = await this.createChartPowerMinute(p);
-                            this.chart = cpMin;
+                            newChart = cpMin;
                             break;
                         }
                         case 'min10': {
                             const cpMin10 = await this.createChartPowerMin10(p);
-                            this.chart = cpMin10;
+                            newChart = cpMin10;
                             break;
                         }
                         case 'hour': {
                             const cpHour = await this.createChartPowerHour(p);
-                            this.chart = cpHour;
+                            newChart = cpHour;
                             break;
                         }
                         case 'day': {
                             const cpDay = await this.createChartPowerDay(p);
-                            this.chart = cpDay;
+                            newChart = cpDay;
                             break;
                         }
 
@@ -668,6 +677,17 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 } else {
                     console.log('unsupported typ + ' + p.typ);
                 }
+
+                if (newChart && this.childChart && Array.isArray(this.childChart.datasets)) {
+                    for (let i = 0; i < this.childChart.datasets.length; i++) {
+                        const ds = this.childChart.datasets[i];
+                        if (ds.hidden === true) {
+                            newChart.datasets[i].hidden = true;
+                        }
+                    }
+                }
+                this.chart = newChart;
+
             }
             this._locked = null;
         } catch (err) {
@@ -677,8 +697,10 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 this._locked = null;
                 setTimeout( () => { this.refreshChart(nextParams); }, 0);
             }
+            this.chart = null;
             this._locked = null;
         }
+        // console.log('refresh done -> chart = ...\n', this.chart);
         // const cpd = await this.createChartPowerDay([ 'pGrid', 'pPv',  'pBat', 'pLoad', 'pBoiler', 'pHeatPump' ]);
         // const cpm = await this.createChartPowerMonth([ 'pGrid', 'pPv',  'pBat', 'pLoad', 'pBoiler', 'pHeatPump' ]);
         // this.charts.push(cpd);
@@ -812,8 +834,9 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             //     dataset.hidden = true;
             // }
             chart.datasets.push(dataset);
-            const col = ArchiveChartComponent.defaultColors[id];
+            const col = Object.assign({}, ArchiveChartComponent.defaultColors[id]);
             if (col) {
+                delete col.backgroundColor;
                 chart.colors.push(col);
             } else {
                 chart.colors.push({ borderColor: 'lightgrey', pointRadius: 0 });
@@ -875,6 +898,9 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 display: true,
                 text: 'Leistungen (10min) ' + ArchiveChartComponent.dayNames[from.getDay()] + ', ' +
                        from.getDate() + '. ' + ArchiveChartComponent.monthNames[from.getMonth()] + ' ' + from.getFullYear()
+            },
+            animation: {
+                duration: 1
             },
             scales: {
                 xAxes: [{
@@ -949,8 +975,9 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 type: 'line'
             };
             chart.datasets.push(dataset);
-            const col = ArchiveChartComponent.defaultColors[id];
+            const col = Object.assign({}, ArchiveChartComponent.defaultColors[id]);
             if (col) {
+                delete col.backgroundColor;
                 chart.colors.push(col);
             } else {
                 chart.colors.push({ borderColor: 'lightgrey', pointRadius: 0 });
@@ -1016,6 +1043,9 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 display: true,
                 text: 'Leistungen (1Std) ' + ArchiveChartComponent.dayNames[from.getDay()] + ', ' +
                        from.getDate() + '. ' + ArchiveChartComponent.monthNames[from.getMonth()] + ' ' + from.getFullYear()
+            },
+            animation: {
+                duration: 1
             },
             scales: {
                 xAxes: [{
@@ -1091,8 +1121,9 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 type: 'line'
             };
             chart.datasets.push(dataset);
-            const col = ArchiveChartComponent.defaultColors[id];
+            const col = Object.assign({}, ArchiveChartComponent.defaultColors[id]);
             if (col) {
+                delete col.backgroundColor;
                 chart.colors.push(col);
             } else {
                 chart.colors.push({ borderColor: 'lightgrey', pointRadius: 0 });
@@ -1159,6 +1190,9 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 text: 'Leistungen (Tagesmittel) ' + ArchiveChartComponent.dayNames[from.getDay()] + ', ' +
                        from.getDate() + '. ' + ArchiveChartComponent.monthNames[from.getMonth()] + ' ' + from.getFullYear()
             },
+            animation: {
+                duration: 1
+            },
             scales: {
                 xAxes: [{
                     type: 'time',
@@ -1174,6 +1208,8 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                         offsetGridLines: true,
                         drawTicks: true
                     },
+                    categoryPercentage: 0.8,
+                    barPercentage: 1,
                     ticks: {
                         callback: (value: string) => {
                             const t = new Date(+value + 4 * kms);
@@ -1200,7 +1236,16 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             colors: [],
         };
         for (const id of ids) {
-            chart.datasets.push({ data: values[id], label: id});
+            const dataset: Charts.ChartDataSets = {
+                label: id,
+                data: values[id],
+                hidden: false,
+                type: 'bar',
+                fill: true,
+                // backgroundColor: 'black',
+            };
+
+            chart.datasets.push(dataset);
             const col = ArchiveChartComponent.defaultColors[id];
             if (col) {
                 chart.colors.push(col);
@@ -1272,7 +1317,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 for (let i = 0; i < this.chart.datasets.length; i++) {
                     const c = this.childChart.chart.getDatasetMeta(i);
                     this.childChart.datasets[i].hidden = (c.hidden === true);
-                    console.log(this.childChart.datasets[i].label, c.hidden === true);
+                    // console.log(this.childChart.datasets[i].label, c.hidden === true);
                 }
 
             } catch (err) {
