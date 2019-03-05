@@ -146,11 +146,16 @@ export class StatisticsData {
                         debug.warn('collection %s missing', f.id);
                         s = '?';
                     } else {
-                        const v = coll.getValueByType(f.typ, f.factor, f.offset);
+                        let v = coll.getValueByType(f.typ, f.factor, f.offset);
+                        if (f.id.startsWith('ePv') && (new Date()).getHours() < 2) {
+                            debug.warn('wrong %s value %s -> force value to zero', f.id, v);
+                            v = 0;
+                        }
                         if (typeof(v) !== 'number') {
                             debug.warn('collection %s, no valid value on field %s (%o, %o)', coll.id, f.id, v, f);
                             s = '?';
                         } else {
+                            // debug.info('id=%s, value=%s', f.id, v);
                             s = sprintf(f.format || '%.3f', v);
                         }
                     }

@@ -298,77 +298,77 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
     }
 
     public async onButtonClick(cfg: ISyncButtonConfig): Promise<void> {
-        console.log(this.checkboxYAuto.nativeElement.checked);
-        if (this.chart) {
-            if (cfg === this.buttonConfigRefreshNow) {
-                this._currentZoomIndex = 0;
-                this.refresh(+this._zoomOptions[this._currentZoomIndex]);
-
-            } else if (cfg === this.buttonConfigXDayBack) {
-                const p = Object.assign({}, this.chart.params);
-                p.options.start = new Date(p.options.start.getTime() - 24 * 60 * 60 * 1000);
-                p.options.end = new Date(p.options.end.getTime() - 24 * 60 * 60 * 1000);
-                this.updateValidators(p.options.end);
-                this.refreshChart(p);
-
-
-            } else if (cfg === this.buttonConfigXPageLeft) {
-                const p = Object.assign({}, this.chart.params);
-                const dt = p.options.end.getTime() - p.options.start.getTime();
-                p.options.start = new Date(p.options.start.getTime() - dt);
-                p.options.end = new Date(p.options.end.getTime() - dt);
-                this.updateValidators(p.options.end);
-                this.refreshChart(p);
-
-            } else if (cfg === this.buttonConfigXLeft) {
-                const p = Object.assign({}, this.chart.params);
-                const dt = p.options.end.getTime() - p.options.start.getTime();
-                p.options.start = new Date(p.options.start.getTime() - this._currentTimeResolutionMillis);
-                p.options.end = new Date(p.options.end.getTime() - this._currentTimeResolutionMillis);
-                this.updateValidators(p.options.end);
-                this.refreshChart(p);
-
-            } else if (cfg === this.buttonConfigXRight) {
-                const p = Object.assign({}, this.chart.params);
-                const dt = p.options.end.getTime() - p.options.start.getTime();
-                p.options.start = new Date(p.options.start.getTime() + this._currentTimeResolutionMillis);
-                p.options.end = new Date(p.options.end.getTime() + this._currentTimeResolutionMillis);
-                this.updateValidators(p.options.end);
-                this.refreshChart(p);
-
-            } else if (cfg === this.buttonConfigXPageRight) {
-                const p = Object.assign({}, this.chart.params);
-                const dt = p.options.end.getTime() - p.options.start.getTime();
-                p.options.start = new Date(p.options.start.getTime() + dt);
-                p.options.end = new Date(p.options.end.getTime() + dt);
-                console.log('---> ===> ', p.options);
-                this.updateValidators(p.options.end);
-                this.refreshChart(p);
-
-            } else if (cfg === this.buttonConfigXZoomIn) {
-                this._currentZoomIndex = Math.max(0, this._currentZoomIndex - 1);
-                console.log('_currentZoomIndex=' + this._currentZoomIndex);
-                const nextParams = this.createChartParameter(this.chart.params.typ, this.chart.params.options.end, this._zoomOptions[this._currentZoomIndex]);
-                this.updateValidators(nextParams.options.end);
-                this.refreshChart(nextParams);
-
-            } else if (cfg === this.buttonConfigXZoomOut) {
-                this._currentZoomIndex = Math.min(this._zoomOptions.length - 1, this._currentZoomIndex + 1);
-                console.log('_currentZoomIndex=' + this._currentZoomIndex);
-                const nextParams = this.createChartParameter(this.chart.params.typ, this.chart.params.options.end, this._zoomOptions[this._currentZoomIndex]);
-                this.updateValidators(nextParams.options.end);
-                this.refreshChart(nextParams);
-
-            } else if (cfg === this.buttonConfigXDayNext) {
-                const p = Object.assign({}, this.chart.params);
-                p.options.start = new Date(p.options.start.getTime() + 24 * 60 * 60 * 1000);
-                p.options.end = new Date(p.options.end.getTime() + 24 * 60 * 60 * 1000);
-                this.updateValidators(p.options.end);
-                this.refreshChart(p);
-            }
-
-
+        // console.log(this.checkboxYAuto.nativeElement.checked);
+        let params: IChartParams;
+        if (this.chart && this.chart.params) {
+            params = Object.assign({}, this.chart.params);
+        } else  {
+            const now = new Date();
+            params = {
+                typ: 'power',
+                options: {
+                    start: new Date(now.getTime() - 90 * 60 * 1000),
+                    end: now
+                }
+            };
         }
+        if (cfg === this.buttonConfigRefreshNow) {
+            this._currentZoomIndex = 0;
+            this.refresh(+this._zoomOptions[this._currentZoomIndex]);
+
+        } else if (cfg === this.buttonConfigXDayBack) {
+            params.options.start = new Date(params.options.start.getTime() - 24 * 60 * 60 * 1000);
+            params.options.end = new Date(params.options.end.getTime() - 24 * 60 * 60 * 1000);
+            this.updateValidators(params.options.end);
+            this.refreshChart(params);
+
+        } else if (cfg === this.buttonConfigXPageLeft) {
+            const dt = params.options.end.getTime() - params.options.start.getTime();
+            params.options.start = new Date(params.options.start.getTime() - dt);
+            params.options.end = new Date(params.options.end.getTime() - dt);
+            this.updateValidators(params.options.end);
+            this.refreshChart(params);
+
+        } else if (cfg === this.buttonConfigXLeft) {
+            params.options.start = new Date(params.options.start.getTime() - this._currentTimeResolutionMillis);
+            params.options.end = new Date(params.options.end.getTime() - this._currentTimeResolutionMillis);
+            this.updateValidators(params.options.end);
+            this.refreshChart(params);
+
+        } else if (cfg === this.buttonConfigXRight) {
+            params.options.start = new Date(params.options.start.getTime() + this._currentTimeResolutionMillis);
+            params.options.end = new Date(params.options.end.getTime() + this._currentTimeResolutionMillis);
+            this.updateValidators(params.options.end);
+            this.refreshChart(params);
+
+        } else if (cfg === this.buttonConfigXPageRight) {
+            const dt = p.options.end.getTime() - params.options.start.getTime();
+            params.options.start = new Date(params.options.start.getTime() + dt);
+            params.options.end = new Date(params.options.end.getTime() + dt);
+            this.updateValidators(params.options.end);
+            this.refreshChart(params);
+
+        } else if (cfg === this.buttonConfigXZoomIn) {
+            this._currentZoomIndex = Math.max(0, this._currentZoomIndex - 1);
+            console.log('_currentZoomIndex=' + this._currentZoomIndex);
+            const nextParams = this.createChartParameter(params.typ, params.options.end, this._zoomOptions[this._currentZoomIndex]);
+            this.updateValidators(nextParams.options.end);
+            this.refreshChart(nextParams);
+
+        } else if (cfg === this.buttonConfigXZoomOut) {
+            this._currentZoomIndex = Math.min(this._zoomOptions.length - 1, this._currentZoomIndex + 1);
+            console.log('_currentZoomIndex=' + this._currentZoomIndex);
+            const nextParams = this.createChartParameter(params.typ, params.options.end, this._zoomOptions[this._currentZoomIndex]);
+            this.updateValidators(nextParams.options.end);
+            this.refreshChart(nextParams);
+
+        } else if (cfg === this.buttonConfigXDayNext) {
+            params.options.start = new Date(params.options.start.getTime() + 24 * 60 * 60 * 1000);
+            params.options.end = new Date(params.options.end.getTime() + 24 * 60 * 60 * 1000);
+            this.updateValidators(params.options.end);
+            this.refreshChart(params);
+        }
+
     }
 
     private createChartParameter (typ: TChartTyp, end: Date, zoom: number | string): IChartParams {
