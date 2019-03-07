@@ -342,7 +342,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             this.refreshChart(params);
 
         } else if (cfg === this.buttonConfigXPageRight) {
-            const dt = p.options.end.getTime() - params.options.start.getTime();
+            const dt = params.options.end.getTime() - params.options.start.getTime();
             params.options.start = new Date(params.options.start.getTime() + dt);
             params.options.end = new Date(params.options.end.getTime() + dt);
             this.updateValidators(params.options.end);

@@ -115,7 +115,8 @@ export class EnergyDaily extends DataRecord<IEnergyDaily> implements IEnergyDail
                     if (dt < 0) {
                         throw new Error('invaild dt ' + dt);
                     } else if (dt > 30000) {
-                        CommonLogger.warn('dt > 30s, skip energy accumulation');
+                        CommonLogger.warn('dt > 30s (1), skip energy accumulation (at=%s, lastPower=%s)', at.toISOString(), this._lastPower.at.toISOString());
+                        const dt = at.getTime() - this._lastPower.at.getTime();
                     } else if (dt > 0) {
                         const de = (power + this._lastPower.power) / 2 * dt / 1000 / 3600;
                         this._totalEnergy += de;
@@ -144,7 +145,8 @@ export class EnergyDaily extends DataRecord<IEnergyDaily> implements IEnergyDail
                 if (dt < 0) {
                     throw new Error('invaild dt ' + dt);
                 } else if (dt > 30000) {
-                    CommonLogger.warn('dt > 30s, skip energy accumulation');
+                    CommonLogger.warn('dt > 30s (2), skip energy accumulation (at=%s, lastPower=%s)', at.toISOString(), this._lastPower.at.toISOString());
+                    this._lastPower = { at: at, power: power };
                 } else if (dt > 0) {
                     const de = (power + this._lastPower.power) / 2 * dt / 1000 / 3600;
                     this._totalEnergy += de;
