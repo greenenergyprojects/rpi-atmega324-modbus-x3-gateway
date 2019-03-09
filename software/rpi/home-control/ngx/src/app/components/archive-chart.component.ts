@@ -10,17 +10,16 @@ import { BaseChartDirective } from 'ng4-charts';
 import * as ngCharts from 'ng4-charts';
 import * as Charts from 'chart.js';
 import { DataService } from '../services/data.service';
-import { Subscription } from 'rxjs';
-import { MonitorRecord } from '../data/common/home-control/monitor-record';
 import { sprintf } from 'sprintf-js';
 import { HistoryService } from '../services/history.service';
 import { IArchiveRequest, ArchiveRequest } from '../data/common/home-control/archive-request';
 import { StatisticAttribute, Statistics } from '../data/common/home-control/statistics';
-import { timeStampAsString } from '../utils/util';
 import { ValidatorElement } from '../directives/validator.directive';
 import { ISyncButtonConfig } from './sync-button.component';
 import { CommonLogger } from '../data/common-logger';
 import { ConfigService } from '../services/config.service';
+import { ModalArchiveChartComponent, IModalArchiveChartConfig } from '../modals/modal-archive-chart.component';
+import { IStatisticItemDefinition } from '../data/common/home-control/statistics';
 
 @Component({
     selector: 'app-archive-chart',
@@ -37,11 +36,6 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
 
     private static dayNames = [ 'Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag' ];
 
-
-    private static chartTypNames: { [ key in TChartTyp ]: string } = {
-        power: 'Leistung',
-        energy: 'Energie'
-    };
 
     private static chartAverageNames: { [ key in TChartAverage ]: string } = {
         minute: 'Minutenmittel',
@@ -64,13 +58,18 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         pPvS:      { borderColor: 'darkgreen',   backgroundColor: 'darkgreen',   pointRadius: 0 }
     };
 
+    @ViewChild('modalArchiveChart')
+    public modalArchiveChart: ModalArchiveChartComponent;
+
     @ViewChild(BaseChartDirective)
     public childChart: ngCharts.BaseChartDirective;
 
     @ViewChild('yauto') checkboxYAuto: ElementRef<HTMLInputElement>;
 
     public chart: INg4Chart;
+    public configSelection: IInputConfig<string>;
     public showInputs: IInputConfig<any> [] = [];
+
     public buttonConfigRefreshNow: ISyncButtonConfig;
     public buttonConfigXDayBack: ISyncButtonConfig;
     public buttonConfigXZoomIn: ISyncButtonConfig;
@@ -81,10 +80,10 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
     public buttonConfigXPageRight: ISyncButtonConfig;
     public buttonConfigXDayNext: ISyncButtonConfig;
 
+    private _configs: IArchiveChartConfig [] = [];
     private _initDone;
     private _locked: IChartParams = null;
     private _requestCnt: number;
-    private _inputTyp: IInputConfig<string>;
     private _inputDay: IInputConfig<string>;
     private _inputMonth: IInputConfig<string>;
     private _inputYear: IInputConfig<string>;
@@ -96,6 +95,35 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
 
     constructor (private dataService: DataService, private historyService: HistoryService, private configService: ConfigService) {
         this._requestCnt = 0;
+
+        const variables: IVariable [] = [];
+        for (const id of Object.getOwnPropertyNames(Statistics.defById)) {
+            const def = Statistics.defById[id];
+            const v: IVariable = {
+                id: id,
+                label: '',
+                def: def
+            };
+            if (ArchiveChartComponent.defaultPowerAttributes.findIndex( (item) => item === id ) >= 0) {
+                v.enabled = true;
+            }
+            variables.push(v);
+        }
+
+        this._configs = [{
+            name: 'Default',
+            variables: variables
+        }];
+
+        this.configSelection = {
+            id: 'config',
+            disabled: false,
+            firstLine: null,
+            value: this._configs[0].name,
+            options: [ this._configs[0].name ],
+            validator: new ValidatorElement<string>('Default', (e, n, v) => this.handleInputChange(e, n, v))
+
+        };
 
         this.buttonConfigRefreshNow = {
             text: 'Reset',
@@ -209,20 +237,6 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             }
         };
 
-
-
-        const typOptions: string [] = [];
-        for (const t of Object.getOwnPropertyNames(ArchiveChartComponent.chartTypNames)) {
-            typOptions.push(ArchiveChartComponent.chartTypNames[t]);
-        }
-        this._inputTyp = {
-            id: 'typ',
-            disabled: false,
-            firstLine: null,
-            options: typOptions,
-            validator: new ValidatorElement<string>('Leistung', (e, n, v) => this.handleInputChange(e, n, v))
-        };
-
         const averageOptions: string [] = [];
         for (const a of Object.getOwnPropertyNames(ArchiveChartComponent.chartAverageNames)) {
             averageOptions.push(ArchiveChartComponent.chartAverageNames[a]);
@@ -262,7 +276,6 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             validator: new ValidatorElement<string>('12:00', (e, n, v) => this.handleInputChange(e, n, v))
         };
 
-        this.showInputs.push(this._inputTyp);
         this.showInputs.push(this._inputDay);
         this.showInputs.push(this._inputMonth);
         this.showInputs.push(this._inputYear);
@@ -293,6 +306,75 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         this.configService.push('archive-chart:__chart', this.chart);
     }
 
+    public async onConfigMenu () {
+        console.log('onConfigMenu', this.modalArchiveChart);
+        const selectedConfig = this.configSelection.validator.value;
+        try {
+            const ids = Object.getOwnPropertyNames(Statistics.defById);
+            const variables: IVariable [] = [];
+            for (const id of ids) {
+                const def = Statistics.defById[id];
+                const v: IVariable = {
+                    id: id,
+                    label: '',
+                    def: def
+                };
+                if (ArchiveChartComponent.defaultPowerAttributes.findIndex( (item) => item === id ) >= 0) {
+                    v.enabled = true;
+                }
+                variables.push(v);
+            }
+
+            const config = this._configs.find( (c) => c.name === selectedConfig );
+            const existingNames: string [] = [];
+            this._configs.forEach( (c) => existingNames.push(c.name));
+            const result = await this.modalArchiveChart.show({
+                title: 'Konfiguration',
+                existingNames: existingNames,
+                chartConfig: config
+            });
+
+            const newConfig = result.chartConfig;
+            if (newConfig.name === 'Default') {
+                return;
+            }
+            const index1 = this._configs.findIndex( (c) => c.name === newConfig.name );
+            if (index1 >= 0) {
+                this._configs[index1] = newConfig;
+            } else {
+                this._configs.push(newConfig);
+            }
+            for (let i = 0; i < this._configs.length; i++) {
+                const c = this._configs[i];
+                if (result.existingNames.findIndex( (n) => n === c.name) < 0) {
+                    this._configs.splice(i, 1);
+                    i--;
+                }
+            }
+
+            this.configSelection.value = newConfig.name;
+            this.configSelection.validator.value = newConfig.name;
+            // console.log(result);
+
+        } catch (err) {
+            if (err === 'delete' && selectedConfig && selectedConfig !== 'Default') {
+                const index = this._configs.findIndex( (c) => c.name === selectedConfig);
+                if (index >= 0) {
+                    this._configs.splice(index, 1);
+                }
+                this.configSelection.value = this._configs[0].name;
+                this.configSelection.validator.value = this.configSelection.value;
+            } else {
+                console.log(err);
+            }
+
+        } finally {
+            const newExistingNames: string [] = [];
+            this._configs.forEach( (c) => newExistingNames.push(c.name));
+            this.configSelection.options = newExistingNames;
+        }
+    }
+
     public async onButtonCancel (cfg: ISyncButtonConfig) {
         console.log('cancel', cfg);
     }
@@ -305,7 +387,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         } else  {
             const now = new Date();
             params = {
-                typ: 'power',
+                config: 'Default',
                 options: {
                     start: new Date(now.getTime() - 90 * 60 * 1000),
                     end: now
@@ -351,14 +433,14 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         } else if (cfg === this.buttonConfigXZoomIn) {
             this._currentZoomIndex = Math.max(0, this._currentZoomIndex - 1);
             console.log('_currentZoomIndex=' + this._currentZoomIndex);
-            const nextParams = this.createChartParameter(params.typ, params.options.end, this._zoomOptions[this._currentZoomIndex]);
+            const nextParams = this.createChartParameter(params.config, params.options.end, this._zoomOptions[this._currentZoomIndex]);
             this.updateValidators(nextParams.options.end);
             this.refreshChart(nextParams);
 
         } else if (cfg === this.buttonConfigXZoomOut) {
             this._currentZoomIndex = Math.min(this._zoomOptions.length - 1, this._currentZoomIndex + 1);
             console.log('_currentZoomIndex=' + this._currentZoomIndex);
-            const nextParams = this.createChartParameter(params.typ, params.options.end, this._zoomOptions[this._currentZoomIndex]);
+            const nextParams = this.createChartParameter(params.config, params.options.end, this._zoomOptions[this._currentZoomIndex]);
             this.updateValidators(nextParams.options.end);
             this.refreshChart(nextParams);
 
@@ -371,7 +453,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
 
     }
 
-    private createChartParameter (typ: TChartTyp, end: Date, zoom: number | string): IChartParams {
+    private createChartParameter (config: string, end: Date, zoom: number | string): IChartParams {
         let start: Date;
         // console.log('createChartParameter zoom=' + zoom);
 
@@ -422,7 +504,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         }
 
         // return { typ: typ, options: { start: new Date(end.getTime() - 45 * 60 * 1000), end: end } };
-        return { typ: typ, options: { start: start, end: end } };
+        return { config: config, options: { start: start, end: end } };
     }
 
 
@@ -463,16 +545,16 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         }
     }
 
-    private getType (name: string): TChartTyp {
-        if (name === null) { return 'power'; }
-        const attributes = Object.getOwnPropertyNames(ArchiveChartComponent.chartTypNames);
-        let rv: TChartTyp = <TChartTyp>attributes.find( (item) => name === ArchiveChartComponent.chartTypNames[item]);
-        if (!rv) {
-            CommonLogger.warn('cannot find chart type for ' + name);
-            rv = 'power';
-        }
-        return rv;
-    }
+    // private getType (name: string): TChartTyp {
+    //     if (name === null) { return 'power'; }
+    //     const attributes = Object.getOwnPropertyNames(ArchiveChartComponent.chartTypNames);
+    //     let rv: TChartTyp = <TChartTyp>attributes.find( (item) => name === ArchiveChartComponent.chartTypNames[item]);
+    //     if (!rv) {
+    //         CommonLogger.warn('cannot find chart type for ' + name);
+    //         rv = 'power';
+    //     }
+    //     return rv;
+    // }
 
     private getAverage (name: string): TChartAverage {
         if (name === null) { return 'minute'; }
@@ -489,24 +571,21 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         // console.log(el, name, newValue);
         if (!this._initDone) { return; }
         const p = this.chart ? this.chart.params : null;
-        let t: TChartTyp;
+        let cfg: string;
         // let a: TChartAverage;
         let dStr: string;
         let mStr: string;
         let yStr: string;
         let hStr: string;
 
-        t = this.getType(this._inputTyp.validator.value);
-        // a = this.getAverage(this._inputAverage.validator.value);
+        cfg = this.configSelection.validator.value;
         dStr = this._inputDay.validator.value;
         mStr = this._inputMonth.validator.value;
         yStr = this._inputYear.validator.value;
         hStr = this._inputHour.validator.value;
 
-        if (el === this._inputTyp.validator) {
-            t = this.getType(newValue);
-        // } else if (el === this._inputAverage.validator) {
-        //     a = this.getAverage(newValue);
+        if (el === this.configSelection.validator) {
+
         } else if (el === this._inputDay.validator) {
             dStr = newValue;
         } else if (el === this._inputMonth.validator) {
@@ -534,7 +613,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
 
         let refresh = false;
         try {
-            if (this.chart.params.typ !== t) { refresh = true; }
+            if (this.chart.params.config !== cfg) { refresh = true; }
             if (!refresh && y !== this.chart.params.options.end.getFullYear() ) {  refresh = true; }
             if (!refresh && m !== this.chart.params.options.end.getMonth() ) {  refresh = true; }
             if (!refresh && d !== this.chart.params.options.end.getDate() ) {  refresh = true; }
@@ -543,10 +622,10 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             refresh = true;
         }
         if (refresh) {
-            if (t === 'power') {
+            if (cfg === 'Default') {
                 const dt = p && p.options ? p.options.end.getTime() - p.options.start.getTime() : 60 * 60 * 1000;
                 const now = new Date(y, m, d, h);
-                this.refreshChart({ typ: t, options: { start: new Date(now.getTime() - dt), end: now} });
+                this.refreshChart({ config: cfg, options: { start: new Date(now.getTime() - dt), end: now} });
             }
         }
 
@@ -563,12 +642,6 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         this._locked = p;
         try {
             let average: TChartAverage;
-
-            this._inputTyp.validator.value = ArchiveChartComponent.chartTypNames[p.typ];
-            if (!this._inputTyp.validator.value) {
-                console.log('unsupported typ value ' + p.typ);
-                this._inputTyp.validator.value = ArchiveChartComponent.chartTypNames.power;
-            }
 
             const dHrs = (p.options.end.getTime() - p.options.start.getTime()) / 60 / 60 / 1000;
             if (dHrs <= 2) {
@@ -642,11 +715,11 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 }
             }
 
-            if (p.typ !== null && average !== null) {
+            if (p.config !== null && average !== null) {
                 // console.log('2--->', this.chart, p);
                 this._locked = p;
                 let newChart: INg4Chart;
-                if (p.typ === 'power') {
+                if (p.config === 'Default') {
                     switch (average) {
                         case 'minute': {
                             const cpMin = await this.createChartPowerMinute(p);
@@ -675,7 +748,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                     }
 
                 } else {
-                    console.log('unsupported typ + ' + p.typ);
+                    console.log('unsupported typ + ' + p.config);
                 }
 
                 if (newChart && this.childChart && Array.isArray(this.childChart.datasets)) {
@@ -1339,7 +1412,7 @@ interface IChartOptions {
 }
 
 interface IChartParams {
-    typ: TChartTyp;
+    config: string;
     options: IChartOptions;
 }
 
@@ -1348,6 +1421,7 @@ interface IInputConfig<T> {
     disabled: boolean;
     firstLine: string;
     options: string [];
+    value?: string;
     validator: ValidatorElement<T>;
 }
 
@@ -1359,3 +1433,16 @@ interface INg4Chart {
     options:  Charts.ChartOptions;
 }
 
+export interface IVariable {
+    id: string;
+    label: string;
+    enabled?: boolean;
+    def: IStatisticItemDefinition;
+    yAxesIndex?: number;
+    points?: { pointRadius?: number };
+}
+
+export interface IArchiveChartConfig {
+    name: string;
+    variables: IVariable [];
+}

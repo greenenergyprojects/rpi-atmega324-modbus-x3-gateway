@@ -9,6 +9,7 @@ import { NavbarComponent } from './navbar/navbar.component';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { ModalLoginComponent } from './modals/modal-login';
+import { ModalArchiveChartComponent } from './modals/modal-archive-chart.component';
 import { SyncButtonComponent } from './components/sync-button.component';
 import { OverviewComponent } from './components/overview.component';
 // import { OverviewChartComponent } from './components/overview-chart.component';
@@ -27,6 +28,8 @@ import { ServerService } from './services/server.service';
 import { AuthService } from './services/auth.service';
 import { AddAuthHeaderInterceptor } from './services/add-auth-header.interceptor';
 import { ValidatorDirective } from './directives/validator.directive';
+import { LetDirective } from './directives/let.directive';
+import { FocusDirective } from './directives/focus.directive';
 import { FilterPipe } from './pipes/filter-pipe';
 
 import { ChartsModule } from 'ng4-charts/ng4-charts';
@@ -34,15 +37,16 @@ import { library } from '@fortawesome/fontawesome-svg-core';
 import * as fa from '@fortawesome/free-solid-svg-icons';
 
 library.add(
-    fa.faEye, fa.faEyeSlash, fa.faSpinner, fa.faSync,
+    fa.faEye, fa.faEyeSlash, fa.faSpinner, fa.faSync, fa.faBars,
     fa.faAngleLeft, fa.faAngleDoubleLeft, fa.faAngleRight, fa.faAngleDoubleRight,
     fa.faSearchPlus, fa.faSearchMinus, fa.faHandPointLeft, fa.faHandPointRight
 );
 
 @NgModule({
     declarations: [
-        ValidatorDirective, FilterPipe,
-        NavbarComponent, AppComponent, ModalLoginComponent, SyncButtonComponent,
+        ValidatorDirective, LetDirective, FocusDirective, FilterPipe,
+        NavbarComponent, AppComponent,
+        ModalLoginComponent, ModalArchiveChartComponent, SyncButtonComponent,
         OverviewComponent,
         ArchiveComponent, ArchiveChartComponent,
         ChartComponent,

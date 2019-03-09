@@ -33,14 +33,14 @@ export type Languages = 'en' | 'de';
 export type ValueType = 'value' | 'avg' | 'min' | 'max' | 'twa' | 'ewa';
 export type StatisticsType = 'second' | 'minute' | 'min10' | 'hour' | 'day' | 'month' | 'week' | 'year' | 'total';
 
-export interface StatisticsFormat {
+export interface IStatisticsFormat {
     format?: string;
     unit?: string;
     func?: (value: number) => number;
 }
 
 export interface StatisticsOptions {
-    format?: StatisticsFormat;
+    format?: IStatisticsFormat;
     ewaTau?: number;
 }
 
@@ -49,7 +49,7 @@ export interface IStatisticItemDefinition {
     id:         string;
     shortLabel: string;
     label:      { [ key1 in Languages ]?: string };
-    format?:    StatisticsFormat;
+    format:     IStatisticsFormat;
     type:       { [ key2 in StatisticsType ]?: { [ key3 in ValueType ]?: boolean | StatisticsOptions }};
 }
 
@@ -226,60 +226,70 @@ export class Statistics {
             id: 'eOut',
             shortLabel: 'grid-e-out',
             label: { en: 'active energy to grid', de: 'Wirkenergie Lieferung an Netz' },
+            format: { format: '%.0f', unit: 'kWh', func: (v) => Math.round(v / 1000) },
             type: Statistics.defaultEnergyType
         },
         eIn: {
             id: 'eIn',
             shortLabel: 'grid-e-in',
             label: { en: 'active energy from grid', de: 'Wirkenergie Bezug vom Netz' },
+            format: { format: '%.0f', unit: 'kWh', func: (v) => Math.round(v / 1000) },
             type: Statistics.defaultEnergyType
         },
         eOutDaily: {
             id: 'eOutDaily',
             shortLabel: 'grid-e-out',
             label: { en: 'active dayily energy to grid', de: 'Wirkenergie Tageslieferung an Netz' },
+            format: { format: '%.01f', unit: 'kWh', func: (v) => Math.round(v / 100) / 10 },
             type: Statistics.defaultEnergyType
         },
         eInDaily: {
             id: 'eInDaily',
             shortLabel: 'grid-e-in',
             label: { en: 'active daily energy from grid', de: 'Wirkenergie Tagesbezug vom Netz' },
+            format: { format: '%.01f', unit: 'kWh', func: (v) => Math.round(v / 100) / 10 },
             type: Statistics.defaultEnergyType
         },
         eBoilerDaily: {
             id: 'eBoilerDaily',
             shortLabel: 'boiler-e-daily',
             label: { en: 'active daily energy to boiler', de: 'Boiler Wirkenergie Tagesbezug' },
+            format: { format: '%.01f', unit: 'kWh', func: (v) => Math.round(v / 100) / 10 },
             type: Statistics.defaultEnergyType
         },
         eHeatPumpDaily: {
             id: 'eHeatPumpDaily',
             shortLabel: 'heatpump-e-daily',
             label: { en: 'active daily energy to heatpump', de: 'Wärmepumpe Wirkenergie Tagesbezug' },
+            format: { format: '%.01f', unit: 'kWh', func: (v) => Math.round(v / 100) / 10 },
             type: Statistics.defaultEnergyType
         },
         ePvDaily: {
             id: 'ePvDaily',
             shortLabel: 'pv-e-daily',
             label: { en: 'active daily energy from photovoltaik', de: 'Tages-Wirkenergie von Photovoltaik' },
+            format: { format: '%.01f', unit: 'kWh', func: (v) => Math.round(v / 100) / 10 },
             type: Statistics.defaultEnergyType
         },
         ePvSDaily: {
             id: 'ePvSDaily',
             shortLabel: 'pv-s-e-daily',
             label: { en: 'active daily energy from photovoltaik south', de: 'Tages-Wirkenergie von Photovoltaik Süd' },
+            format: { format: '%.01f', unit: 'kWh', func: (v) => Math.round(v / 100) / 10 },
             type: Statistics.defaultEnergyType
         },
         ePvEWDaily: {
             id: 'ePvEWDaily',
             shortLabel: 'pv-ew-e-daily',
             label: { en: 'active daily energy from photovoltaik east/west', de: 'Tages-Wirkenergie von Photovoltaik Ost/West' },
+            format: { format: '%.01f', unit: 'kWh', func: (v) => Math.round(v / 100) / 10 },
             type: Statistics.defaultEnergyType
         },
         capBatPercent: {
             id: 'capBatPercent',
             shortLabel: 'bat-cap-percent',
             label: { en: 'battery load as percent of nominal capacity', de: 'Batterieladezustand in % (von Nominalkapazität)' },
+            format: { format: '%.0f', unit: '%', func: (v) => Math.round(v) },
             type: {
                 second: { value: true },
                 minute: { min: true, twa: true, max: true},
@@ -292,6 +302,7 @@ export class Statistics {
             id: 'tOutdoor',
             shortLabel: 'outdoor-t',
             label: { en: 'outdoor temperature in °C', de: 'Außentemperatur in °C' },
+            format: { format: '%.01f', unit: '°C', func: (v) => Math.round(v * 10) / 10 },
             type: {
                 second: { value: true },
                 minute: { min: true, twa: true, max: true},
@@ -308,6 +319,7 @@ export class Statistics {
             id: 'tHeatSupply',
             shortLabel: 'heatpump-temp-supply-fwd',
             label: { en: 'Heatpump supply temperature forward', de: 'Heizung Vorlauf zu Puffer' },
+            format: { format: '%.01f', unit: '°C', func: (v) => Math.round(v * 10) / 10 },
             type: {
                 second: { value: true },
                 minute: { min: true, twa: true, max: true},
@@ -320,6 +332,7 @@ export class Statistics {
             id: 'tHeatBuffer',
             shortLabel: 'heatpump-temp-buffer',
             label: { en: 'Heatpump buffer temperature', de: 'Heizung Puffer Temperatur' },
+            format: { format: '%.01f', unit: '°C', func: (v) => Math.round(v * 10) / 10 },
             type: {
                 second: { value: true },
                 minute: { min: true, twa: true, max: true},
@@ -332,6 +345,7 @@ export class Statistics {
             id: 'tHeatSupplyReturn',
             shortLabel: 'heatpump-temp-supply return',
             label: { en: 'Heatpump supply temperature return', de: 'Heizung Rücklauf zu Puffer' },
+            format: { format: '%.01f', unit: '°C', func: (v) => Math.round(v * 10) / 10 },
             type: {
                 second: { value: true },
                 minute: { min: true, twa: true, max: true},
@@ -344,6 +358,7 @@ export class Statistics {
             id: 'tHeatBrineIn',
             shortLabel: 'heatpump-brine-in',
             label: { en: 'Heatpump brine in temperature', de: 'Heizung Sole (von Erde) Temperatur' },
+            format: { format: '%.01f', unit: '°C', func: (v) => Math.round(v * 10) / 10 },
             type: {
                 second: { value: true },
                 minute: { min: true, twa: true, max: true},
@@ -358,6 +373,7 @@ export class Statistics {
             id: 'tHeatBrineOut',
             shortLabel: 'heatpump-brine-out',
             label: { en: 'Heatpump brine out temperature', de: 'Heizung Sole (zu Erde) Temperatur' },
+            format: { format: '%.01f', unit: '°C', func: (v) => Math.round(v * 10) / 10 },
             type: {
                 second: { value: true },
                 minute: { min: true, twa: true, max: true},
@@ -372,6 +388,7 @@ export class Statistics {
             id: 'fHeatCompressor',
             shortLabel: 'heatpump-compressor-frequency',
             label: { en: 'Heatpump frequency compressor', de: 'Heizung Kompressorfrequenz' },
+            format: { format: '%.01f', unit: '°C', func: (v) => Math.round(v * 10) / 10 },
             type: {
                 second: { value: true },
                 minute: { min: true, twa: true, max: true},

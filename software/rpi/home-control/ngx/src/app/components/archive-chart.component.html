@@ -1,15 +1,37 @@
 <div>
+    <app-modal-archive-chart #modalArchiveChart></app-modal-archive-chart>
     <form #controlForm="ngForm">
         <div class="form-row">
-            <div class="col-auto">
-                <app-sync-button [config]="buttonConfigRefreshNow"></app-sync-button>
+            <!-- <div *ngLet="configSelection as cfg" class="col-auto">
+                <div *ngIf="cfg && !cfg.disabled">
+                    <select class="form-control-sm"
+                        app-validator [element]="cfg.validator" [(ngModel)]="cfg.validator.value" name="{{cfg.id}}" >
+                        <option *ngIf="cfg.firstLine" value="{{cfg.firstLine}}">{{cfg.firstLine}}</option>    
+                        <option *ngFor="let opt of cfg.options" value="{{opt}}" [selected]="opt===cfg.value">{{opt}}</option>
+                    </select>
+                </div>
+            </div> -->
+            <div *ngIf="configSelection && !configSelection.disabled" class="col-auto">
+                <select class="form-control-sm"
+                    app-validator [element]="configSelection.validator" [(ngModel)]="configSelection.validator.value" name="{{configSelection.id}}" >
+                    <option *ngIf="configSelection.firstLine" value="{{configSelection.firstLine}}">{{configSelection.firstLine}}</option>    
+                    <option *ngFor="let opt of configSelection.options" value="{{opt}}" [selected]="opt===configSelection.value">{{opt}}</option>
+                </select>
+                <button class="btn-sm btn-primary" type="button" (click)="onConfigMenu()" style="margin-left: 0.3em; margin-right: 1em">
+                        <fa-icon [icon]="'bars'"></fa-icon>
+                </button>
             </div>
+    
+
             <div *ngFor="let cfg of showInputs" class="col-auto">
                 <select *ngIf="!cfg.disabled" class="form-control-sm"
                         app-validator [element]="cfg.validator" [(ngModel)]="cfg.validator.value" name="{{cfg.id}}" >
                     <option *ngIf="cfg.firstLine" value="{{cfg.firstLine}}">{{cfg.firstLine}}</option>    
                     <option *ngFor="let opt of cfg.options" value="{{opt}}" [selected]="opt===cfg.value">{{opt}}</option>
                 </select>
+            </div>
+            <div class="col-auto">
+                <app-sync-button [config]="buttonConfigRefreshNow"></app-sync-button>
             </div>
         </div>
     </form>

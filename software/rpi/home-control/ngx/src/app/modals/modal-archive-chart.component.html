@@ -1,0 +1,56 @@
+<ng-template #content let-c="close" let-d="dismiss">
+    <div class="modal-header">
+        <h5 class="modal-title" id="modal-basic-title">{{title}}</h5>
+    </div>
+    <div class="modal-body">
+        <form [formGroup]="formGroup" (ngSubmit)="onSubmit()" (keydown)="keyDown($event)">
+            <div class="input-group input-group-sm mb-3">
+                <div class="input-group-prepend">
+                    <span class="input-group-text" id="inputGroup-sizing-sm"><strong>Name</strong></span>
+                </div>
+                <input *ngIf="!isNameEditable" type="text" class="form-control" readonly value="{{nameValidator.value}}">
+                <input *ngIf="isNameEditable" [ngFocus]="focusName"  type="text" class="form-control" formControlName="configName" [readonly]="name==='Default'"
+                       app-validator [element]="nameValidator" [(ngModel)]="nameValidator.value" name="{{configName}}">
+            </div>
+        
+        <ul *ngIf="false" class="nav nav-pills nav-stacked" style="border: solid 1px black; max-height: 7em; overflow-y: scroll;">
+            <li *ngFor="let v of variables" [ngClass]="{'list-group-item':true, 'active':v.active, 'variable-enabled': v.enabled}"
+                (click)="onClickVariable(v)" style="cursor:pointer">
+                {{v.id}}
+            </li>
+        </ul>
+        <ul class="list-group" style="border: solid 1px black; max-height: 12em; overflow-y: scroll;">
+            <li *ngFor="let v of variables" [ngClass]="{'list-group-item':true, 'variable-enabled': v.enabled}"
+                (click)="onClickVariable(v)" style="cursor:pointer">
+                <div [ngClass]="{'input-group input-group-sm mb-3':true,'variable-enabled': v.enabled}" style="margin-bottom:0px!important">
+                    <div class="input-group-prepend">
+                        <div class="input-group-text">
+                            <input type="checkbox" [checked]="v.enabled" (change)="v.enabled = !v.enabled" (click)="onCheckboxChange(v)">
+                        </div>
+                        <span class="input-group-text" id="inputGroup-sizing-sm">{{v.id}}</span>
+                    </div>
+                    <input type="text" class="form-control" formControlName="{{v.id}}" >
+                    <div class="input-group-append">
+                        <button class="btn-sm btn-success" type="button" (click)="onClickVariableConfig(v)" style="padding-top: 0; padding-bottom: 0">
+                                <fa-icon [icon]="'bars'"></fa-icon>
+                        </button>
+                        
+                    </div>
+                </div>
+            </li>
+        </ul>
+    </form> 
+        
+    </div>
+    <div class="modal-footer">
+        <span class = "mr-left">
+                <button *ngIf="deleteButtonVisible" type="submit" class="btn btn-danger" (click)="c('delete click'); onDeleteConfig()" style="margin-right: 1em">Löschen</button>
+                <button *ngIf="copyButtonVisible" type="submit" class="btn btn-primary" (click)="onCopyConfig()">Kopieren</button>
+        </span>
+        <span class="ml-auto">
+            <button type="submit" class="btn btn-warning" (click)="d('Cancel click'); onCancel()">Abbrechen</button>
+            <button type="submit" class="btn btn-success" [disabled]="!formGroup.valid" (click)="c('OK click'); onOk()" style="margin-left: 1em">OK</button>
+            
+        </span>
+    </div>
+</ng-template>
