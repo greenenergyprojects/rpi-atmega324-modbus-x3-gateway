@@ -2,15 +2,10 @@
     <app-modal-archive-chart #modalArchiveChart></app-modal-archive-chart>
     <form #controlForm="ngForm">
         <div class="form-row">
-            <!-- <div *ngLet="configSelection as cfg" class="col-auto">
-                <div *ngIf="cfg && !cfg.disabled">
-                    <select class="form-control-sm"
-                        app-validator [element]="cfg.validator" [(ngModel)]="cfg.validator.value" name="{{cfg.id}}" >
-                        <option *ngIf="cfg.firstLine" value="{{cfg.firstLine}}">{{cfg.firstLine}}</option>    
-                        <option *ngFor="let opt of cfg.options" value="{{opt}}" [selected]="opt===cfg.value">{{opt}}</option>
-                    </select>
-                </div>
-            </div> -->
+            <div class="col-auto" style="margin-right: 1em">
+                <app-sync-button [config]="buttonConfigRefreshNow"></app-sync-button>
+            </div>
+
             <div *ngIf="configSelection && !configSelection.disabled" class="col-auto">
                 <select class="form-control-sm"
                     app-validator [element]="configSelection.validator" [(ngModel)]="configSelection.validator.value" name="{{configSelection.id}}" >
@@ -29,9 +24,6 @@
                     <option *ngIf="cfg.firstLine" value="{{cfg.firstLine}}">{{cfg.firstLine}}</option>    
                     <option *ngFor="let opt of cfg.options" value="{{opt}}" [selected]="opt===cfg.value">{{opt}}</option>
                 </select>
-            </div>
-            <div class="col-auto">
-                <app-sync-button [config]="buttonConfigRefreshNow"></app-sync-button>
             </div>
         </div>
     </form>
