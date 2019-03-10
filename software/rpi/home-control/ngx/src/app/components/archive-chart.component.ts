@@ -49,14 +49,35 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
     };
 
     private static defaultColors: { [ key in StatisticAttribute ]?: ngCharts.Color } = {
-        pBoiler:   { borderColor: 'blue',        backgroundColor: 'blue',        pointRadius: 0 },
-        pGrid:     { borderColor: 'black',       backgroundColor: 'black',       pointRadius: 0 },
-        pBat:      { borderColor: 'orange',      backgroundColor: 'orange',      pointRadius: 0 },
-        pHeatPump: { borderColor: 'saddlebrown', backgroundColor: 'saddlebrown', pointRadius: 0 },
-        pLoad:     { borderColor: 'red',         backgroundColor: 'red',         pointRadius: 0 },
-        pPv:       { borderColor: 'green',       backgroundColor: 'green',       pointRadius: 3 },
-        pPvEW:     { borderColor: 'lightgreen',  backgroundColor: 'lightgreen',  pointRadius: 0 },
-        pPvS:      { borderColor: 'darkgreen',   backgroundColor: 'darkgreen',   pointRadius: 0 }
+        pBoiler:           { borderColor: 'blue',        backgroundColor: 'blue',        pointRadius: 0 },
+        pGrid:             { borderColor: 'black',       backgroundColor: 'black',       pointRadius: 0 },
+        pBat:              { borderColor: 'orange',      backgroundColor: 'orange',      pointRadius: 0 },
+        pHeatPump:         { borderColor: 'saddlebrown', backgroundColor: 'saddlebrown', pointRadius: 0 },
+        pLoad:             { borderColor: 'red',         backgroundColor: 'red',         pointRadius: 0 },
+        pPv:               { borderColor: 'green',       backgroundColor: 'green',       pointRadius: 3 },
+        pPvS:              { borderColor: 'darkgreen',   backgroundColor: 'darkgreen',   pointRadius: 0 },
+        pPvEW:             { borderColor: 'lightgreen',  backgroundColor: 'lightgreen',  pointRadius: 0 },
+
+        eOut:              { borderColor: 'grey',        backgroundColor: 'grey',        pointRadius: 0 },
+        eIn:               { borderColor: 'black',       backgroundColor: 'black',       pointRadius: 0 },
+        eOutDaily:         { borderColor: 'green',       backgroundColor: 'green',       pointRadius: 0 },
+        eInDaily:          { borderColor: 'red',         backgroundColor: 'red',         pointRadius: 0 },
+        eBoilerDaily:      { borderColor: 'blue',        backgroundColor: 'blue',        pointRadius: 0 },
+        eHeatPumpDaily:    { borderColor: 'saddlebrown', backgroundColor: 'saddlebrown', pointRadius: 0 },
+        ePvDaily:          { borderColor: 'green',       backgroundColor: 'green',       pointRadius: 3 },
+        ePvSDaily:         { borderColor: 'darkgreen',   backgroundColor: 'darkgreen',   pointRadius: 0 },
+        ePvEWDaily:        { borderColor: 'lightgreen',  backgroundColor: 'lightgreen',  pointRadius: 0},
+
+        capBatPercent:     { borderColor: 'yellow',      backgroundColor: 'yellow',      pointRadius: 0 },
+
+        tOutdoor:          { borderColor: 'blue',        backgroundColor: 'blue',        pointRadius: 0 },
+        tHeatBrineIn:      { borderColor: 'lightblue',   backgroundColor: 'lightblue',   pointRadius: 0 },
+        tHeatBrineOut:     { borderColor: 'darkblue',    backgroundColor: 'darkblue',    pointRadius: 0 },
+        tHeatBuffer:       { borderColor: 'red',         backgroundColor: 'red',         pointRadius: 0 },
+        tHeatSupply:       { borderColor: 'lightred',    backgroundColor: 'lightred',    pointRadius: 0 },
+        tHeatSupplyReturn: { borderColor: 'lightblue',   backgroundColor: 'lightblue',   pointRadius: 0 },
+        fHeatCompressor:   { borderColor: 'red',         backgroundColor: 'red',         pointRadius: 0}
+
     };
 
 
@@ -101,43 +122,22 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
     constructor (private dataService: DataService, private historyService: HistoryService, private configService: ConfigService) {
         this._requestCnt = 0;
 
-        const variables: IVariable [] = [];
-        const yAxes: IYAxis [] = [];
-        for (const id of Object.getOwnPropertyNames(Statistics.defById)) {
-            const def = Statistics.defById[id];
-            let yAxis: IYAxis;
-            if (def && def.format && def.format.unit) {
-                yAxis = yAxes.find( (a) => a.unit === def.format.unit);
-                if (!yAxis) {
-                    yAxis = { id: yAxes.length, unit: def.format.unit };
-                    yAxes.push(yAxis);
-                }
-            }
-            const v: IVariable = {
-                id: id,
-                label: '',
-                def: def,
-                yAxis: yAxis,
-                enabled: ArchiveChartComponent.defaultPowerAttributes.findIndex( (item) => item === id ) >= 0
-            };
-            variables.push(v);
-        }
+        this._configs = [];
+        this._configs.push(this.createConfig('Default', [ 'pGrid', 'pPv',  'pBat', 'pLoad', 'pBoiler', 'pHeatPump' ]));
+        this._configs.push(this.createConfig('PV/Netz/Bat', [ 'pGrid', 'pPv',  'pBat' ]));
+        this._configs.push(this.createConfig('PV', ['pPv', 'pPvS', 'pPvEW']));
+        this._configs.push(this.createConfig('Temp', ['tOutdoor']));
 
-        this._activeConfig = {
-            name: 'Default',
-            variables: variables
-        };
-        this._configs = [this._activeConfig];
-
+        this._activeConfig = this._configs[0];
         this.configSelection = {
             id: 'config',
             disabled: false,
             firstLine: null,
             value: this._activeConfig.name,
-            options: [ this._activeConfig.name ],
+            options: [ ],
             validator: new ValidatorElement<string>('Default', (e, n, v) => this.handleInputChange(e, n, v))
-
         };
+        this._configs.forEach( (c) => this.configSelection.options.push(c.name));
 
         this.buttonConfigRefreshNow = {
             text: 'Reset',
@@ -309,7 +309,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             const now = new Date(Date.now() + 5 * 60 * 1000);
             this.updateValidators(now);
             // console.log(this._activeConfig);
-            await this.refreshChart(this.createChartParameter('power', new Date(), this._zoomOptions[this._currentZoomIndex]));
+            await this.refreshChart(this.createChartParameter('Default', new Date(), this._zoomOptions[this._currentZoomIndex]));
         }
         this._initDone = true;
     }
@@ -325,21 +325,6 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         console.log('onConfigMenu', this.modalArchiveChart);
         const selectedConfig = this.configSelection.validator.value;
         try {
-            // const ids = Object.getOwnPropertyNames(Statistics.defById);
-            // const variables: IVariable [] = [];
-            // for (const id of ids) {
-            //     const def = Statistics.defById[id];
-            //     const v: IVariable = {
-            //         id: id,
-            //         label: '',
-            //         def: def
-            //     };
-            //     if (ArchiveChartComponent.defaultPowerAttributes.findIndex( (item) => item === id ) >= 0) {
-            //         v.enabled = true;
-            //     }
-            //     variables.push(v);
-            // }
-
             const config = this._configs.find( (c) => c.name === selectedConfig );
             const existingNames: string [] = [];
             this._configs.forEach( (c) => existingNames.push(c.name));
@@ -541,9 +526,11 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
 
     private refresh (dHours?: number) {
         try {
-            console.log('--> refresh');
+            // console.log('--> refresh');
             if (this.chart) {
                 const p = Object.assign({}, this.chart.params);
+                p.config = this._configs[0].name;
+                this.configSelection.validator.value = this._configs[0].name;
                 const now = new Date(Date.now() + 5 * 60 * 1000);
                 let dt: number;
                 if (dHours >= 0.5) {
@@ -595,14 +582,20 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         let yStr: string;
         let hStr: string;
 
-        cfg = this.configSelection.validator.value;
+        cfg  = this.configSelection.validator.value;
         dStr = this._inputDay.validator.value;
         mStr = this._inputMonth.validator.value;
         yStr = this._inputYear.validator.value;
         hStr = this._inputHour.validator.value;
 
-        if (el === this.configSelection.validator) {
+        if (!cfg || !dStr || !mStr || !yStr || !hStr) {
+            // initialization in progress
+            return;
+        }
 
+        if (el === this.configSelection.validator) {
+            console.log(newValue);
+            cfg = newValue;
         } else if (el === this._inputDay.validator) {
             dStr = newValue;
         } else if (el === this._inputMonth.validator) {
@@ -615,12 +608,6 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             console.log('not supported');
             return;
         }
-
-        if (!dStr || !mStr || !yStr || !hStr) {
-            // initialization in progress
-            return;
-        }
-
 
         const d = dStr ? +dStr.substr(0, dStr.length - 1) : null;
         const m = ArchiveChartComponent.monthNames.findIndex( (item) => item === mStr);
@@ -639,11 +626,9 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             refresh = true;
         }
         if (refresh) {
-            if (cfg === 'Default') {
-                const dt = p && p.options ? p.options.end.getTime() - p.options.start.getTime() : 60 * 60 * 1000;
-                const now = new Date(y, m, d, h);
-                this.refreshChart({ config: cfg, options: { start: new Date(now.getTime() - dt), end: now} });
-            }
+            const dt = p && p.options ? p.options.end.getTime() - p.options.start.getTime() : 60 * 60 * 1000;
+            const now = new Date(y, m, d, h);
+            this.refreshChart({ config: cfg, options: { start: new Date(now.getTime() - dt), end: now} });
         }
 
     }
@@ -768,7 +753,10 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                     for (let i = 0; i < this.childChart.datasets.length; i++) {
                         const ds = this.childChart.datasets[i];
                         if (ds.hidden === true) {
-                            newChart.datasets[i].hidden = true;
+                            const dsx = newChart.datasets[i];
+                            if (dsx) {
+                                dsx.hidden = true;
+                            }
                         }
                     }
                 }
@@ -786,151 +774,8 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             this.chart = null;
             this._locked = null;
         }
-        // console.log('refresh done -> chart = ...\n', this.chart);
-        // const cpd = await this.createChartPowerDay([ 'pGrid', 'pPv',  'pBat', 'pLoad', 'pBoiler', 'pHeatPump' ]);
-        // const cpm = await this.createChartPowerMonth([ 'pGrid', 'pPv',  'pBat', 'pLoad', 'pBoiler', 'pHeatPump' ]);
-        // this.charts.push(cpd);
-        // this.charts.push(cpm);
     }
 
-    // private async createChartPowerMinute (p: IChartParams, ids?: (StatisticAttribute) []): Promise<INg4Chart> {
-    //     ids = ids || ArchiveChartComponent.defaultPowerAttributes;
-    //     const dm = Math.max( Math.round((p.options.end.getTime() - p.options.start.getTime()) / 1000 / 60), 45);
-    //     const res = dm <= 60 ? 5 : 15;
-    //     this._currentTimeResolutionMillis = res * 60 * 1000;
-    //     const tx = (Math.floor(p.options.end.getTime() / (1000 * 60 * res))) * res;
-    //     const to = new Date(tx * 1000 * 60);
-    //     const from = new Date(to.getTime() - dm * 60 * 1000);
-    //     // console.log('createChartPowerMinute()\n from=' + from.toISOString() + '\n   to=' + to.toISOString());
-
-    //     const archiveRequest: IArchiveRequest = {
-    //         id:      this._requestCnt++,
-    //         type:    'minute',
-    //         dataIds: ids,
-    //         from:    from,
-    //         to:      to
-    //     };
-    //     const r = await this.dataService.getArchiv(new ArchiveRequest(archiveRequest));
-    //     const values: { [ key in StatisticAttribute | 'pLoad' ]?: { x: string | Date, y: number}  [] } = {};
-    //     for (let m = -dm; m <= 0; m++) {
-    //         for (const id of ids) {
-    //             const sign = (id === 'pBoiler' || id === 'pHeatPump' || id === 'pLoad') ? -1 : 1;
-    //             const t = new Date(to.getTime() + m * 60 * 1000);
-    //             const coll = Array.isArray(r.result[id]) ? r.result[id].find(
-    //                 (item) => item.start.getMinutes() === t.getMinutes() && item.start.getHours() === t.getHours()) : null;
-    //             if (!Array.isArray(values[id])) {
-    //                 values[id] = [];
-    //             }
-    //             // console.log(m, coll);
-    //             if (coll) {
-    //                 values[id].push({ x: t.toISOString(), y: sign * coll.twa });
-    //             } else {
-    //                 values[id].push({ x: t.toISOString(), y: null });
-    //             }
-    //         }
-    //     }
-
-    //     const chart1Options: Charts.ChartOptions = {
-    //         responsive: true,
-    //         title: {
-    //             display: true,
-    //             text: 'Leistungen (min) ' + ArchiveChartComponent.dayNames[from.getDay()] + ', ' +
-    //                    from.getDate() + '. ' + ArchiveChartComponent.monthNames[from.getMonth()] + ' ' + from.getFullYear()
-    //         },
-    //         animation: {
-    //             duration: 1,
-    //             easing: 'easeOutQuad',
-    //             onComplete: () => {
-    //                 const ctx = <CanvasRenderingContext2D>this.childChart.ctx;
-    //                 // console.log(ctx);
-    //                 // ctx.fillStyle = 'black';
-    //                 // ctx.fillRect(10, 10, 20, 20);
-
-    //             }
-    //         },
-    //         scales: {
-    //             xAxes: [{
-    //                 type: 'time',
-    //                 time: {
-    //                     unit: 'minute',
-    //                     stepSize: 5,
-    //                     displayFormats: {
-    //                         minute: 'x'
-    //                     }
-    //                 },
-    //                 gridLines: {
-    //                     offsetGridLines: false,
-    //                     drawTicks: true
-    //                 },
-    //                 ticks: {
-    //                     callback: (value: string) => {
-    //                         const t = new Date(+value);
-    //                         if (from.getDate() !== to.getDate()) {
-    //                             return sprintf('%d.%d. %d:%02d', t.getDate(), t.getMonth() + 1, t.getHours(), t.getMinutes());
-    //                         } else if ((t.getMinutes() % res) === 0) {
-    //                             return sprintf('%d:%02d', t.getHours(), t.getMinutes());
-    //                         } else {
-    //                             return '';
-    //                         }
-    //                     }
-    //                 }
-    //             }],
-    //             yAxes: [{
-    //                 ticks: {
-    //                     callback: (value) => Math.abs(value) < 1000 ? value + 'W' : Math.round(value / 10) / 100 + 'kW',
-    //                 }
-    //             }]
-    //         }
-    //     };
-
-    //     try {
-    //         const x = <any>this.childChart;
-    //         if (x && x.chart && x.chart.scales && x.chart.scales) {
-    //             // console.log(x.chart.scales);
-    //             const y = x.chart.scales['y-axis-0'];
-    //             if (y) {
-    //                 const min = y.min;
-    //                 const max = y.max;
-    //                 if (typeof min === 'number' && typeof max === 'number') {}
-    //                     if (this.checkboxYAuto && this.checkboxYAuto.nativeElement && !this.checkboxYAuto.nativeElement.checked) {
-    //                         chart1Options.scales.yAxes[0].ticks.min = min;
-    //                         chart1Options.scales.yAxes[0].ticks.max = max;
-    //                 }
-    //             }
-    //         }
-    //     } catch (err) {
-    //         console.log(err);
-    //     }
-
-    //     const chart: INg4Chart = {
-    //         params: p,
-    //         datasets: [ ],
-    //         options: chart1Options,
-    //         legend: true,
-    //         colors: [],
-    //     };
-    //     for (const id of ids) {
-    //         const dataset: Charts.ChartDataSets = {
-    //             label: id,
-    //             data: values[id],
-    //             hidden: false,
-    //             type: 'line'
-    //         };
-    //         // if (id === 'pBat') {
-    //         //     dataset.hidden = true;
-    //         // }
-    //         chart.datasets.push(dataset);
-    //         const col = Object.assign({}, ArchiveChartComponent.defaultColors[id]);
-    //         if (col) {
-    //             delete col.backgroundColor;
-    //             chart.colors.push(col);
-    //         } else {
-    //             chart.colors.push({ borderColor: 'lightgrey', pointRadius: 0 });
-    //         }
-    //     }
-
-    //     return chart;
-    // }
 
     private async  getArchiveData (config: IArchiveChartConfig, type: StatisticsType, from: Date, to: Date ): Promise<ArchiveResponse> {
         const ids: StatisticAttribute [] = [];
@@ -975,6 +820,11 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         const from = new Date(to.getTime() - dm * 60 * 1000);
         // console.log('createChartPowerMinute()\n from=' + from.toISOString() + '\n   to=' + to.toISOString());
 
+        this._activeConfig = this._configs.find( (c) => c.name === p.config);
+        if (!this._activeConfig) {
+            console.log('Error: cannot find config ' + p.config);
+            return;
+        }
         const r = await this.getArchiveData(this._activeConfig, 'minute', from, to);
         const chartData = this.prepareChartData(this._activeConfig, r);
 
@@ -995,7 +845,22 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 }
             }
         }
-        console.log(chartData);
+        // console.log(chartData);
+
+        let unit = '';
+        let yAxisId = -1;
+
+        for (const v of this._activeConfig.variables) {
+            if (!v.enabled) { continue; }
+            if (yAxisId < 0) {
+                yAxisId = v.yAxis.id;
+                unit = v.yAxis.unit;
+            } else if (yAxisId !== v.yAxis.id) {
+                yAxisId = -1;
+                unit = '';
+                break;
+            }
+        }
 
         const chart1Options: Charts.ChartOptions = {
             responsive: true,
@@ -1030,6 +895,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                         drawTicks: true
                     },
                     ticks: {
+                        beginAtZero: true,
                         callback: (value: string) => {
                             const t = new Date(+value);
                             if (from.getDate() !== to.getDate()) {
@@ -1044,11 +910,13 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 }],
                 yAxes: [{
                     ticks: {
-                        callback: (value) => Math.abs(value) < 1000 ? value + 'W' : Math.round(value / 10) / 100 + 'kW',
+                        beginAtZero: true,
+                        callback: (value) => Math.abs(value) < 1000 ? value + unit : Math.round(value / 10) / 100 + 'k' + unit,
                     }
                 }]
             }
         };
+
 
         try {
             const x = <any>this.childChart;
@@ -1099,8 +967,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         return chart;
     }
 
-    private async createChartPowerMin10 (p: IChartParams, ids?: (StatisticAttribute) []): Promise<INg4Chart> {
-        ids = ids || ArchiveChartComponent.defaultPowerAttributes;
+    private async createChartPowerMin10 (p: IChartParams): Promise<INg4Chart> {
         const dm10 = Math.round((p.options.end.getTime() - p.options.start.getTime()) / 60000 / 10);
         let res: number;
         console.log(dm10);
@@ -1116,32 +983,46 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         const tx = (Math.floor(p.options.end.getTime() / (1000 * 60 * res))) * res; // + res;
         const to = new Date(tx * 1000 * 60);
         const from = new Date(to.getTime() - dm10 * 10 * 60 * 1000);
-        console.log('createChartPowerMinute()\n from=' + from.toISOString() + '\n   to=' + to.toISOString());
+        // console.log('createChartPowerMinute()\n from=' + from.toISOString() + '\n   to=' + to.toISOString());
 
-        const archiveRequest: IArchiveRequest = {
-            id:      this._requestCnt++,
-            type:    'min10',
-            dataIds: ids,
-            from:    from,
-            to:      to
-        };
-        const r = await this.dataService.getArchiv(new ArchiveRequest(archiveRequest));
-        const values: { [ key in StatisticAttribute | 'pLoad' ]?: { x: string | Date, y: number}  [] } = {};
+        this._activeConfig = this._configs.find( (c) => c.name === p.config);
+        if (!this._activeConfig) {
+            console.log('Error: cannot find config ' + p.config);
+            return;
+        }
+        const r = await this.getArchiveData(this._activeConfig, 'min10', from, to);
+        const chartData = this.prepareChartData(this._activeConfig, r);
+
         for (let m10 = -dm10; m10 <= 0; m10++) {
-            for (const id of ids) {
+            for (const id of Object.getOwnPropertyNames(chartData)) {
+                const x = <IChartData>chartData[id];
                 const sign = (id === 'pBoiler' || id === 'pHeatPump' || id === 'pLoad') ? -1 : 1;
                 const t = new Date(to.getTime() + m10 * 10 * 60 * 1000);
                 const coll = Array.isArray(r.result[id]) ? r.result[id].find(
                     (item) => item.start.getMinutes() === t.getMinutes() && item.start.getHours() === t.getHours()) : null;
-                if (!Array.isArray(values[id])) {
-                    values[id] = [];
-                }
-                // console.log(m, coll);
-                if (coll) {
-                    values[id].push({ x: t.toISOString(), y: sign * coll.twa });
+                if (!x || !Array.isArray(x.values)) {
+                    console.log('Error: mising array values for ' + id);
+                } else if (coll) {
+                    x.values.push({ x: t.toISOString(), y: sign * coll.twa });
                 } else {
-                    values[id].push({ x: t.toISOString(), y: null });
+                    x.values.push({ x: t.toISOString(), y: null });
                 }
+            }
+        }
+        // console.log(chartData);
+
+        let unit = '';
+        let yAxisId = -1;
+
+        for (const v of this._activeConfig.variables) {
+            if (!v.enabled) { continue; }
+            if (yAxisId < 0) {
+                yAxisId = v.yAxis.id;
+                unit = v.yAxis.unit;
+            } else if (yAxisId !== v.yAxis.id) {
+                yAxisId = -1;
+                unit = '';
+                break;
             }
         }
 
@@ -1188,7 +1069,8 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 }],
                 yAxes: [{
                     ticks: {
-                        callback: (value) => Math.abs(value) < 1000 ? value + 'W' : Math.round(value / 10) / 100 + 'kW'
+                        beginAtZero: true,
+                        callback: (value) => Math.abs(value) < 1000 ? value + unit : Math.round(value / 10) / 100 + unit
                     }
                 }]
             }
@@ -1220,10 +1102,10 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             legend: true,
             colors: [],
         };
-        for (const id of ids) {
+        for (const id of Object.getOwnPropertyNames(chartData)) {
             const dataset: Charts.ChartDataSets = {
                 label: id,
-                data: values[id],
+                data: chartData[id].values,
                 hidden: false,
                 type: 'line'
             };
@@ -1241,8 +1123,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
     }
 
 
-    private async createChartPowerHour (p: IChartParams, ids?: (StatisticAttribute) []): Promise<INg4Chart> {
-        ids = ids || ArchiveChartComponent.defaultPowerAttributes;
+    private async createChartPowerHour (p: IChartParams): Promise<INg4Chart> {
         const kms = 1000 * 60 * 60; // factor between hour and milliseconds
         const dHrs = Math.round((p.options.end.getTime() - p.options.start.getTime()) / kms);
         let res: number;
@@ -1261,32 +1142,46 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             to = new Date(to.getTime() + kms);
         }
         const from = new Date(to.getTime() - dHrs * kms);
-        console.log('createChartPowerHour()\n from=' + from.toISOString() + '\n   to=' + to.toISOString());
+        // console.log('createChartPowerHour()\n from=' + from.toISOString() + '\n   to=' + to.toISOString());
 
-        const archiveRequest: IArchiveRequest = {
-            id:      this._requestCnt++,
-            type:    'hour',
-            dataIds: ids,
-            from:    from,
-            to:      to
-        };
-        const r = await this.dataService.getArchiv(new ArchiveRequest(archiveRequest));
-        const values: { [ key in StatisticAttribute | 'pLoad' ]?: { x: string | Date, y: number}  [] } = {};
-        for (let t = -dHrs; t <= 0; t++) {
-            for (const id of ids) {
+        this._activeConfig = this._configs.find( (c) => c.name === p.config);
+        if (!this._activeConfig) {
+            console.log('Error: cannot find config ' + p.config);
+            return;
+        }
+        const r = await this.getArchiveData(this._activeConfig, 'hour', from, to);
+        const chartData = this.prepareChartData(this._activeConfig, r);
+
+        for (let hr = -dHrs; hr <= 0; hr++) {
+            for (const id of Object.getOwnPropertyNames(chartData)) {
+                const x = <IChartData>chartData[id];
                 const sign = (id === 'pBoiler' || id === 'pHeatPump' || id === 'pLoad') ? -1 : 1;
-                const tp = new Date(to.getTime() + t * kms + 0.5 * kms);
+                const tp = new Date(to.getTime() + hr * kms + 0.5 * kms);
                 const coll = Array.isArray(r.result[id]) ? r.result[id].find(
                     (item) => Math.floor(item.start.getTime() / kms) === Math.floor(tp.getTime() / kms)) : null;
-                if (!Array.isArray(values[id])) {
-                    values[id] = [];
-                }
-                // console.log(m, coll);
-                if (coll) {
-                    values[id].push({ x: tp.toISOString(), y: sign * coll.twa });
+                if (!x || !Array.isArray(x.values)) {
+                    console.log('Error: mising array values for ' + id);
+                } else if (coll) {
+                    x.values.push({ x: tp.toISOString(), y: sign * coll.twa });
                 } else {
-                    values[id].push({ x: tp.toISOString(), y: null });
+                    x.values.push({ x: tp.toISOString(), y: null });
                 }
+            }
+        }
+        // console.log(chartData);
+
+        let unit = '';
+        let yAxisId = -1;
+
+        for (const v of this._activeConfig.variables) {
+            if (!v.enabled) { continue; }
+            if (yAxisId < 0) {
+                yAxisId = v.yAxis.id;
+                unit = v.yAxis.unit;
+            } else if (yAxisId !== v.yAxis.id) {
+                yAxisId = -1;
+                unit = '';
+                break;
             }
         }
 
@@ -1334,7 +1229,8 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 }],
                 yAxes: [{
                     ticks: {
-                        callback: (value) => Math.abs(value) < 1000 ? value + 'W' : Math.round(value / 10) / 100 + 'kW'
+                        beginAtZero: true,
+                        callback: (value) => Math.abs(value) < 1000 ? value + unit : Math.round(value / 10) / 100 + 'k' + unit
                     }
                 }]
             }
@@ -1366,10 +1262,10 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             legend: true,
             colors: [],
         };
-        for (const id of ids) {
+        for (const id of Object.getOwnPropertyNames(chartData)) {
             const dataset: Charts.ChartDataSets = {
                 label: id,
-                data: values[id],
+                data: chartData[id].values,
                 hidden: false,
                 type: 'line'
             };
@@ -1387,8 +1283,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
     }
 
 
-    private async createChartPowerDay (p: IChartParams, ids?: (StatisticAttribute) []): Promise<INg4Chart> {
-        ids = ids || ArchiveChartComponent.defaultPowerAttributes;
+    private async createChartPowerDay (p: IChartParams): Promise<INg4Chart> {
         const kms = 1000 * 60 * 60 * 24; // factor between day and milliseconds
         const dDays = Math.round((p.options.end.getTime() - p.options.start.getTime()) / kms);
         console.log(dDays);
@@ -1407,32 +1302,45 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             to = new Date(to.getTime() + kms);
         }
         const from = new Date(to.getTime() - dDays * kms);
-        console.log('createChartPowerDay()\n from=' + from.toISOString() + '\n   to=' + to.toISOString());
+        // console.log('createChartPowerDay()\n from=' + from.toISOString() + '\n   to=' + to.toISOString());
 
-        const x: IArchiveRequest = {
-            id:      this._requestCnt++,
-            type:    'day',
-            dataIds: ids,
-            from:    from,
-            to:      to
-        };
-        const r = await this.dataService.getArchiv(new ArchiveRequest(x));
-        const values: { [ key in StatisticAttribute | 'pLoad' ]?: { x: string | Date, y: number}  [] } = {};
+        this._activeConfig = this._configs.find( (c) => c.name === p.config);
+        if (!this._activeConfig) {
+            console.log('Error: cannot find config ' + p.config);
+            return;
+        }
+        const r = await this.getArchiveData(this._activeConfig, 'day', from, to);
+        const chartData = this.prepareChartData(this._activeConfig, r);
+
         for (let t = -dDays; t <= 0; t++) {
-            for (const id of ids) {
+            for (const id of Object.getOwnPropertyNames(chartData)) {
+                const x = <IChartData>chartData[id];
                 const sign = (id === 'pBoiler' || id === 'pHeatPump' || id === 'pLoad') ? -1 : 1;
                 const tp = new Date(to.getTime() + t * kms + 0.0 * kms);
                 const coll = Array.isArray(r.result[id]) ? r.result[id].find(
                     (item) => Math.floor(item.start.getTime() / kms) === Math.floor(tp.getTime() / kms)) : null;
-                if (!Array.isArray(values[id])) {
-                    values[id] = [];
-                }
-                // console.log(m, coll);
-                if (coll) {
-                    values[id].push({ x: tp.toISOString(), y: sign * coll.twa });
+                if (!x || !Array.isArray(x.values)) {
+                    console.log('Error: mising array values for ' + id);
+                } else if (coll) {
+                    x.values.push({ x: tp.toISOString(), y: sign * coll.twa });
                 } else {
-                    values[id].push({ x: tp.toISOString(), y: null });
+                    x.values.push({ x: tp.toISOString(), y: null });
                 }
+            }
+        }
+
+        let unit = '';
+        let yAxisId = -1;
+
+        for (const v of this._activeConfig.variables) {
+            if (!v.enabled) { continue; }
+            if (yAxisId < 0) {
+                yAxisId = v.yAxis.id;
+                unit = v.yAxis.unit;
+            } else if (yAxisId !== v.yAxis.id) {
+                yAxisId = -1;
+                unit = '';
+                break;
             }
         }
 
@@ -1475,7 +1383,8 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 }],
                 yAxes: [{
                     ticks: {
-                        callback: (value) => Math.abs(value) < 1000 ? value + 'W' : Math.round(value / 10) / 100 + 'kW'
+                        beginAtZero: true,
+                        callback: (value) => Math.abs(value) < 1000 ? value + unit : Math.round(value / 10) / 100 + 'k' + unit
                     }
                 }]
             }
@@ -1488,10 +1397,10 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             legend: true,
             colors: [],
         };
-        for (const id of ids) {
+        for (const id of Object.getOwnPropertyNames(chartData)) {
             const dataset: Charts.ChartDataSets = {
                 label: id,
-                data: values[id],
+                data: chartData[id].values,
                 hidden: false,
                 type: 'bar',
                 fill: true,
@@ -1509,6 +1418,35 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
 
         return chart;
     }
+
+    private createConfig (name: string, ids: StatisticAttribute []): IArchiveChartConfig {
+        const variables: IVariable [] = [];
+        const yAxes: IYAxis [] = [];
+        for (const id of Object.getOwnPropertyNames(Statistics.defById)) {
+            const def = Statistics.defById[id];
+            let yAxis: IYAxis;
+            if (def && def.format && def.format.unit) {
+                yAxis = yAxes.find( (a) => a.unit === def.format.unit);
+                if (!yAxis) {
+                    yAxis = { id: yAxes.length, unit: def.format.unit };
+                    yAxes.push(yAxis);
+                }
+            }
+            const v: IVariable = {
+                id: id,
+                label: '',
+                def: def,
+                yAxis: yAxis,
+                enabled: ids.findIndex( (item) => item === id ) >= 0
+            };
+            variables.push(v);
+        }
+        return {
+            name: name,
+            variables: variables
+        };
+    }
+
 
     // private cloneNg4Chart (src: INg4Chart): INg4Chart {
     //     const rv: INg4Chart = {
