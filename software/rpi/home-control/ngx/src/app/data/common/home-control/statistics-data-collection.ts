@@ -185,6 +185,27 @@ export class StatisticsDataCollection {
         return this._twa;
     }
 
+    public get max (): number {
+        return this._max;
+    }
+
+    public get value (): number | null {
+        if (typeof this._twa === 'number') {
+            return this._twa;
+        } else if (typeof this._ewa === 'number') {
+            return this._ewa;
+        } else if (typeof this._max === 'number' && typeof this._min === 'number' ) {
+            return (this._max + this._min) / 2;
+        } else if (typeof this._max === 'number') {
+            return this._max;
+        } else if (typeof this._min === 'number') {
+            return this._min;
+        } else {
+            return null;
+        }
+    }
+
+
     public getValueByType (typ: ValueType, factor?: number, offset?: number): number | null {
         let rv: number;
         switch (typ) {

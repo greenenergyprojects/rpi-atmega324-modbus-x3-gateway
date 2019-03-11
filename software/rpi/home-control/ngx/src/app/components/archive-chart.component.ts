@@ -21,6 +21,7 @@ import { ConfigService } from '../services/config.service';
 import { ModalArchiveChartComponent, IModalArchiveChartConfig } from '../modals/modal-archive-chart.component';
 import { IStatisticItemDefinition } from '../data/common/home-control/statistics';
 import { ArchiveResponse } from '../data/common/home-control/archive-response';
+import { StatisticsDataCollection } from '../data/common/home-control/statistics-data-collection';
 
 @Component({
     selector: 'app-archive-chart',
@@ -126,7 +127,8 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         this._configs.push(this.createConfig('Default', [ 'pGrid', 'pPv',  'pBat', 'pLoad', 'pBoiler', 'pHeatPump' ]));
         this._configs.push(this.createConfig('PV/Netz/Bat', [ 'pGrid', 'pPv',  'pBat' ]));
         this._configs.push(this.createConfig('PV', ['pPv', 'pPvS', 'pPvEW']));
-        this._configs.push(this.createConfig('Temp', ['tOutdoor']));
+        this._configs.push(this.createConfig('Temp', ['tOutdoor', 'pGrid', 'ePvDaily']));
+        console.log(this._configs);
 
         this._activeConfig = this._configs[0];
         this.configSelection = {
@@ -790,7 +792,9 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             from:    from,
             to:      to
         };
-        return await this.dataService.getArchiv(new ArchiveRequest(archiveRequest));
+        const result = await this.dataService.getArchiv(new ArchiveRequest(archiveRequest));
+        console.log(result);
+        return result;
     }
 
     private prepareChartData (config: IArchiveChartConfig, r: ArchiveResponse ): { [ key in StatisticAttribute ]?: IChartData } {
@@ -810,6 +814,91 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         return rv;
     }
 
+
+    private createNg4Chart (p: IChartParams, data: { [ key in StatisticAttribute ]?: IChartData }, options: Charts.ChartOptions): INg4Chart {
+        const chart: INg4Chart = {
+            params: p,
+            datasets: [ ],
+            options: options,
+            legend: true,
+            colors: [],
+        };
+        for (const id of Object.getOwnPropertyNames(data)) {
+
+            const yAxis = <IYAxis>(data[id].yAxis);
+            let a = options.scales.yAxes.find( (ax) => ax.id === yAxis.id.toString());
+            if (!a) {
+                switch (yAxis.unit) {
+                    case 'W': {
+                        a = {
+                            id: yAxis.id.toString(),
+                            ticks: {
+                                beginAtZero: true,
+                                callback: (value) => Math.abs(value) < 1000 ? value + 'W' : Math.round(value / 10) / 100 + 'k' + 'W',
+                            }
+                        };
+                        options.scales.yAxes.push(a);
+                        break;
+                    }
+
+                    case '°C': {
+                        a = {
+                            id: yAxis.id.toString(),
+                            ticks: {
+                                beginAtZero: true,
+                                callback: (value) => value + '°C'
+                            }
+                        };
+                        options.scales.yAxes.push(a);
+                        break;
+                    }
+
+                    case 'Wh': case 'kWh': {
+                        a = {
+                            id: yAxis.id.toString(),
+                            ticks: {
+                                beginAtZero: true,
+                                callback: (value) => {
+                                    if (value >= 1000000) {
+                                        return Math.round(value / 10000) / 100 + 'MWh';
+                                    } else if (value >= 1000) {
+                                        return Math.round(value / 10) / 100 + 'kWh';
+                                    } else {
+                                        return Math.round(value) + 'Wh';
+                                    }
+                                },
+                            }
+                        };
+                        options.scales.yAxes.push(a);
+                        break;
+                    }
+
+                    default: {
+                        console.log('Error: unit ' + yAxis.unit + ' for Y axis not supported');
+                        break;
+                    }
+                }
+            }
+            const dataset: Charts.ChartDataSets = {
+                label: id,
+                data: data[id].values,
+                hidden: false,
+                type: 'line',
+                yAxisID: data[id].yAxis.id.toString()
+            };
+
+            chart.datasets.push(dataset);
+            const col = Object.assign({}, ArchiveChartComponent.defaultColors[id]);
+            if (col) {
+                delete col.backgroundColor;
+                chart.colors.push(col);
+            } else {
+                chart.colors.push({ borderColor: 'lightgrey', pointRadius: 0 });
+            }
+        }
+
+        return chart;
+    }
 
     private async createChartPowerMinute (p: IChartParams): Promise<INg4Chart> {
         const dm = Math.max( Math.round((p.options.end.getTime() - p.options.start.getTime()) / 1000 / 60), 45);
@@ -834,12 +923,14 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 const x = <IChartData>chartData[id];
                 const sign = (id === 'pBoiler' || id === 'pHeatPump' || id === 'pLoad') ? -1 : 1;
                 const t = new Date(to.getTime() + m * 60 * 1000);
-                const coll = Array.isArray(r.result[id]) ? r.result[id].find(
+                const coll = Array.isArray(r.result[id]) ? (<StatisticsDataCollection []>r.result[id]).find(
                     (item) => item.start.getMinutes() === t.getMinutes() && item.start.getHours() === t.getHours()) : null;
+
+                const value = coll ? coll.value : null;
                 if (!x || !Array.isArray(x.values)) {
                     console.log('Error: mising array values for ' + id);
-                } else if (coll) {
-                    x.values.push({ x: t.toISOString(), y: sign * coll.twa });
+                } else if (typeof value === 'number') {
+                    x.values.push({ x: t.toISOString(), y: sign * value });
                 } else {
                     x.values.push({ x: t.toISOString(), y: null });
                 }
@@ -908,15 +999,9 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                         }
                     }
                 }],
-                yAxes: [{
-                    ticks: {
-                        beginAtZero: true,
-                        callback: (value) => Math.abs(value) < 1000 ? value + unit : Math.round(value / 10) / 100 + 'k' + unit,
-                    }
-                }]
+                yAxes: []
             }
         };
-
 
         try {
             const x = <any>this.childChart;
@@ -937,34 +1022,94 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             console.log(err);
         }
 
-        const chart: INg4Chart = {
-            params: p,
-            datasets: [ ],
-            options: chart1Options,
-            legend: true,
-            colors: [],
-        };
-        for (const id of Object.getOwnPropertyNames(chartData)) {
-            const dataset: Charts.ChartDataSets = {
-                label: id,
-                data: chartData[id].values,
-                hidden: false,
-                type: 'line'
-            };
-            // if (id === 'pBat') {
-            //     dataset.hidden = true;
-            // }
-            chart.datasets.push(dataset);
-            const col = Object.assign({}, ArchiveChartComponent.defaultColors[id]);
-            if (col) {
-                delete col.backgroundColor;
-                chart.colors.push(col);
-            } else {
-                chart.colors.push({ borderColor: 'lightgrey', pointRadius: 0 });
-            }
-        }
+        return this.createNg4Chart(p, chartData, chart1Options);
 
-        return chart;
+        // const chart: INg4Chart = {
+        //     params: p,
+        //     datasets: [ ],
+        //     options: chart1Options,
+        //     legend: true,
+        //     colors: [],
+        // };
+        // for (const id of Object.getOwnPropertyNames(chartData)) {
+
+        //     const yAxis = <IYAxis>(chartData[id].yAxis);
+        //     let a = chart1Options.scales.yAxes.find( (ax) => ax.id === yAxis.id.toString());
+        //     if (!a) {
+        //         switch (yAxis.unit) {
+        //             case 'W': {
+        //                 a = {
+        //                     id: yAxis.id.toString(),
+        //                     ticks: {
+        //                         beginAtZero: true,
+        //                         callback: (value) => Math.abs(value) < 1000 ? value + 'W' : Math.round(value / 10) / 100 + 'k' + 'W',
+        //                     }
+        //                 };
+        //                 chart1Options.scales.yAxes.push(a);
+        //                 break;
+        //             }
+
+        //             case '°C': {
+        //                 a = {
+        //                     id: yAxis.id.toString(),
+        //                     ticks: {
+        //                         beginAtZero: true,
+        //                         callback: (value) => value + '°C'
+        //                     }
+        //                 };
+        //                 chart1Options.scales.yAxes.push(a);
+        //                 break;
+        //             }
+
+        //             case 'Wh': case 'kWh': {
+        //                 a = {
+        //                     id: yAxis.id.toString(),
+        //                     ticks: {
+        //                         beginAtZero: true,
+        //                         callback: (value) => {
+        //                             if (value >= 1000000) {
+        //                                 return Math.round(value / 10000) / 100 + 'MWh';
+        //                             } else if (value >= 1000) {
+        //                                 return Math.round(value / 10) / 100 + 'kWh';
+        //                             } else {
+        //                                 return Math.round(value) + 'Wh'
+        //                             }
+        //                         },
+        //                     }
+        //                 };
+        //                 chart1Options.scales.yAxes.push(a);
+        //                 break;
+        //             }
+
+        //             default: {
+        //                 console.log('Error: unit ' + yAxis.unit + ' for Y axis not supported');
+        //                 break;
+        //             }
+        //         }
+        //     }
+        //     const dataset: Charts.ChartDataSets = {
+        //         label: id,
+        //         data: chartData[id].values,
+        //         hidden: false,
+        //         type: 'line',
+        //         yAxisID: chartData[id].yAxis.id.toString()
+        //     };
+        //     // if (id === 'pBat') {
+        //     //     dataset.hidden = true;
+        //     // }
+
+        //     console.log(chartData[id], dataset);
+        //     chart.datasets.push(dataset);
+        //     const col = Object.assign({}, ArchiveChartComponent.defaultColors[id]);
+        //     if (col) {
+        //         delete col.backgroundColor;
+        //         chart.colors.push(col);
+        //     } else {
+        //         chart.colors.push({ borderColor: 'lightgrey', pointRadius: 0 });
+        //     }
+        // }
+
+        // return chart;
     }
 
     private async createChartPowerMin10 (p: IChartParams): Promise<INg4Chart> {
