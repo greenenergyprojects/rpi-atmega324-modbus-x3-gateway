@@ -13,25 +13,19 @@
                        app-validator [element]="nameValidator" [(ngModel)]="nameValidator.value" name="{{configName}}">
             </div>
         
-        <ul *ngIf="false" class="nav nav-pills nav-stacked" style="border: solid 1px black; max-height: 7em; overflow-y: scroll;">
-            <li *ngFor="let v of variables" [ngClass]="{'list-group-item':true, 'active':v.active, 'variable-enabled': v.enabled}"
-                (click)="onClickVariable(v)" style="cursor:pointer">
-                {{v.id}}
-            </li>
-        </ul>
-        <ul class="list-group" style="border: solid 1px black; max-height: 12em; overflow-y: scroll;">
+        <ul class="list-group" style="border: solid 1px black; overflow-y: scroll;" [style.maxHeight]="maxHeight">
             <li *ngFor="let v of variables" [ngClass]="{'list-group-item':true, 'variable-enabled': v.enabled}"
                 (click)="onClickVariable(v)" style="cursor:pointer">
                 <div [ngClass]="{'input-group input-group-sm mb-3':true,'variable-enabled': v.enabled}" style="margin-bottom:0px!important">
                     <div class="input-group-prepend">
                         <div class="input-group-text">
-                            <input type="checkbox" [checked]="v.enabled" (change)="v.enabled = !v.enabled" (click)="onCheckboxChange(v)">
+                            <input type="checkbox" [checked]="v.enabled" (change)="v.enabled = !v.enabled" (click)="onCheckboxChange(v)" [disabled]="!isNameEditable">
                         </div>
                         <span class="input-group-text" id="inputGroup-sizing-sm">{{v.id}}</span>
                     </div>
-                    <input type="text" class="form-control" formControlName="{{v.id}}" >
+                    <input type="text" class="form-control" formControlName="{{v.id}}" [disabled]="!isNameEditable">
                     <div class="input-group-append">
-                        <button class="btn-sm btn-success" type="button" (click)="onClickVariableConfig(v)" style="padding-top: 0; padding-bottom: 0">
+                        <button class="btn-sm btn-success" type="button" (click)="onClickVariableConfig(v)" style="padding-top: 0; padding-bottom: 0" [disabled]="!isNameEditable">
                                 <fa-icon [icon]="'bars'"></fa-icon>
                         </button>
                         

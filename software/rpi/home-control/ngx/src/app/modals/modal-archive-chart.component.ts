@@ -44,6 +44,7 @@ export class ModalArchiveChartComponent {
     public title: string;
     public focusName: EventEmitter<boolean> = new EventEmitter();
 
+    public maxHeight = '12em';
     public isNameEditable: boolean;
     public nameValidator: ValidatorElement<string>;
     public deleteButtonVisible: boolean;
@@ -94,6 +95,7 @@ export class ModalArchiveChartComponent {
         }
 
         this.title = config.title || 'Konfiguration';
+        this.maxHeight = (window.innerHeight / 2) + 'px';
         this.nameValidator.value = this.archiveConfig.chartConfig.name;
         this.isNameEditable = config.chartConfig.name !== 'Default';
         this.deleteButtonVisible = config.chartConfig.name !== 'Default';

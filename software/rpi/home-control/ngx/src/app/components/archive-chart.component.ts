@@ -815,7 +815,9 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
     }
 
 
-    private createNg4Chart (p: IChartParams, data: { [ key in StatisticAttribute ]?: IChartData }, options: Charts.ChartOptions): INg4Chart {
+    private createNg4Chart (p: IChartParams, data: { [ key in StatisticAttribute ]?: IChartData },
+                            options: Charts.ChartOptions, type?: Charts.ChartType): INg4Chart {
+        type = type || 'line';
         const chart: INg4Chart = {
             params: p,
             datasets: [ ],
@@ -883,7 +885,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 label: id,
                 data: data[id].values,
                 hidden: false,
-                type: 'line',
+                type: type,
                 yAxisID: data[id].yAxis.id.toString()
             };
 
@@ -1143,12 +1145,13 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 const x = <IChartData>chartData[id];
                 const sign = (id === 'pBoiler' || id === 'pHeatPump' || id === 'pLoad') ? -1 : 1;
                 const t = new Date(to.getTime() + m10 * 10 * 60 * 1000);
-                const coll = Array.isArray(r.result[id]) ? r.result[id].find(
+                const coll = Array.isArray(r.result[id]) ? <StatisticsDataCollection>(r.result[id]).find(
                     (item) => item.start.getMinutes() === t.getMinutes() && item.start.getHours() === t.getHours()) : null;
+                const value = coll ? coll.value : null;
                 if (!x || !Array.isArray(x.values)) {
                     console.log('Error: mising array values for ' + id);
                 } else if (coll) {
-                    x.values.push({ x: t.toISOString(), y: sign * coll.twa });
+                    x.values.push({ x: t.toISOString(), y: sign * value });
                 } else {
                     x.values.push({ x: t.toISOString(), y: null });
                 }
@@ -1212,12 +1215,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                         }
                     }
                 }],
-                yAxes: [{
-                    ticks: {
-                        beginAtZero: true,
-                        callback: (value) => Math.abs(value) < 1000 ? value + unit : Math.round(value / 10) / 100 + unit
-                    }
-                }]
+                yAxes: []
             }
         };
 
@@ -1240,31 +1238,33 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             console.log(err);
         }
 
-        const chart: INg4Chart = {
-            params: p,
-            datasets: [ ],
-            options: chart1Options,
-            legend: true,
-            colors: [],
-        };
-        for (const id of Object.getOwnPropertyNames(chartData)) {
-            const dataset: Charts.ChartDataSets = {
-                label: id,
-                data: chartData[id].values,
-                hidden: false,
-                type: 'line'
-            };
-            chart.datasets.push(dataset);
-            const col = Object.assign({}, ArchiveChartComponent.defaultColors[id]);
-            if (col) {
-                delete col.backgroundColor;
-                chart.colors.push(col);
-            } else {
-                chart.colors.push({ borderColor: 'lightgrey', pointRadius: 0 });
-            }
-        }
+        return this.createNg4Chart(p, chartData, chart1Options);
 
-        return chart;
+        // const chart: INg4Chart = {
+        //     params: p,
+        //     datasets: [ ],
+        //     options: chart1Options,
+        //     legend: true,
+        //     colors: [],
+        // };
+        // for (const id of Object.getOwnPropertyNames(chartData)) {
+        //     const dataset: Charts.ChartDataSets = {
+        //         label: id,
+        //         data: chartData[id].values,
+        //         hidden: false,
+        //         type: 'line'
+        //     };
+        //     chart.datasets.push(dataset);
+        //     const col = Object.assign({}, ArchiveChartComponent.defaultColors[id]);
+        //     if (col) {
+        //         delete col.backgroundColor;
+        //         chart.colors.push(col);
+        //     } else {
+        //         chart.colors.push({ borderColor: 'lightgrey', pointRadius: 0 });
+        //     }
+        // }
+
+        // return chart;
     }
 
 
@@ -1302,18 +1302,19 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 const x = <IChartData>chartData[id];
                 const sign = (id === 'pBoiler' || id === 'pHeatPump' || id === 'pLoad') ? -1 : 1;
                 const tp = new Date(to.getTime() + hr * kms + 0.5 * kms);
-                const coll = Array.isArray(r.result[id]) ? r.result[id].find(
+                const coll = Array.isArray(r.result[id]) ? <StatisticsDataCollection>(r.result[id]).find(
                     (item) => Math.floor(item.start.getTime() / kms) === Math.floor(tp.getTime() / kms)) : null;
+                const value = coll ? coll.value : null;
                 if (!x || !Array.isArray(x.values)) {
                     console.log('Error: mising array values for ' + id);
                 } else if (coll) {
-                    x.values.push({ x: tp.toISOString(), y: sign * coll.twa });
+                    x.values.push({ x: tp.toISOString(), y: sign * value });
                 } else {
                     x.values.push({ x: tp.toISOString(), y: null });
                 }
             }
         }
-        // console.log(chartData);
+        console.log(chartData);
 
         let unit = '';
         let yAxisId = -1;
@@ -1372,59 +1373,56 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                         }
                     }
                 }],
-                yAxes: [{
-                    ticks: {
-                        beginAtZero: true,
-                        callback: (value) => Math.abs(value) < 1000 ? value + unit : Math.round(value / 10) / 100 + 'k' + unit
-                    }
-                }]
+                yAxes: []
             }
         };
 
-        try {
-            const x = <any>this.childChart;
-            if (x && x.chart && x.chart.scales && x.chart.scales) {
-                // console.log(x.chart.scales);
-                const y = x.chart.scales['y-axis-0'];
-                if (y) {
-                    const min = y.min;
-                    const max = y.max;
-                    if (typeof min === 'number' && typeof max === 'number') {}
-                        if (this.checkboxYAuto && this.checkboxYAuto.nativeElement && !this.checkboxYAuto.nativeElement.checked) {
-                            chart1Options.scales.yAxes[0].ticks.min = min;
-                            chart1Options.scales.yAxes[0].ticks.max = max;
-                    }
-                }
-            }
-        } catch (err) {
-            console.log(err);
-        }
+        return this.createNg4Chart(p, chartData, chart1Options);
 
-        const chart: INg4Chart = {
-            params: p,
-            datasets: [ ],
-            options: chart1Options,
-            legend: true,
-            colors: [],
-        };
-        for (const id of Object.getOwnPropertyNames(chartData)) {
-            const dataset: Charts.ChartDataSets = {
-                label: id,
-                data: chartData[id].values,
-                hidden: false,
-                type: 'line'
-            };
-            chart.datasets.push(dataset);
-            const col = Object.assign({}, ArchiveChartComponent.defaultColors[id]);
-            if (col) {
-                delete col.backgroundColor;
-                chart.colors.push(col);
-            } else {
-                chart.colors.push({ borderColor: 'lightgrey', pointRadius: 0 });
-            }
-        }
+        // try {
+        //     const x = <any>this.childChart;
+        //     if (x && x.chart && x.chart.scales && x.chart.scales) {
+        //         // console.log(x.chart.scales);
+        //         const y = x.chart.scales['y-axis-0'];
+        //         if (y) {
+        //             const min = y.min;
+        //             const max = y.max;
+        //             if (typeof min === 'number' && typeof max === 'number') {}
+        //                 if (this.checkboxYAuto && this.checkboxYAuto.nativeElement && !this.checkboxYAuto.nativeElement.checked) {
+        //                     chart1Options.scales.yAxes[0].ticks.min = min;
+        //                     chart1Options.scales.yAxes[0].ticks.max = max;
+        //             }
+        //         }
+        //     }
+        // } catch (err) {
+        //     console.log(err);
+        // }
 
-        return chart;
+        // const chart: INg4Chart = {
+        //     params: p,
+        //     datasets: [ ],
+        //     options: chart1Options,
+        //     legend: true,
+        //     colors: [],
+        // };
+        // for (const id of Object.getOwnPropertyNames(chartData)) {
+        //     const dataset: Charts.ChartDataSets = {
+        //         label: id,
+        //         data: chartData[id].values,
+        //         hidden: false,
+        //         type: 'line'
+        //     };
+        //     chart.datasets.push(dataset);
+        //     const col = Object.assign({}, ArchiveChartComponent.defaultColors[id]);
+        //     if (col) {
+        //         delete col.backgroundColor;
+        //         chart.colors.push(col);
+        //     } else {
+        //         chart.colors.push({ borderColor: 'lightgrey', pointRadius: 0 });
+        //     }
+        // }
+
+        // return chart;
     }
 
 
@@ -1462,12 +1460,13 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 const x = <IChartData>chartData[id];
                 const sign = (id === 'pBoiler' || id === 'pHeatPump' || id === 'pLoad') ? -1 : 1;
                 const tp = new Date(to.getTime() + t * kms + 0.0 * kms);
-                const coll = Array.isArray(r.result[id]) ? r.result[id].find(
+                const coll = Array.isArray(r.result[id]) ? <StatisticsDataCollection>(r.result[id]).find(
                     (item) => Math.floor(item.start.getTime() / kms) === Math.floor(tp.getTime() / kms)) : null;
+                    const value = coll ? coll.value : null;
                 if (!x || !Array.isArray(x.values)) {
                     console.log('Error: mising array values for ' + id);
                 } else if (coll) {
-                    x.values.push({ x: tp.toISOString(), y: sign * coll.twa });
+                    x.values.push({ x: tp.toISOString(), y: sign * value });
                 } else {
                     x.values.push({ x: tp.toISOString(), y: null });
                 }
@@ -1526,42 +1525,39 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                         }
                     }
                 }],
-                yAxes: [{
-                    ticks: {
-                        beginAtZero: true,
-                        callback: (value) => Math.abs(value) < 1000 ? value + unit : Math.round(value / 10) / 100 + 'k' + unit
-                    }
-                }]
+                yAxes: []
             }
         };
 
-        const chart: INg4Chart = {
-            params: p,
-            datasets: [ ],
-            options: chart1Options,
-            legend: true,
-            colors: [],
-        };
-        for (const id of Object.getOwnPropertyNames(chartData)) {
-            const dataset: Charts.ChartDataSets = {
-                label: id,
-                data: chartData[id].values,
-                hidden: false,
-                type: 'bar',
-                fill: true,
-                // backgroundColor: 'black',
-            };
+        return this.createNg4Chart(p, chartData, chart1Options, 'bar');
 
-            chart.datasets.push(dataset);
-            const col = ArchiveChartComponent.defaultColors[id];
-            if (col) {
-                chart.colors.push(col);
-            } else {
-                chart.colors.push({ borderColor: 'lightgrey', pointRadius: 0 });
-            }
-        }
+        // const chart: INg4Chart = {
+        //     params: p,
+        //     datasets: [ ],
+        //     options: chart1Options,
+        //     legend: true,
+        //     colors: [],
+        // };
+        // for (const id of Object.getOwnPropertyNames(chartData)) {
+        //     const dataset: Charts.ChartDataSets = {
+        //         label: id,
+        //         data: chartData[id].values,
+        //         hidden: false,
+        //         type: 'bar',
+        //         fill: true,
+        //         // backgroundColor: 'black',
+        //     };
 
-        return chart;
+        //     chart.datasets.push(dataset);
+        //     const col = ArchiveChartComponent.defaultColors[id];
+        //     if (col) {
+        //         chart.colors.push(col);
+        //     } else {
+        //         chart.colors.push({ borderColor: 'lightgrey', pointRadius: 0 });
+        //     }
+        // }
+
+        // return chart;
     }
 
     private createConfig (name: string, ids: StatisticAttribute []): IArchiveChartConfig {
