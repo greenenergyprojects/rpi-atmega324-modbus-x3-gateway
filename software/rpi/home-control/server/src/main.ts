@@ -1,4 +1,4 @@
-export const VERSION = '1.5.5';
+export const VERSION = '1.5.6';
 
 import * as cluster from 'cluster';
 import * as fs from 'fs';
@@ -225,6 +225,7 @@ export class Main {
         if (!config || config.disabled) {
             this._workers.statistics = { worker: null, state: 'disabled', restartCount: -1, messageId: -1, waiting: [] };
         } else {
+            debug.info('starting worker statistics');
             this._workers.statistics = { worker: cluster.fork({ worker: 'statistics' }), state: 'starting', restartCount: 0, messageId: 0, waiting: [] };
         }
 
@@ -232,6 +233,7 @@ export class Main {
         if (!cfgArchive || cfgArchive.disabled) {
             this._workers.archive = { worker: null, state: 'disabled', restartCount: -1, messageId: -1, waiting: [] };
         } else {
+            debug.info('starting worker archive');
             this._workers.archive = { worker: cluster.fork({ worker: 'archive' }), state: 'starting', restartCount: 0, messageId: 0, waiting: [] };
         }
 

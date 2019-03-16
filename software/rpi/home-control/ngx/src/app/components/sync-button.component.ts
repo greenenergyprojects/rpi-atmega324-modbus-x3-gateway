@@ -8,6 +8,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 export interface ISyncButtonConfig {
     text?: string;
     icon?: string;
+    hidden?: boolean;
+    minWidth?: string;
     classes: {
         default: string;
         onBusy?: string;
@@ -26,7 +28,8 @@ export interface ISyncButtonConfig {
 @Component({
     selector: 'app-sync-button',
     template: `
-        <button [ngClass]="classes" (click)="onClick()" placement="top" #tooltip="ngbTooltip" ngbTooltip triggers="manual">
+        <button [ngClass]="classes" (click)="onClick()" placement="top" #tooltip="ngbTooltip" ngbTooltip triggers="manual"
+                [hidden]="config.hidden" [ngStyle]="{'min-width': config.minWidth}">
             <span *ngIf="!config.hideSyncIcon" style="margin-right:10px">
                 <fa-icon [icon]="'sync'" [pulse]="isBusy">{{config.text}}></fa-icon>
             </span>
@@ -53,6 +56,9 @@ export class SyncButtonComponent implements OnInit {
 
     public ngOnInit () {
         this.classes = this.config.classes.default;
+        if (!this.config.minWidth) {
+            this.config.minWidth = '1em';
+        }
         // console.log(this.tooltip);
     }
 

@@ -55,7 +55,7 @@
         "timeoutMillis": 5000
     },
     "monitor": {
-        "disabled": true,
+        "disabled": false,
         "periodMillis": 1000,
         "timeOffset": { "sec": 1, "ms": 0 },
         "froniusPeriodMillis": 2000,

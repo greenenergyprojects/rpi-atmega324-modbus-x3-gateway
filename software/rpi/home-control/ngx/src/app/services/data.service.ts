@@ -260,7 +260,7 @@ export class DataService {
         // }
 
         this._serverService.httpGetJson('/data/monitor').then( (v: IMonitorRecord []) => {
-            if (!Array.isArray(v) || v.length !== 1) {
+            if (!Array.isArray(v)) {
                 console.log(new Error('unexpected response'));
                 this._monitorObservers.forEach( (o) => o.next(null));
                 this._historyService.refresh(null);
@@ -268,6 +268,10 @@ export class DataService {
             }
             // this.handleNibe1155Values(v[0].nibe1155);
             // console.log(v[0]);
+            if (v.length <= 0) {
+                console.log('Warning: no monitor values received');
+                return;
+            }
             const r = new MonitorRecord(v[0]);
             this._monitorObservers.forEach( (o) => o.next(r));
             this._historyService.refresh(r);

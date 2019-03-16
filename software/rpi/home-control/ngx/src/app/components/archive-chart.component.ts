@@ -157,6 +157,8 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             text: 'Tag ',
             icon: 'hand-point-left',
             classes: { default: 'btn-sm btn-primary', onSuccess: 'btn-sm btn-success', onError: 'btn-sm btn-danger' },
+            hidden: false,
+            minWidth: '3em',
             hideSyncIcon: true,
             onSuccessTimeoutMillis: 2000,
             onErrorTimeoutMillis: 2000,
@@ -170,6 +172,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             icon: 'angle-double-left',
             classes: { default: 'btn-sm btn-primary', onSuccess: 'btn-sm btn-success', onError: 'btn-sm btn-danger' },
             hideSyncIcon: true,
+            minWidth: '3em',
             onSuccessTimeoutMillis: 2000,
             onErrorTimeoutMillis: 2000,
             handler: {
@@ -182,6 +185,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             icon: 'angle-left',
             classes: { default: 'btn-sm btn-primary', onSuccess: 'btn-sm btn-success', onError: 'btn-sm btn-danger' },
             hideSyncIcon: true,
+            minWidth: '3em',
             onSuccessTimeoutMillis: 2000,
             onErrorTimeoutMillis: 2000,
             handler: {
@@ -197,6 +201,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             onSuccessTimeoutMillis: 2000,
             onErrorTimeoutMillis: 2000,
             hideSyncIcon: true,
+            minWidth: '3em',
             handler: {
                 onClick: (cfg) => this.onButtonClick(cfg),
                 onCancel: (cfg) => this.onButtonCancel(cfg)
@@ -209,6 +214,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             onSuccessTimeoutMillis: 2000,
             onErrorTimeoutMillis: 2000,
             hideSyncIcon: true,
+            minWidth: '3em',
             handler: {
                 onClick: (cfg) => this.onButtonClick(cfg),
                 onCancel: (cfg) => this.onButtonCancel(cfg)
@@ -221,6 +227,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             onSuccessTimeoutMillis: 2000,
             onErrorTimeoutMillis: 2000,
             hideSyncIcon: true,
+            minWidth: '3em',
             handler: {
                 onClick: (cfg) => this.onButtonClick(cfg),
                 onCancel: (cfg) => this.onButtonCancel(cfg)
@@ -234,6 +241,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             onSuccessTimeoutMillis: 2000,
             onErrorTimeoutMillis: 2000,
             hideSyncIcon: true,
+            minWidth: '3em',
             handler: {
                 onClick: (cfg) => this.onButtonClick(cfg),
                 onCancel: (cfg) => this.onButtonCancel(cfg)
@@ -243,8 +251,10 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         this.buttonConfigXDayNext = {
             text: 'Tag ',
             icon: 'hand-point-right',
+            hidden: false,
             classes: { default: 'btn-sm btn-primary', onSuccess: 'btn-sm btn-success', onError: 'btn-sm btn-danger' },
             hideSyncIcon: true,
+            minWidth: '3em',
             onSuccessTimeoutMillis: 2000,
             onErrorTimeoutMillis: 2000,
             handler: {
@@ -437,6 +447,8 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         } else if (cfg === this.buttonConfigXZoomIn) {
             this._currentZoomIndex = Math.max(0, this._currentZoomIndex - 1);
             console.log('_currentZoomIndex=' + this._currentZoomIndex);
+            this.buttonConfigXDayNext.hidden = (this._currentZoomIndex > 6);
+            this.buttonConfigXDayBack.hidden  = (this._currentZoomIndex > 6);
             const nextParams = this.createChartParameter(params.config, params.options.end, this._zoomOptions[this._currentZoomIndex]);
             this.updateValidators(nextParams.options.end);
             this.refreshChart(nextParams);
@@ -444,6 +456,8 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         } else if (cfg === this.buttonConfigXZoomOut) {
             this._currentZoomIndex = Math.min(this._zoomOptions.length - 1, this._currentZoomIndex + 1);
             console.log('_currentZoomIndex=' + this._currentZoomIndex);
+            this.buttonConfigXDayNext.hidden = (this._currentZoomIndex > 6);
+            this.buttonConfigXDayBack.hidden  = (this._currentZoomIndex > 6);
             const nextParams = this.createChartParameter(params.config, params.options.end, this._zoomOptions[this._currentZoomIndex]);
             this.updateValidators(nextParams.options.end);
             this.refreshChart(nextParams);
@@ -562,16 +576,16 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
     //     return rv;
     // }
 
-    private getAverage (name: string): TChartAverage {
-        if (name === null) { return 'minute'; }
-        const attributes = Object.getOwnPropertyNames(ArchiveChartComponent.chartAverageNames);
-        let rv: TChartAverage = <TChartAverage>attributes.find( (item) => name === ArchiveChartComponent.chartAverageNames[item]);
-        if (!rv) {
-            CommonLogger.warn('cannot find chart average for ' + name);
-            rv = 'minute';
-        }
-        return rv;
-    }
+    // private getAverage (name: string): TChartAverage {
+    //     if (name === null) { return 'minute'; }
+    //     const attributes = Object.getOwnPropertyNames(ArchiveChartComponent.chartAverageNames);
+    //     let rv: TChartAverage = <TChartAverage>attributes.find( (item) => name === ArchiveChartComponent.chartAverageNames[item]);
+    //     if (!rv) {
+    //         CommonLogger.warn('cannot find chart average for ' + name);
+    //         rv = 'minute';
+    //     }
+    //     return rv;
+    // }
 
     private handleInputChange (el: ValidatorElement<string>, name: string, newValue: string) {
         // console.log(el, name, newValue);
@@ -689,7 +703,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 case 'day': {
                     this._inputYear.disabled = false;
                     this._inputMonth.disabled = false;
-                    this._inputDay.disabled = true;
+                    this._inputDay.disabled = false;
                     this._inputHour.disabled = true;
                     break;
                 }
@@ -697,7 +711,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 case 'week': {
                     this._inputYear.disabled = false;
                     this._inputMonth.disabled = true;
-                    this._inputDay.disabled = true;
+                    this._inputDay.disabled = false;
                     this._inputHour.disabled = true;
                     break;
                 }
@@ -754,10 +768,18 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 if (newChart && this.childChart && Array.isArray(this.childChart.datasets)) {
                     for (let i = 0; i < this.childChart.datasets.length; i++) {
                         const ds = this.childChart.datasets[i];
-                        if (ds.hidden === true) {
-                            const dsx = newChart.datasets[i];
-                            if (dsx) {
-                                dsx.hidden = true;
+                        if (ds) {
+                            try {
+                                console.log('1---> i=' + i + ' => ' + ds.label);
+                                console.log('2---> i=' + i + ' => ' + newChart.datasets[i].label);
+                            } catch (err) {
+                                console.log(err);
+                            }
+                            if (ds.hidden === true) {
+                                const dsx = newChart.datasets[i];
+                                if (dsx) {
+                                    dsx.hidden = true;
+                                }
                             }
                         }
                     }
@@ -892,7 +914,9 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
             chart.datasets.push(dataset);
             const col = Object.assign({}, ArchiveChartComponent.defaultColors[id]);
             if (col) {
-                delete col.backgroundColor;
+                if (type !== 'bar' ) {
+                    delete col.backgroundColor;
+                }
                 chart.colors.push(col);
             } else {
                 chart.colors.push({ borderColor: 'lightgrey', pointRadius: 0 });
@@ -1025,93 +1049,6 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         }
 
         return this.createNg4Chart(p, chartData, chart1Options);
-
-        // const chart: INg4Chart = {
-        //     params: p,
-        //     datasets: [ ],
-        //     options: chart1Options,
-        //     legend: true,
-        //     colors: [],
-        // };
-        // for (const id of Object.getOwnPropertyNames(chartData)) {
-
-        //     const yAxis = <IYAxis>(chartData[id].yAxis);
-        //     let a = chart1Options.scales.yAxes.find( (ax) => ax.id === yAxis.id.toString());
-        //     if (!a) {
-        //         switch (yAxis.unit) {
-        //             case 'W': {
-        //                 a = {
-        //                     id: yAxis.id.toString(),
-        //                     ticks: {
-        //                         beginAtZero: true,
-        //                         callback: (value) => Math.abs(value) < 1000 ? value + 'W' : Math.round(value / 10) / 100 + 'k' + 'W',
-        //                     }
-        //                 };
-        //                 chart1Options.scales.yAxes.push(a);
-        //                 break;
-        //             }
-
-        //             case '°C': {
-        //                 a = {
-        //                     id: yAxis.id.toString(),
-        //                     ticks: {
-        //                         beginAtZero: true,
-        //                         callback: (value) => value + '°C'
-        //                     }
-        //                 };
-        //                 chart1Options.scales.yAxes.push(a);
-        //                 break;
-        //             }
-
-        //             case 'Wh': case 'kWh': {
-        //                 a = {
-        //                     id: yAxis.id.toString(),
-        //                     ticks: {
-        //                         beginAtZero: true,
-        //                         callback: (value) => {
-        //                             if (value >= 1000000) {
-        //                                 return Math.round(value / 10000) / 100 + 'MWh';
-        //                             } else if (value >= 1000) {
-        //                                 return Math.round(value / 10) / 100 + 'kWh';
-        //                             } else {
-        //                                 return Math.round(value) + 'Wh'
-        //                             }
-        //                         },
-        //                     }
-        //                 };
-        //                 chart1Options.scales.yAxes.push(a);
-        //                 break;
-        //             }
-
-        //             default: {
-        //                 console.log('Error: unit ' + yAxis.unit + ' for Y axis not supported');
-        //                 break;
-        //             }
-        //         }
-        //     }
-        //     const dataset: Charts.ChartDataSets = {
-        //         label: id,
-        //         data: chartData[id].values,
-        //         hidden: false,
-        //         type: 'line',
-        //         yAxisID: chartData[id].yAxis.id.toString()
-        //     };
-        //     // if (id === 'pBat') {
-        //     //     dataset.hidden = true;
-        //     // }
-
-        //     console.log(chartData[id], dataset);
-        //     chart.datasets.push(dataset);
-        //     const col = Object.assign({}, ArchiveChartComponent.defaultColors[id]);
-        //     if (col) {
-        //         delete col.backgroundColor;
-        //         chart.colors.push(col);
-        //     } else {
-        //         chart.colors.push({ borderColor: 'lightgrey', pointRadius: 0 });
-        //     }
-        // }
-
-        // return chart;
     }
 
     private async createChartPowerMin10 (p: IChartParams): Promise<INg4Chart> {
@@ -1239,32 +1176,6 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         }
 
         return this.createNg4Chart(p, chartData, chart1Options);
-
-        // const chart: INg4Chart = {
-        //     params: p,
-        //     datasets: [ ],
-        //     options: chart1Options,
-        //     legend: true,
-        //     colors: [],
-        // };
-        // for (const id of Object.getOwnPropertyNames(chartData)) {
-        //     const dataset: Charts.ChartDataSets = {
-        //         label: id,
-        //         data: chartData[id].values,
-        //         hidden: false,
-        //         type: 'line'
-        //     };
-        //     chart.datasets.push(dataset);
-        //     const col = Object.assign({}, ArchiveChartComponent.defaultColors[id]);
-        //     if (col) {
-        //         delete col.backgroundColor;
-        //         chart.colors.push(col);
-        //     } else {
-        //         chart.colors.push({ borderColor: 'lightgrey', pointRadius: 0 });
-        //     }
-        // }
-
-        // return chart;
     }
 
 
@@ -1378,51 +1289,6 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         };
 
         return this.createNg4Chart(p, chartData, chart1Options);
-
-        // try {
-        //     const x = <any>this.childChart;
-        //     if (x && x.chart && x.chart.scales && x.chart.scales) {
-        //         // console.log(x.chart.scales);
-        //         const y = x.chart.scales['y-axis-0'];
-        //         if (y) {
-        //             const min = y.min;
-        //             const max = y.max;
-        //             if (typeof min === 'number' && typeof max === 'number') {}
-        //                 if (this.checkboxYAuto && this.checkboxYAuto.nativeElement && !this.checkboxYAuto.nativeElement.checked) {
-        //                     chart1Options.scales.yAxes[0].ticks.min = min;
-        //                     chart1Options.scales.yAxes[0].ticks.max = max;
-        //             }
-        //         }
-        //     }
-        // } catch (err) {
-        //     console.log(err);
-        // }
-
-        // const chart: INg4Chart = {
-        //     params: p,
-        //     datasets: [ ],
-        //     options: chart1Options,
-        //     legend: true,
-        //     colors: [],
-        // };
-        // for (const id of Object.getOwnPropertyNames(chartData)) {
-        //     const dataset: Charts.ChartDataSets = {
-        //         label: id,
-        //         data: chartData[id].values,
-        //         hidden: false,
-        //         type: 'line'
-        //     };
-        //     chart.datasets.push(dataset);
-        //     const col = Object.assign({}, ArchiveChartComponent.defaultColors[id]);
-        //     if (col) {
-        //         delete col.backgroundColor;
-        //         chart.colors.push(col);
-        //     } else {
-        //         chart.colors.push({ borderColor: 'lightgrey', pointRadius: 0 });
-        //     }
-        // }
-
-        // return chart;
     }
 
 
@@ -1438,6 +1304,7 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
         } else {
             res = 14;
         }
+        this._currentTimeResolutionMillis = res * 24 * 60 * 60 * 1000;
 
         const tx = (Math.floor(p.options.end.getTime() / (kms * res))) * res;
         let to = new Date(tx * kms);
@@ -1470,21 +1337,6 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 } else {
                     x.values.push({ x: tp.toISOString(), y: null });
                 }
-            }
-        }
-
-        let unit = '';
-        let yAxisId = -1;
-
-        for (const v of this._activeConfig.variables) {
-            if (!v.enabled) { continue; }
-            if (yAxisId < 0) {
-                yAxisId = v.yAxis.id;
-                unit = v.yAxis.unit;
-            } else if (yAxisId !== v.yAxis.id) {
-                yAxisId = -1;
-                unit = '';
-                break;
             }
         }
 
@@ -1531,33 +1383,6 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
 
         return this.createNg4Chart(p, chartData, chart1Options, 'bar');
 
-        // const chart: INg4Chart = {
-        //     params: p,
-        //     datasets: [ ],
-        //     options: chart1Options,
-        //     legend: true,
-        //     colors: [],
-        // };
-        // for (const id of Object.getOwnPropertyNames(chartData)) {
-        //     const dataset: Charts.ChartDataSets = {
-        //         label: id,
-        //         data: chartData[id].values,
-        //         hidden: false,
-        //         type: 'bar',
-        //         fill: true,
-        //         // backgroundColor: 'black',
-        //     };
-
-        //     chart.datasets.push(dataset);
-        //     const col = ArchiveChartComponent.defaultColors[id];
-        //     if (col) {
-        //         chart.colors.push(col);
-        //     } else {
-        //         chart.colors.push({ borderColor: 'lightgrey', pointRadius: 0 });
-        //     }
-        // }
-
-        // return chart;
     }
 
     private createConfig (name: string, ids: StatisticAttribute []): IArchiveChartConfig {
@@ -1589,53 +1414,6 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
     }
 
 
-    // private cloneNg4Chart (src: INg4Chart): INg4Chart {
-    //     const rv: INg4Chart = {
-    //         params:   null,
-    //         legend:   src.legend === true,
-    //         datasets: [],
-    //         colors:   [],
-    //         options:  {}
-    //     };
-
-    //     rv.params = {
-    //         typ: src.params.typ,
-    //         options: {
-    //             start: new Date(src.params.options.start),
-    //             end: new Date(src.params.options.end),
-    //         }
-    //     };
-
-    //     if (Array.isArray(src.datasets)) {
-    //         for (const ds of src.datasets) {
-    //             const x: Charts.ChartDataSets = { data: [] };
-    //             if (ds.label) { x.label = ds.label; }
-    //             if (ds.hidden === true || ds.hidden === false) { x.hidden = ds.hidden; }
-    //             if (ds.type) { x.type = ds.type; }
-    //             if (Array.isArray(ds.data)) {
-    //                 for (const d of ds.data) {
-    //                     if (typeof d === 'number') {
-    //                         x.data.push(d);
-    //                     } else {
-    //                         x.data.push(<any>Object.assign({}, d));
-    //                     }
-    //                 }
-    //             }
-    //             rv.datasets.push(x);
-    //         }
-    //     }
-
-    //     if (Array.isArray(src.colors)) {
-    //         for (const c of src.colors) {
-    //             rv.colors.push(Object.assign({}, c));
-    //         }
-    //     }
-
-    //     rv.options = src.options;
-
-    //     return rv;
-    // }
-
 
     private hovered (event: any) {
         console.log('hovered', event);
@@ -1649,13 +1427,14 @@ export class ArchiveChartComponent implements OnInit, OnDestroy {
                 for (let i = 0; i < this.chart.datasets.length; i++) {
                     const c = this.childChart.chart.getDatasetMeta(i);
                     this.childChart.datasets[i].hidden = (c.hidden === true);
-                    // console.log(this.childChart.datasets[i].label, c.hidden === true);
+                    console.log(this.childChart.datasets[i].label);
+                    console.log(c);
                 }
 
             } catch (err) {
                 console.log(err);
             }
-        }, 0);
+        }, 10);
     }
 
 }
