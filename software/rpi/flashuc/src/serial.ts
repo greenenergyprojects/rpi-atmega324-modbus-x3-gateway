@@ -19,6 +19,8 @@ export interface ISerialConfig {
 export interface ITarget {
     index: number;
     name: string;
+    disabled: boolean;
+    program: { path: string; cpu: 'atmega324p'; };
     reset?: { typ: 'rpi-gpio', pin: string, level: 'low' | 'high', timeMillis: number };
 }
 
@@ -65,9 +67,6 @@ export class Serial {
         this._eventEmitter = new EventEmitter();
         if (!Array.isArray(config.targets)) {
             this._config.targets = [];
-        }
-        if (this._config.targets.length === 0) {
-            this._config.targets[0] = { index: 0, name: 'U?' };
         }
         if (config.timeoutMillis === undefined) {
             this._config.timeoutMillis = 10000;

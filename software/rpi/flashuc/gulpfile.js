@@ -1,6 +1,6 @@
 // https://www.liquidlight.co.uk/blog/article/how-do-i-update-to-gulp-4/
 
-const remoteHostname = 'mbgwx3';
+const remoteHostname = 'pi-mbgwx3';
 const remoteTargetDir = '/home/pi/flashuc';
 
 const fs = require('fs');

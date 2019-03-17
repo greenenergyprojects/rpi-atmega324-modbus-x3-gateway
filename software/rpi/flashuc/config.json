@@ -2,8 +2,11 @@
     "serial": {
         "device": "/dev/ttyS0",
         "options": { "baudRate": 115200 },
-        "devices": [{
+        "targets": [{
             "index": 0,
+            "disabled": true,
+            "name": "U1",
+            "program": { "path": "atmega324p_u1.elf", "cpu": "atmega324p" },
             "reset": {
                 "typ": "rpi-gpio",
                 "pin": "22",
@@ -11,6 +14,9 @@
                 "timeMillis": 10
             }}, {
             "index": 1,
+            "name": "U2",
+            "disabled": false,
+            "program": { "path": "atmega324p_u2.elf", "cpu": "atmega324p" },
             "reset": {
                 "typ": "rpi-gpio",
                 "pin": "18",

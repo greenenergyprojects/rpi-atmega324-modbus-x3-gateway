@@ -77,8 +77,9 @@ if (logfileConfig) {
 import { Elf } from './elf/elf';
 import { sprintf } from 'sprintf-js';
 import { Device } from './devices/device';
-import { Serial } from './serial';
+import { Serial, ISerialConfig } from './serial';
 import { Gpio } from './gpio';
+
 
 
 debug.info('start of application');
@@ -86,13 +87,21 @@ main();
 
 async function main () {
     try {
-        const elfFilename = path.join(__dirname, '..', 'atmega324p_u1.elf');
-        const elf = await Elf.createFromFile(elfFilename);
-        const d: Device = new Device('atmega324p', elf);
-        // console.log(d.hexdump());
+        const serialConfig: ISerialConfig = nconf.get('serial');
+        if (!serialConfig) {
+            throw new Error('missing attribute serial in config file');
+        }
+        // const elfFilename = path.join(__dirname, '..', 'atmega324p_u1.elf');
         // const serial = await Serial.createInstance({ device: '/dev/ttyS0', options: { baudRate: 115200 }});
-        const serial = await Serial.createInstance(nconf.get('serial'));
-        await d.flash();
+        const serial = await Serial.createInstance(serialConfig);
+        for (const t of serialConfig.targets) {
+            if (t.disabled) { continue; }
+            const elfFilename = path.join(__dirname, '..', t.program.path);
+            const elf = await Elf.createFromFile(elfFilename);
+            const d: Device = new Device(t.program.cpu, elf);
+            // console.log(d.hexdump());
+            await d.flash();
+        }
         await serial.close();
         Gpio.shutdown();
 

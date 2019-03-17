@@ -1,16 +1,14 @@
 /****************************************************************
 * Bootloader for Atmega
 * Author: Manfred Steiner (SX)
-* Code based on Bootloader from Walter Steiner (SN)
 *************************************************************** */
-
-
 
 // Include-Dateien
 #include <avr/io.h>
 //#include "iom88p_ok.h"
 #include <avr/boot.h>
 #include <util/delay.h>
+#include <avr/pgmspace.h>
 #include <avr/interrupt.h>
 #include <avr/wdt.h>
 
@@ -20,69 +18,28 @@
 #define invBit(adr,bit) (adr ^= 1 << bit)
 #define isBit(adr,bit) (adr &(1 << bit))
 
+#define SPI_MASTER
+#define SPI_CHANNEL 0
+#define SPI_SLAVES 1
 
-// Workarround for Visual Studio Code C intelliSenseMode bugs
-#ifndef COMPILE
-    typedef unsigned char uint8_t;
-    typedef unsigned short uint16_t;
-    typedef unsigned long uint32_t;
-    typedef signed char int8_t;
-    typedef signed short int16_t;
-    typedef signed long int32_t;
-    #define pgm_read_byte(address_short) address_short
-    #define boot_page_erase(address_short) address_short
-    #define boot_page_write(address_short) address_short
-    #define boot_page_fill(address_short, value) address_short
-#else 
-    #include <avr/pgmspace.h>
-#endif
+//typedef unsigned char  uint8_t;
+//typedef signed   char  int8_t;
+//typedef unsigned int   uint16_t;
+//typedef signed   int   int16_t;
 
-
-#ifdef UART0
-   #define UDR   UDR0
-   #define UCSRA UCSR0A
-   #define UCSRB UCSR0B
-   #define UCSRC UCSR0C
-   #define UBRRL UBRR0L
-   #define UBRRH UBRR0H
-#endif
-#ifdef UART1
-   #define UDR   UDR1
-   #define UCSRA UCSR1A
-   #define UCSRB UCSR1B
-   #define UCSRC UCSR1C
-   #define UBRRL UBRR1L
-   #define UBRRH UBRR1H
-#endif
-
-
-
-// #define SPI_MASTER
-// #define SPI_SLAVE
-#ifdef SPI_MASTER
-    #define SPI_CHANNEL 0
-#endif
-#ifndef SPI_SLAVES
-    #define SPI_SLAVES 0
-#endif
-//#define SPI_SLAVES 0
 
 // Definitionen
 #ifndef F_CPU
-    #warning "Missing define F_CPU (option -DF_CPU=...)"
-    #define F_CPU 12000000
+    #error "Missing define F_CPU (option -DF_CPU=...)"
 #endif
 
 #ifndef BAUDRATE
-    #warning "Missing define BAUDRATE (option -DBAUDRATE=...)"
-    #define BAUDRATE 115200
+    #error "Missing define BAUDRATE (option -DBAUDRATE=...)"
 #endif
 
 #ifndef BOOTADR
-    #warning "Missing define BOOTADR (option -DBOOTADR=...)"
-    #define BOOTADR 0x7000
+    #error "Missing define BOOTADR (option -DBOOTADR=...)"
 #endif
-
 
 typedef void (*pFunc)(char);
 typedef struct Table {
@@ -94,7 +51,7 @@ typedef struct Table {
 
 #if SPM_PAGESIZE == 128
     const char __attribute__ ((section (".table"))) welcomeMsg[54] =
-        "#0(atmega324p 128 uc1-bootloader V0.01 2019-03-17 sx)";
+        "#0(atmega324p 128 uc1-bootloader V0.01 2018-10-16 sx)";
 #endif
 
 const struct Table __attribute__ ((section (".table"))) table = {
@@ -186,18 +143,9 @@ int16_t recBufferBase64ToBin (char p[]) {
 
 
 void sendUartByte (char ch) {
-#ifdef UART0
     UDR0 = ch;
-#endif    
-#ifdef UART1
-    UDR1 = ch;
-#endif    
-#ifdef UART0
-    while ((UCSR0A & 0x20) == 0x00) {}
-#endif    
-#ifdef UART1
-    while ((UCSR1A & 0x20) == 0x00) {}
-#endif    
+    while ((UCSR0A & 0x20) == 0x00) {
+    }
 }
 
 void sendLineFeed () {
@@ -308,22 +256,13 @@ void sendResponseStatus (uint8_t status) {
 }
 
 uint8_t readSerial (char *c) {
-#ifdef UART0    
-    if ((UCSR0A & 0x80) != 0) {
+    if ((UCSR0A & 0x80) == 0) {
+        return 0;
+    } else {
         *c = UDR0;
         return 1;
     }
-#endif
-#ifdef UART1
-    if ((UCSR1A & 0x80) != 0) {
-        *c = UDR1;
-        return 1;
-    }
-#endif    
-    return 0;
 }
-
-
 
 void boot_program_page (uint32_t addr, uint8_t buf[]) {
     uint16_t i;
@@ -406,13 +345,9 @@ void writeFlashSegment () {
 uint8_t executeCommand () {
     char c = 0;
     uint16_t len = 0;
-    int32_t timer = 0x100000;
 
-    while (timer >= 0) {
-        if (!readSerial(&c)) {
-            timer--;
-        } else {
-            timer = 0x100000;
+    while (1) {
+        if (readSerial(&c)) {
             if (c == '@') {
                return 1;
 
@@ -478,31 +413,14 @@ int main () {
     // init I/O-register
     MCUSR = 0;     // first step to turn off WDT
     wdt_disable(); // second step to turn off WDT
-
-    #ifdef UART1
-        UCSR1A = 0x02; // double the UART speed
-        UCSR1B = 0x18; // RX + TX enable
-        UBRR1H = 0;
-        UBRR1L = (F_CPU / BAUDRATE + 4) / 8 - 1;
-    #endif
-
-    #ifdef UART0
-        UCSR0A = 0x02; // double the UART speed
-        UCSR0B = 0x18; // RX + TX enable
-        UBRR0H = 0;
-        UBRR0L = (F_CPU / BAUDRATE + 4) / 8 - 1;
-    #endif
-
+    UCSR0A = 0x02; // double the UART speed
+    UCSR0B = 0x18; // RX + TX enable
+    UBRR0H = 0;
+    UBRR0L = (F_CPU / BAUDRATE + 4) / 8 - 1;
     #ifdef SPI_MASTER 
-        DDRB  |= (1 << PB7) | (1 << PB5) | (1 << PB4);  // SCLK, MOSI, nSS
+        DDRB |= (1 << PB7) | (1 << PB5) | (1 << PB4);  // SCLK, MOSI, nSS
         PORTB |= (1 << PB4);
-        SPCR0  = (1 << SPE0) | (1 << MSTR0);
-    #endif
-
-    #ifdef SPI_SLAVE 
-        DDRB  |= (1 << PB5);  // MOSI
-        PORTB |= (1 << PB4);  // nSS
-        SPCR0  = (1 << SPE0);
+        SPCR0 = (1 << SPE0) | (1 << MSTR0);
     #endif
 
     sendLineFeed();
