@@ -67,6 +67,8 @@
 #endif
 //#define SPI_SLAVES 0
 
+// #define SPI_SLAVES 1
+
 // Definitionen
 #ifndef F_CPU
     #warning "Missing define F_CPU (option -DF_CPU=...)"
@@ -111,8 +113,40 @@ void (*startBootloader)( void ) = (void *)BOOTADR;
 // buffer for receiving bytes via UART
 // channel(1)  + { address(4=32bit) + page content as Base64} + fill-bytes(4) + zero(1)
 char recBuffer[ 1 + (4 + SPM_PAGESIZE) * 4 / 3 + 5];
-uint8_t channel = 0;
+int8_t channel;
 
+#ifdef SPI_MASTER
+    struct Spi {
+        uint8_t index;
+        uint8_t toSend;
+        uint8_t toSendShadow;
+        uint8_t received[SPI_SLAVES];
+    } spi;
+#endif
+#ifdef SPI_SLAVE
+    struct Spi {
+        uint8_t index;
+        uint8_t toSend;
+        uint8_t toSendShadow;
+        uint8_t received;
+    } spi;
+#endif
+
+
+uint16_t t0Timer;
+
+
+void prepareApplicationStart () {
+    cli();
+    DDRA = 0;
+    DDRB = 0;
+    TCCR0B = 0;
+    TIMSK0 = 0;
+    SPCR0 = 0;
+    MCUCR = (1 << IVCE);
+    MCUCR = 0; 
+
+}
 
 char byteToBase64 (uint8_t b) {
     b &= 0x3f;
@@ -185,29 +219,72 @@ int16_t recBufferBase64ToBin (char p[]) {
 }
 
 
+uint8_t readSerial (char *c) {
+    #ifdef UART0    
+        if ((UCSR0A & 0x80) != 0) {
+            *c = UDR0;
+            return 1;
+        }
+    #endif
+    #ifdef UART1
+        if ((UCSR1A & 0x80) != 0) {
+            *c = UDR1;
+            return 1;
+        }
+    #endif 
+    return 0;
+}
+
+uint8_t readByte (char *c) {
+    #ifdef SPI_SLAVE
+        *c = spi.received;
+        spi.received = 0;
+        return *c > 0 ? 1 : 0;
+    #else
+        return readSerial(c);
+    #endif
+}
+
+
 void sendUartByte (char ch) {
-#ifdef UART0
-    UDR0 = ch;
-#endif    
-#ifdef UART1
-    UDR1 = ch;
-#endif    
-#ifdef UART0
-    while ((UCSR0A & 0x20) == 0x00) {}
-#endif    
-#ifdef UART1
-    while ((UCSR1A & 0x20) == 0x00) {}
-#endif    
+    #ifdef UART0
+        UDR0 = ch;
+        while ((UCSR0A & 0x20) == 0x00) {}
+    #endif    
+    #ifdef UART1
+        UDR1 = ch;
+        while ((UCSR1A & 0x20) == 0x00) {}
+    #endif    
+}
+
+void sendSpiByte (char c) {
+    #if defined(SPI_MASTER) || defined(SPI_SLAVE)
+        while (spi.toSend) {}
+        spi.toSend = c;
+    #endif
+}
+                
+
+void sendByte (char c) {
+    #ifdef UART0
+        sendUartByte(c);
+    #endif
+    #ifdef UART1
+        sendUartByte(c);
+    #endif
+    #ifdef SPI_SLAVE
+        sendSpiByte(c);
+    #endif
 }
 
 void sendLineFeed () {
-    sendUartByte(13);
-    sendUartByte(10);
+    sendByte(13);
+    sendByte(10);
 }
 
 void sendStr (const char *s) {
     while (*s) {
-        sendUartByte(*s++);
+        sendByte(*s++);
     }
 }
 
@@ -219,15 +296,15 @@ void sendStrPgm (const char *s) {
         if (!byte) {
             break;
         }
-        sendUartByte(byte);
+        sendByte(byte);
     }
 }
 
 void sendHexByte (uint8_t b) {
     for (int i = 0; i < 2; i++) {
         uint8_t x = b >> 4;
-        if (x < 10) { sendUartByte('0' + x); }
-        else { sendUartByte('a' + x - 10); }
+        if (x < 10) { sendByte('0' + x); }
+        else { sendByte('a' + x - 10); }
         b = b << 4;
     }
 }
@@ -238,24 +315,7 @@ void sendHexByte (uint8_t b) {
 //     sendUartByte(byteToBase64((uint8_t)v));
 // }
 
-char sendByte (char c) {
-    char rv = c;
-    // sendStr("<channel "); sendUartByte('0' + channel); sendUartByte('>');
-    if (SPI_SLAVES > 0) {
-        PORTB &= ~(1 << PB4);
-        for (uint8_t i = 0; i <= SPI_SLAVES; i++) {
-            SPDR0 = i == SPI_SLAVES ? 0xff : c;
-            while (!(SPSR0 & (1 << SPIF0))) {}
-            if (channel > 0 && i == channel) {
-                rv = SPDR0;
-                // sendStr("<rv "); sendHexByte(rv); sendUartByte('>');
-            }
-        }
-        PORTB |= (1 << PB4);
-    }
-    sendUartByte(rv == 0xff ? '?' : rv);
-    return rv;
-}
+
 
 
 void sendResponse (uint8_t buf[], uint16_t length) {
@@ -267,18 +327,18 @@ void sendResponse (uint8_t buf[], uint16_t length) {
         b = *buf++;
         switch (i) {
             case 0: {
-                sendUartByte(byteToBase64(b >> 2));
+                sendByte(byteToBase64(b >> 2));
                 b = b << 4;
                 break;
             }
             case 1: {
-                sendUartByte(byteToBase64(x | b >> 4));
+                sendByte(byteToBase64(x | b >> 4));
                 b = b << 2;
                 break;
             }
             case 2: {
-                sendUartByte(byteToBase64(x | b >> 6));
-                sendUartByte(byteToBase64(b));
+                sendByte(byteToBase64(x | b >> 6));
+                sendByte(byteToBase64(b));
                 break;
             }
         }
@@ -289,12 +349,12 @@ void sendResponse (uint8_t buf[], uint16_t length) {
     switch (i) {
         case 0: break;
         case 1: {
-            sendUartByte(byteToBase64(b));
+            sendByte(byteToBase64(b));
             sendStr("==");
             break;
         }
         case 2: {
-            sendUartByte(b);
+            sendByte(b);
             sendStr("=");
             break;
         }
@@ -305,22 +365,6 @@ void sendResponse (uint8_t buf[], uint16_t length) {
 
 void sendResponseStatus (uint8_t status) {
     sendResponse(&status, 1);
-}
-
-uint8_t readSerial (char *c) {
-#ifdef UART0    
-    if ((UCSR0A & 0x80) != 0) {
-        *c = UDR0;
-        return 1;
-    }
-#endif
-#ifdef UART1
-    if ((UCSR1A & 0x80) != 0) {
-        *c = UDR1;
-        return 1;
-    }
-#endif    
-    return 0;
 }
 
 
@@ -409,18 +453,18 @@ uint8_t executeCommand () {
     int32_t timer = 0x100000;
 
     while (timer >= 0) {
-        if (!readSerial(&c)) {
+        if (!readByte(&c)) {
             timer--;
         } else {
             timer = 0x100000;
             if (c == '@') {
                return 1;
 
-            } else if (channel != 0) {
-                c = sendByte(c);
-                if (c == 0 || c == 0xff) {
-                    return 0;
-                }
+            } else if (channel > 0) {
+                #if defined(SPI_MASTER) || defined(SPI_SLAVE)
+                    PORTA ^= 0x01;
+                    spi.toSend = c;
+                #endif
 
             } else {
                 if (c == '\n' || c == '\r') {
@@ -435,7 +479,9 @@ uint8_t executeCommand () {
                     switch (recBuffer[0]) {
                         case 'w': {
                             if ((len % 4) == 1) {
+                                cli();
                                 writeFlashSegment();
+                                sei();
                             } else {
                                 sendResponseStatus(2);
                             }
@@ -453,6 +499,7 @@ uint8_t executeCommand () {
 
                         case 'x': {
                             sendResponseStatus(0);
+                            prepareApplicationStart();
                             startApplication();
                             break;
                         }
@@ -474,10 +521,58 @@ uint8_t executeCommand () {
     return 0;
 }
 
+ISR (SPI_STC_vect) {
+    // PORTA ^= 0x01;
+    #ifdef SPI_MASTER
+        spi.received[spi.index] = spi.index < SPI_SLAVES ? SPDR0 : 0x00;
+    #endif
+    #ifdef SPI_SLAVE
+        if (spi.index == SPI_SLAVE) {
+            spi.received = SPDR0;
+        }
+    #endif
+
+    #if defined(SPI_MASTER) || defined(SPI_SLAVE)
+        spi.index++;
+        if (spi.index >= SPI_SLAVES) {
+            PORTB |= (1 << PB4); 
+            spi.index = 0;
+            spi.toSendShadow = spi.toSend;
+            spi.toSend = 0x00;
+            PORTB &= ~(1 << PB4);
+        }
+        SPDR0 = spi.toSendShadow;
+    #endif
+
+}
+
+
+ISR (TIMER0_OVF_vect) {
+    // overflow every 1.89ms
+    // PORTA ^= 0x01;
+    if (t0Timer > 0) {
+        t0Timer--;
+    }
+}
+
 int main () {
     // init I/O-register
     MCUSR = 0;     // first step to turn off WDT
     wdt_disable(); // second step to turn off WDT
+
+    channel = -1;
+    DDRA |= 0x07;
+    #if defined(SPI_MASTER) || defined(SPI_SLAVE)
+        for (uint8_t i = 0; i < sizeof spi; i++) {
+            ((uint8_t *)&spi)[i] = 0;
+        }
+    #endif
+    
+    TCCR0A = 0;
+    TCCR0B = (1 << CS01) | (1 << CS00);
+    TIMSK0 = (1 << TOIE0);
+
+
 
     #ifdef UART1
         UCSR1A = 0x02; // double the UART speed
@@ -494,14 +589,23 @@ int main () {
     #endif
 
     #ifdef SPI_MASTER 
+        // SPI f = fcpu / 4 = 3MHz@12MHz
         DDRB  |= (1 << PB7) | (1 << PB5) | (1 << PB4);  // SCLK, MOSI, nSS
         PORTB |= (1 << PB4);
-        SPCR0  = (1 << SPE0) | (1 << MSTR0);
+        // SPSR0 |= (1 << SPI2X0);
+        SPCR0  = (1 << SPE0) | (1 << MSTR0) | (1 << SPIE0) | (1 << SPR00);
+        PORTB |= (1 << PB4); 
+        MCUCR = (1 << IVCE);
+        MCUCR = (1 << IVSEL); 
+        sei();
+        PORTB &= ~(1 << PB4);
+        SPDR0 = 0x00;
     #endif
 
     #ifdef SPI_SLAVE 
         DDRB  |= (1 << PB5);  // MOSI
         PORTB |= (1 << PB4);  // nSS
+        SPSR0 |= (1 << SPI2X0);
         SPCR0  = (1 << SPE0);
     #endif
 
@@ -515,34 +619,40 @@ int main () {
     do {
         char c = 0;
         uint8_t byteReceived = 0;
-        for (volatile uint16_t i = 0; i < 0x3000 && !byteReceived; i++) {
+        t0Timer = 50;
+        while (t0Timer > 0 && !byteReceived) {
             byteReceived = readSerial(&c);
         }
         if (byteReceived) {
+            timer = 0;
             if (c == '\n' || c == '\r' || c == 0) {
                 atReceived = 0;
+                channel = -1;
             } else if (c == '@') {
                 atReceived = 1;
-            } else if (atReceived && (c < '0' || c > '1')) {
-                atReceived = 0;
-            } else {
-                channel = c - '0';
-                sendByte(c);
-                atReceived = executeCommand();
-                timer = 0;
-            }
-            if (atReceived) {
-                timer = 0;
-                channel  = 0;
-                sendByte('@');
+                channel = -1;
+                sendUartByte(c);
+                sendSpiByte(c);
+            } else if (atReceived) {
+                if (c < '0' || c > '9') {
+                    atReceived = 0;
+                } else {
+                    channel = c - '0';
+                    sendUartByte(c);
+                    sendSpiByte(c);
+                    atReceived = executeCommand(c);
+                }
             }
 
         }
-        if (!atReceived) {
+
+        if (!atReceived && channel < 0) {
             sendStr(".");
         }
+
         timer++;
     } while (timer < 100);
 
+    prepareApplicationStart();
     startApplication();
 }
