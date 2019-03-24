@@ -70,7 +70,7 @@ export class Device {
         // this._program = [ { paddr: firstAddr, data: mem, memsz: mem.length } ];
         // debug.info('\n%s', this.hexdump());
 
-        const idTarget = await serial.reset();
+        const idTarget = await serial.resetAll();
         debug.info('reset done (%o)', idTarget);
 
         const promisses: Promise<{ address: number, buffer: Buffer }> [] = [];

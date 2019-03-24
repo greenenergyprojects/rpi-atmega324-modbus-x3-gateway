@@ -102,6 +102,14 @@ export class Serial {
         });
     }
 
+    public async resetAll (timeoutMillis = 500): Promise<ITargetId []> {
+        const rv: ITargetId [] = [];
+        for (const t of this._config.targets) {
+            rv.push(await this.reset(t.name));
+        }
+        return rv;
+    }
+
     public async reset (target?: number | string, timeoutMillis = 500): Promise<ITargetId> {
         const t = this.getTarget(target);
         if (!t) { throw new Error('invalid target ' + target); }
@@ -225,7 +233,7 @@ export class Serial {
 
     private getTarget (target: number | string): ITarget {
         if (target === undefined || target === null) {
-            return this._config.targets[0];
+            return null;
 
         } else if (typeof target === 'string') {
             const rv = this._config.targets.find( (t) => t.name === target );

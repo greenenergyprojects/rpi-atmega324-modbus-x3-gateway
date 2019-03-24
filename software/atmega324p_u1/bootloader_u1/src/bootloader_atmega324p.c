@@ -4,6 +4,20 @@
 * Code based on Bootloader from Walter Steiner (SN)
 *************************************************************** */
 
+// #undef SPI_MASTER
+// #undef UART0
+// #undef UART1
+// #undef UART0_DEBUG
+
+// U1
+// #define UART0
+// #define SPI_MASTER
+
+// U2
+// #define UART0_DEBUG
+// #define SPI_SLAVE 1
+
+
 
 
 // Include-Dateien
@@ -37,8 +51,7 @@
     #include <avr/pgmspace.h>
 #endif
 
-
-#ifdef UART0
+#if defined(UART0) || defined(UART0_DEBUG)
    #define UDR   UDR0
    #define UCSRA UCSR0A
    #define UCSRB UCSR0B
@@ -95,8 +108,17 @@ typedef struct Table {
 } Table;
 
 #if SPM_PAGESIZE == 128
-    const char __attribute__ ((section (".table"))) welcomeMsg[54] =
-        "#0(atmega324p 128 uc1-bootloader V0.01 2019-03-17 sx)";
+    #ifdef SPI_MASTER
+        const char __attribute__ ((section (".table"))) welcomeMsg[54] =
+            "#0(atmega324p 128 uc1-bootloader V0.01 2019-03-17 sx)";
+    #elif SPI_SLAVE == 1
+        const char __attribute__ ((section (".table"))) welcomeMsg[54] =
+            "#1(atmega324p 128 uc1-bootloader V0.01 2019-03-17 sx)";
+    #else
+        const char __attribute__ ((section (".table"))) welcomeMsg[54] =
+            "#?(atmega324p 128 uc1-bootloader V0.01 2019-03-17 sx)";
+    #endif
+
 #endif
 
 const struct Table __attribute__ ((section (".table"))) table = {
@@ -117,15 +139,13 @@ int8_t channel;
 
 #ifdef SPI_MASTER
     struct Spi {
-        uint8_t index;
         uint8_t toSend;
         uint8_t toSendShadow;
-        uint8_t received[SPI_SLAVES];
+        uint8_t received;
     } spi;
 #endif
 #ifdef SPI_SLAVE
     struct Spi {
-        uint8_t index;
         uint8_t toSend;
         uint8_t toSendShadow;
         uint8_t received;
@@ -247,26 +267,27 @@ uint8_t readByte (char *c) {
 
 
 void sendUartByte (char ch) {
-    #ifdef UART0
-        UDR0 = ch;
+    #if defined(UART0) || defined(UART0_DEBUG)
         while ((UCSR0A & 0x20) == 0x00) {}
+        UDR0 = ch;
     #endif    
     #ifdef UART1
-        UDR1 = ch;
         while ((UCSR1A & 0x20) == 0x00) {}
+        UDR1 = ch;
     #endif    
 }
 
 void sendSpiByte (char c) {
     #if defined(SPI_MASTER) || defined(SPI_SLAVE)
-        while (spi.toSend) {}
+        // while (spi.toSend) {}
+        PORTA ^= (1 << PA1);
         spi.toSend = c;
     #endif
 }
                 
 
 void sendByte (char c) {
-    #ifdef UART0
+    #if defined(UART0) || defined(UART0_DEBUG)
         sendUartByte(c);
     #endif
     #ifdef UART1
@@ -461,9 +482,11 @@ uint8_t executeCommand () {
                return 1;
 
             } else if (channel > 0) {
-                #if defined(SPI_MASTER) || defined(SPI_SLAVE)
-                    PORTA ^= 0x01;
+                #if defined(SPI_MASTER)
                     spi.toSend = c;
+                #endif
+                #if defined(SPI_SLAVE)
+                    // spi.toSend = c;
                 #endif
 
             } else {
@@ -522,26 +545,28 @@ uint8_t executeCommand () {
 }
 
 ISR (SPI_STC_vect) {
-    // PORTA ^= 0x01;
+    PORTA ^= (1 << PA0);
+    PORTC ^= (1 << PC4);
     #ifdef SPI_MASTER
-        spi.received[spi.index] = spi.index < SPI_SLAVES ? SPDR0 : 0x00;
-    #endif
-    #ifdef SPI_SLAVE
-        if (spi.index == SPI_SLAVE) {
-            spi.received = SPDR0;
+        spi.received = SPDR0;
+        if (spi.received != 0) {
+            PORTA ^= (1 << PA1);
+            sendUartByte(spi.received);
         }
+        PORTB |= (1 << PB4); 
+        spi.toSendShadow = spi.toSend;
+        PORTB &= ~(1 << PB4);
+        SPDR0 = spi.toSendShadow;
+        spi.toSend = 0x00;
     #endif
 
-    #if defined(SPI_MASTER) || defined(SPI_SLAVE)
-        spi.index++;
-        if (spi.index >= SPI_SLAVES) {
-            PORTB |= (1 << PB4); 
-            spi.index = 0;
-            spi.toSendShadow = spi.toSend;
-            spi.toSend = 0x00;
-            PORTB &= ~(1 << PB4);
+    #ifdef SPI_SLAVE
+        SPDR0 = spi.toSend;
+        spi.toSend = 0;
+        spi.received = SPDR0;
+        if (spi.received != 0) {
+            sendUartByte(spi.received);
         }
-        SPDR0 = spi.toSendShadow;
     #endif
 
 }
@@ -549,7 +574,7 @@ ISR (SPI_STC_vect) {
 
 ISR (TIMER0_OVF_vect) {
     // overflow every 1.89ms
-    // PORTA ^= 0x01;
+    PORTC ^= (1 << PC5);
     if (t0Timer > 0) {
         t0Timer--;
     }
@@ -562,6 +587,11 @@ int main () {
 
     channel = -1;
     DDRA |= 0x07;
+    PORTA = 0;
+    DDRC |= 0x38;
+    PORTC &= ~0x38;
+
+
     #if defined(SPI_MASTER) || defined(SPI_SLAVE)
         for (uint8_t i = 0; i < sizeof spi; i++) {
             ((uint8_t *)&spi)[i] = 0;
@@ -581,7 +611,7 @@ int main () {
         UBRR1L = (F_CPU / BAUDRATE + 4) / 8 - 1;
     #endif
 
-    #ifdef UART0
+    #if defined(UART0) || defined(UART0_DEBUG)
         UCSR0A = 0x02; // double the UART speed
         UCSR0B = 0x18; // RX + TX enable
         UBRR0H = 0;
@@ -603,10 +633,12 @@ int main () {
     #endif
 
     #ifdef SPI_SLAVE 
-        DDRB  |= (1 << PB5);  // MOSI
-        PORTB |= (1 << PB4);  // nSS
-        SPSR0 |= (1 << SPI2X0);
-        SPCR0  = (1 << SPE0);
+        DDRB  |= (1 << PB6);  // MISO
+        // SPSR0 |= (1 << SPI2X0);
+        SPCR0  = (1 << SPE0) | (1 << SPIE0);
+        MCUCR = (1 << IVCE);
+        MCUCR = (1 << IVSEL); 
+        sei();
     #endif
 
     sendLineFeed();
