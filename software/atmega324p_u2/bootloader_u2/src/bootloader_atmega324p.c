@@ -1,5 +1,5 @@
 /****************************************************************
-* Bootloader for Atmega324P - SPI Master
+* Bootloader for Atmega324P - SPI Slave
 * Author: Manfred Steiner (SX)
 *************************************************************** */
 
@@ -34,6 +34,11 @@
     #include <avr/pgmspace.h>
 #endif
 
+#if !defined(UART0) && !defined(UART1) && !defined(UART0_DEBUG)
+    #define UART0_DEBUG
+#endif
+
+
 #if defined(UART0) || defined(UART0_DEBUG)
    #define UDR   UDR0
    #define UCSRA UCSR0A
@@ -51,14 +56,9 @@
    #define UBRRH UBRR1H
 #endif
 
+#define SPI_SLAVE
+#define SPI_CHANNEL 1
 
-
-#define SPI_MASTER
-#define SPI_CHANNEL 0
-
-#if !defined(UART0) && !defined(UART1)
-    #define UART0
-#endif
 
 // Definitionen
 #ifndef F_CPU
@@ -86,12 +86,11 @@ typedef struct Table {
 } Table;
 
 #if SPM_PAGESIZE == 128
-        const char __attribute__ ((section (".table"))) welcomeMsg[54] =
-            "#0(atmega324p 128 uc1-bootloader V0.01 2019-03-17 sx)";
+    const char __attribute__ ((section (".table"))) welcomeMsg[54] =
+        "#1(atmega324p 128 uc1-bootloader V0.01 2019-03-17 sx)";
 #else
     #error "Wrong SPM_PAGESIZE"
 #endif
-
 
 const struct Table __attribute__ ((section (".table"))) table = {
     welcomeMsg,
@@ -200,7 +199,7 @@ int16_t recBufferBase64ToBin (char p[]) {
     uint8_t b = 0;
     char *pDest = p;
 
-    while (j < sizeof recBuffer && p[i] != 10) {
+    while (j < sizeof recBuffer && p[i] != 0) {
         int8_t v = base64ToByte(p[i]);
         if (v < 0) { return -(i + 1); }
         switch (i++ % 4) {
@@ -227,7 +226,7 @@ int16_t recBufferBase64ToBin (char p[]) {
             }
         }
     }
-    if (p[i] != 10) {
+    if (p[i] != 0) {
         return -(i + 1);
     }
     return j;
@@ -250,7 +249,6 @@ uint8_t readSerial (char *c) {
     return 0;
 }
 
-
 void sendUartByte (char ch) {
     #if defined(UART0) || defined(UART0_DEBUG)
         while ((UCSR0A & 0x20) == 0x00) {}
@@ -269,7 +267,11 @@ void sendSpiByte (char c) {
 
 
 uint8_t readByte (char *c) {
-    return readSerial(c);
+    cli();
+    *c = spi.received;
+    spi.received = 0;
+    sei();
+    return (*c) > 0 ? 1 : 0;
 }
 
 
@@ -280,6 +282,7 @@ void sendByte (char c) {
     #ifdef UART1
         sendUartByte(c);
     #endif
+    sendSpiByte(c);
 }
 
 void sendLineFeed () {
@@ -427,15 +430,13 @@ void readFlashSegment () {
     sendResponse((uint8_t *)recBuffer, SPM_PAGESIZE + 4);
 }
 
-void writeFlashSegment (char buf[]) {
-    uint8_t *p = (uint8_t *)(buf);
+void writeFlashSegment () {
+    uint8_t *p = (uint8_t *)(&recBuffer[1]);
     int16_t size = recBufferBase64ToBin((char *)p);
-
     if (size < 4) {
         sendResponseStatus(4);  // status 4: error - illegal size
         return;
     }
-
     uint16_t addr = (p[2] << 8) | p[3];
     if (p[0] != 0 || p[1] != 0 || addr > BOOTADR) {
         sendResponseStatus(5);  // status 5: error - illegal address
@@ -455,76 +456,18 @@ void writeFlashSegment (char buf[]) {
 }
 
 
-uint8_t send2SlaveOld (uint16_t len) {
-    char *pb = recBuffer;
-    spi.received = 0;
-    while (len > 0) {
-        uint8_t b = *pb++;
-        sendSpiByte(b);
-        
-        volatile uint16_t timer = 0x2000;
-        while (timer > 0) {
-            
-            if (spi.received != 0) {
-                if (spi.received == b) {
-                    spi.received = 0;
-                    
-                    break;
-                } else {
-                    return 1;
-                }
-            }
-            if (timer == 0) {
-                
-                return 2;
-            }
-            timer--;
-        }
-        len--;
-    }
-    return 0;
-}
-
-uint8_t send2Slave (uint16_t len) {
-    char *pb = recBuffer;
-    spi.received = 0;
-    while (len > 0) {
-        uint8_t b = *pb++;
-        sendSpiByte(b);
-        
-        volatile int16_t timer = 0x100;
-        while (timer > 0) {
-            if (spi.received != 0) {
-                if (b != spi.received) {
-                    setLedRed(1);
-                } else {
-                    
-                }
-                spi.received = 0;
-                timer -= 4;
-                
-            } else {
-                timer--;
-            }
-            
-        }
-        len--;
-    }
-    return 0;
-}
-
-
-
-void executeBuffer (char buf[], uint16_t len) {
-    switch (buf[0]) {
+void executeBuffer (uint16_t len) {
+    switch (recBuffer[0]) {
         case 'w': {
-            // sendHexByte(len);
-            if ((len % 4) == 2) {
-                
+            
+            for (int i = 0; i < len; i++) {
+                sendUartByte(recBuffer[i]);
+            }
+            
+            if ((len % 4) == 1) {
                 cli();
-                writeFlashSegment(&buf[1]);
+                writeFlashSegment();
                 sei();
-                
             } else {
 
                 sendResponseStatus(2);
@@ -565,28 +508,35 @@ uint8_t executeCommand () {
     uint16_t len = 2;
     int32_t timer = 0x100000;
 
+    spi.skipUart = 1;
+
+    sendUartByte(recBuffer[0]);
+    sendUartByte(recBuffer[1]);
+
     while (timer >= 0) {
         if (!readByte(&c)) {
             timer--;
-        } else if (c != 0) {
+        } else {
+            
             timer = 0x100000;
             if (c == '@') {
                return 1;
 
             } else {
-
                 if (c != 0 && len < (sizeof(recBuffer) - 1) ) {
                     recBuffer[len++] = c;
-                    
+                    sendSpiByte(c);
                     sendUartByte(c);
                 }
                 if (c == '\n' || c == '\r') {
-                    
-                    recBuffer[len] = 0;
-                    if (channel != SPI_CHANNEL) {
-                        send2Slave(len);
-                    } else {
-                        executeBuffer(&recBuffer[2], len - 2);
+                    setLedRed(1);
+                
+
+
+
+                    recBuffer[len] = '\n';
+                    if (channel == SPI_CHANNEL) {
+                        executeBuffer(len);
                     }
                     return 0;
                 }
@@ -597,23 +547,21 @@ uint8_t executeCommand () {
 }
 
 ISR (SPI_STC_vect) {
-    PORTA ^= (1 << PA0);
     setLedYellow(-1);
-    spi.received = SPDR0;
-    if (spi.received != 0) {
+    uint8_t received = SPDR0;
+    
+    if (spi.toSend > 0) {
+        PORTA ^= (1 << PA2);
+    }
+    SPDR0 = spi.toSend;
+    spi.toSend = 0;
+    if (received != 0) {
         PORTA ^= (1 << PA1);
+        spi.received = received;
         if (!spi.skipUart) {
             sendUartByte(spi.received);
         }
     }
-    PORTB |= (1 << PB4); 
-    spi.toSendShadow = spi.toSend;
-    PORTB &= ~(1 << PB4);
-    if (spi.toSendShadow > 0) {
-        PORTA ^= (1 << PA2);
-    }
-    SPDR0 = spi.toSendShadow;
-    spi.toSend = 0x00;
 }
 
 
@@ -639,6 +587,7 @@ int main () {
     for (uint8_t i = 0; i < sizeof spi; i++) {
         ((uint8_t *)&spi)[i] = 0;
     }
+    spi.skipUart = 1;
     
     TCCR0A = 0;
     TCCR0B = (1 << CS01) | (1 << CS00); // 73us
@@ -660,23 +609,18 @@ int main () {
         UBRR0L = (F_CPU / BAUDRATE + 4) / 8 - 1;
     #endif
 
-    // SPI f = fcpu / 4 = 3MHz@12MHz
-    DDRB  |= (1 << PB7) | (1 << PB5) | (1 << PB4);  // SCLK, MOSI, nSS
-    PORTB |= (1 << PB4);
-    // SPSR0 |= (1 << SPI2X0);
-    SPCR0  = (1 << SPE0) | (1 << MSTR0) | (1 << SPIE0) | (1 << SPR10);
-    PORTB |= (1 << PB4); 
+    DDRB  |= (1 << PB6);  // MISO
+    SPCR0  = (1 << SPE0) | (1 << SPIE0);
     MCUCR = (1 << IVCE);
     MCUCR = (1 << IVSEL); 
     sei();
-    PORTB &= ~(1 << PB4);
-    SPDR0 = 0x00;
 
     sendLineFeed();
     sendStrPgm(welcomeMsg);
     // sendStr("  ");
     // sendByte(SPI_CHANNEL + '0');
     sendLineFeed();
+    
 
     uint8_t timer = 0;
     uint8_t atReceived = 0;
@@ -690,7 +634,7 @@ int main () {
         }
         if (byteReceived && c != 0) {
             timer = 0;
-            sendUartByte(c);
+            sendSpiByte(c);
 
             if (c == '\n' || c == '\r') {
                 atReceived = 0;
@@ -706,9 +650,7 @@ int main () {
                 } else {
                     channel = c - '0';
                     recBuffer[1] = c;
-                    spi.skipUart = 1;
                     atReceived = executeCommand(c);
-                    spi.skipUart = 0;
                 }
             }
 

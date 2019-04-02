@@ -3,17 +3,17 @@ Archive member included to satisfy reference by file (symbol)
 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_exit.o)
                               /usr/lib/gcc/avr/5.4.0/../../../avr/lib/avr5/crtatmega324p.o (exit)
 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_copy_data.o)
-                              build/bootloader_atmega324p_115200_12MHz_u1_uart1.o (__do_copy_data)
+                              build/bootloader_atmega324p_115200_12MHz_u2.o (__do_copy_data)
 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_clear_bss.o)
-                              build/bootloader_atmega324p_115200_12MHz_u1_uart1.o (__do_clear_bss)
+                              build/bootloader_atmega324p_115200_12MHz_u2.o (__do_clear_bss)
 
 Allocating common symbols
 Common symbol       size              file
 
-recBuffer           0xb8              build/bootloader_atmega324p_115200_12MHz_u1_uart1.o
-channel             0x1               build/bootloader_atmega324p_115200_12MHz_u1_uart1.o
-spi                 0x4               build/bootloader_atmega324p_115200_12MHz_u1_uart1.o
-t0Timer             0x2               build/bootloader_atmega324p_115200_12MHz_u1_uart1.o
+recBuffer           0xb8              build/bootloader_atmega324p_115200_12MHz_u2.o
+channel             0x1               build/bootloader_atmega324p_115200_12MHz_u2.o
+spi                 0x4               build/bootloader_atmega324p_115200_12MHz_u2.o
+t0Timer             0x2               build/bootloader_atmega324p_115200_12MHz_u2.o
 
 Memory Configuration
 
@@ -33,7 +33,7 @@ Address of section .data set to 0x800100
 LOAD /usr/lib/gcc/avr/5.4.0/../../../avr/lib/avr5/crtatmega324p.o
 Address of section .text set to 0x7000
 Address of section .table set to 0x7fc0
-LOAD build/bootloader_atmega324p_115200_12MHz_u1_uart1.o
+LOAD build/bootloader_atmega324p_115200_12MHz_u2.o
 START GROUP
 LOAD /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a
 LOAD /usr/lib/gcc/avr/5.4.0/../../../avr/lib/avr5/libm.a
@@ -138,7 +138,7 @@ END GROUP
 .rela.plt
  *(.rela.plt)
 
-.text           0x0000000000007000      0xa00
+.text           0x0000000000007000      0x956
  *(.vectors)
  .vectors       0x0000000000007000       0x7c /usr/lib/gcc/avr/5.4.0/../../../avr/lib/avr5/crtatmega324p.o
                 0x0000000000007000                __vectors
@@ -226,7 +226,7 @@ END GROUP
                 0x00000000000070b6                __vector_10
                 0x00000000000070b6                __vector_16
                 0x00000000000070b6                __vector_20
- .text          0x00000000000070ba      0x7c4 build/bootloader_atmega324p_115200_12MHz_u1_uart1.o
+ .text          0x00000000000070ba      0x738 build/bootloader_atmega324p_115200_12MHz_u2.o
                 0x00000000000070ba                setLedGreen
                 0x00000000000070d6                setLedYellow
                 0x00000000000070f2                setLedRed
@@ -235,77 +235,75 @@ END GROUP
                 0x000000000000714a                base64ToByte
                 0x0000000000007182                recBufferBase64ToBin
                 0x0000000000007248                readSerial
-                0x0000000000007260                sendUartByte
-                0x000000000000726e                sendSpiByte
-                0x0000000000007274                readByte
-                0x0000000000007278                sendByte
-                0x000000000000727c                sendLineFeed
-                0x0000000000007288                sendStr
-                0x00000000000072a0                sendStrPgm
-                0x00000000000072be                sendHexByte
-                0x00000000000072e8                sendResponse
-                0x00000000000073a8                sendResponseStatus
-                0x00000000000073c8                boot_program_page
-                0x0000000000007444                verifyPage
-                0x000000000000746c                readFlashSegment
-                0x00000000000074d0                writeFlashSegment
-                0x0000000000007578                send2SlaveOld
-                0x00000000000075e4                send2Slave
-                0x0000000000007672                executeBuffer
-                0x00000000000076e6                executeCommand
-                0x00000000000077b0                __vector_19
-                0x0000000000007844                __vector_18
- .text          0x000000000000787e        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_exit.o)
- .text          0x000000000000787e        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_copy_data.o)
- .text          0x000000000000787e        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_clear_bss.o)
-                0x000000000000787e                . = ALIGN (0x2)
+                0x000000000000724c                sendUartByte
+                0x000000000000725a                sendSpiByte
+                0x0000000000007260                readByte
+                0x0000000000007280                sendByte
+                0x0000000000007290                sendLineFeed
+                0x000000000000729c                sendStr
+                0x00000000000072b4                sendStrPgm
+                0x00000000000072d2                sendHexByte
+                0x00000000000072fc                sendResponse
+                0x00000000000073bc                sendResponseStatus
+                0x00000000000073dc                boot_program_page
+                0x0000000000007458                verifyPage
+                0x0000000000007480                readFlashSegment
+                0x00000000000074e4                writeFlashSegment
+                0x000000000000758e                executeBuffer
+                0x000000000000765a                executeCommand
+                0x0000000000007734                __vector_19
+                0x00000000000077b8                __vector_18
+ .text          0x00000000000077f2        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_exit.o)
+ .text          0x00000000000077f2        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_copy_data.o)
+ .text          0x00000000000077f2        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_clear_bss.o)
+                0x00000000000077f2                . = ALIGN (0x2)
  *(.text.*)
- .text.startup  0x000000000000787e      0x17e build/bootloader_atmega324p_115200_12MHz_u1_uart1.o
-                0x000000000000787e                main
+ .text.startup  0x00000000000077f2      0x160 build/bootloader_atmega324p_115200_12MHz_u2.o
+                0x00000000000077f2                main
  .text.libgcc.mul
-                0x00000000000079fc        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_exit.o)
+                0x0000000000007952        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_exit.o)
  .text.libgcc.div
-                0x00000000000079fc        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_exit.o)
- .text.libgcc   0x00000000000079fc        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_exit.o)
+                0x0000000000007952        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_exit.o)
+ .text.libgcc   0x0000000000007952        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_exit.o)
  .text.libgcc.prologue
-                0x00000000000079fc        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_exit.o)
+                0x0000000000007952        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_exit.o)
  .text.libgcc.builtins
-                0x00000000000079fc        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_exit.o)
+                0x0000000000007952        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_exit.o)
  .text.libgcc.fmul
-                0x00000000000079fc        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_exit.o)
+                0x0000000000007952        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_exit.o)
  .text.libgcc.fixed
-                0x00000000000079fc        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_exit.o)
+                0x0000000000007952        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_exit.o)
  .text.libgcc.mul
-                0x00000000000079fc        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_copy_data.o)
+                0x0000000000007952        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_copy_data.o)
  .text.libgcc.div
-                0x00000000000079fc        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_copy_data.o)
- .text.libgcc   0x00000000000079fc        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_copy_data.o)
+                0x0000000000007952        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_copy_data.o)
+ .text.libgcc   0x0000000000007952        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_copy_data.o)
  .text.libgcc.prologue
-                0x00000000000079fc        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_copy_data.o)
+                0x0000000000007952        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_copy_data.o)
  .text.libgcc.builtins
-                0x00000000000079fc        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_copy_data.o)
+                0x0000000000007952        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_copy_data.o)
  .text.libgcc.fmul
-                0x00000000000079fc        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_copy_data.o)
+                0x0000000000007952        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_copy_data.o)
  .text.libgcc.fixed
-                0x00000000000079fc        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_copy_data.o)
+                0x0000000000007952        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_copy_data.o)
  .text.libgcc.mul
-                0x00000000000079fc        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_clear_bss.o)
+                0x0000000000007952        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_clear_bss.o)
  .text.libgcc.div
-                0x00000000000079fc        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_clear_bss.o)
- .text.libgcc   0x00000000000079fc        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_clear_bss.o)
+                0x0000000000007952        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_clear_bss.o)
+ .text.libgcc   0x0000000000007952        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_clear_bss.o)
  .text.libgcc.prologue
-                0x00000000000079fc        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_clear_bss.o)
+                0x0000000000007952        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_clear_bss.o)
  .text.libgcc.builtins
-                0x00000000000079fc        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_clear_bss.o)
+                0x0000000000007952        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_clear_bss.o)
  .text.libgcc.fmul
-                0x00000000000079fc        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_clear_bss.o)
+                0x0000000000007952        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_clear_bss.o)
  .text.libgcc.fixed
-                0x00000000000079fc        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_clear_bss.o)
-                0x00000000000079fc                . = ALIGN (0x2)
+                0x0000000000007952        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_clear_bss.o)
+                0x0000000000007952                . = ALIGN (0x2)
  *(.fini9)
- .fini9         0x00000000000079fc        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_exit.o)
-                0x00000000000079fc                exit
-                0x00000000000079fc                _exit
+ .fini9         0x0000000000007952        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_exit.o)
+                0x0000000000007952                exit
+                0x0000000000007952                _exit
  *(.fini9)
  *(.fini8)
  *(.fini8)
@@ -324,15 +322,15 @@ END GROUP
  *(.fini1)
  *(.fini1)
  *(.fini0)
- .fini0         0x00000000000079fc        0x4 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_exit.o)
+ .fini0         0x0000000000007952        0x4 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_exit.o)
  *(.fini0)
-                0x0000000000007a00                _etext = .
+                0x0000000000007956                _etext = .
 
-.data           0x0000000000800100        0x6 load address 0x0000000000007a00
+.data           0x0000000000800100        0x6 load address 0x0000000000007956
                 0x0000000000800100                PROVIDE (__data_start, .)
  *(.data)
  .data          0x0000000000800100        0x0 /usr/lib/gcc/avr/5.4.0/../../../avr/lib/avr5/crtatmega324p.o
- .data          0x0000000000800100        0x2 build/bootloader_atmega324p_115200_12MHz_u1_uart1.o
+ .data          0x0000000000800100        0x2 build/bootloader_atmega324p_115200_12MHz_u2.o
                 0x0000000000800100                startBootloader
  .data          0x0000000000800102        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_exit.o)
  .data          0x0000000000800102        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_copy_data.o)
@@ -341,7 +339,7 @@ END GROUP
  *(.rodata)
  *(.rodata*)
  .rodata.str1.1
-                0x0000000000800102        0x3 build/bootloader_atmega324p_115200_12MHz_u1_uart1.o
+                0x0000000000800102        0x3 build/bootloader_atmega324p_115200_12MHz_u2.o
                                           0x5 (size before relaxing)
  *(.gnu.linkonce.d*)
                 0x0000000000800106                . = ALIGN (0x2)
@@ -353,21 +351,21 @@ END GROUP
                 0x0000000000800106                PROVIDE (__bss_start, .)
  *(.bss)
  .bss           0x0000000000800106        0x0 /usr/lib/gcc/avr/5.4.0/../../../avr/lib/avr5/crtatmega324p.o
- .bss           0x0000000000800106        0x2 build/bootloader_atmega324p_115200_12MHz_u1_uart1.o
+ .bss           0x0000000000800106        0x2 build/bootloader_atmega324p_115200_12MHz_u2.o
                 0x0000000000800106                startApplication
  .bss           0x0000000000800108        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_exit.o)
  .bss           0x0000000000800108        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_copy_data.o)
  .bss           0x0000000000800108        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_clear_bss.o)
  *(.bss*)
  *(COMMON)
- COMMON         0x0000000000800108       0xbf build/bootloader_atmega324p_115200_12MHz_u1_uart1.o
+ COMMON         0x0000000000800108       0xbf build/bootloader_atmega324p_115200_12MHz_u2.o
                 0x0000000000800108                recBuffer
                 0x00000000008001c0                channel
                 0x00000000008001c1                spi
                 0x00000000008001c5                t0Timer
                 0x00000000008001c7                PROVIDE (__bss_end, .)
-                0x0000000000007a00                __data_load_start = LOADADDR (.data)
-                0x0000000000007a06                __data_load_end = (__data_load_start + SIZEOF (.data))
+                0x0000000000007956                __data_load_start = LOADADDR (.data)
+                0x000000000000795c                __data_load_end = (__data_load_start + SIZEOF (.data))
 
 .noinit         0x00000000008001c7        0x0
                 [!provide]                        PROVIDE (__noinit_start, .)
@@ -415,7 +413,7 @@ END GROUP
 
 .comment        0x0000000000000000       0x11
  *(.comment)
- .comment       0x0000000000000000       0x11 build/bootloader_atmega324p_115200_12MHz_u1_uart1.o
+ .comment       0x0000000000000000       0x11 build/bootloader_atmega324p_115200_12MHz_u2.o
                                          0x12 (size before relaxing)
 
 .note.gnu.avr.deviceinfo
@@ -441,39 +439,39 @@ END GROUP
 .debug_aranges  0x0000000000000000       0x28
  *(.debug_aranges)
  .debug_aranges
-                0x0000000000000000       0x28 build/bootloader_atmega324p_115200_12MHz_u1_uart1.o
+                0x0000000000000000       0x28 build/bootloader_atmega324p_115200_12MHz_u2.o
 
 .debug_pubnames
  *(.debug_pubnames)
 
-.debug_info     0x0000000000000000     0x17ea
+.debug_info     0x0000000000000000     0x1571
  *(.debug_info .gnu.linkonce.wi.*)
  .debug_info    0x0000000000000000      0x6cc /usr/lib/gcc/avr/5.4.0/../../../avr/lib/avr5/crtatmega324p.o
- .debug_info    0x00000000000006cc     0x111e build/bootloader_atmega324p_115200_12MHz_u1_uart1.o
+ .debug_info    0x00000000000006cc      0xea5 build/bootloader_atmega324p_115200_12MHz_u2.o
 
-.debug_abbrev   0x0000000000000000      0xa8b
+.debug_abbrev   0x0000000000000000      0xa42
  *(.debug_abbrev)
  .debug_abbrev  0x0000000000000000      0x66e /usr/lib/gcc/avr/5.4.0/../../../avr/lib/avr5/crtatmega324p.o
- .debug_abbrev  0x000000000000066e      0x41d build/bootloader_atmega324p_115200_12MHz_u1_uart1.o
+ .debug_abbrev  0x000000000000066e      0x3d4 build/bootloader_atmega324p_115200_12MHz_u2.o
 
-.debug_line     0x0000000000000000      0x9a3
+.debug_line     0x0000000000000000      0x912
  *(.debug_line .debug_line.* .debug_line_end)
  .debug_line    0x0000000000000000       0x1a /usr/lib/gcc/avr/5.4.0/../../../avr/lib/avr5/crtatmega324p.o
- .debug_line    0x000000000000001a      0x989 build/bootloader_atmega324p_115200_12MHz_u1_uart1.o
+ .debug_line    0x000000000000001a      0x8f8 build/bootloader_atmega324p_115200_12MHz_u2.o
 
-.debug_frame    0x0000000000000000      0x38c
+.debug_frame    0x0000000000000000      0x340
  *(.debug_frame)
- .debug_frame   0x0000000000000000      0x38c build/bootloader_atmega324p_115200_12MHz_u1_uart1.o
+ .debug_frame   0x0000000000000000      0x340 build/bootloader_atmega324p_115200_12MHz_u2.o
 
-.debug_str      0x0000000000000000      0x640
+.debug_str      0x0000000000000000      0x627
  *(.debug_str)
  .debug_str     0x0000000000000000      0x255 /usr/lib/gcc/avr/5.4.0/../../../avr/lib/avr5/crtatmega324p.o
- .debug_str     0x0000000000000255      0x3eb build/bootloader_atmega324p_115200_12MHz_u1_uart1.o
-                                        0x43b (size before relaxing)
+ .debug_str     0x0000000000000255      0x3d2 build/bootloader_atmega324p_115200_12MHz_u2.o
+                                        0x422 (size before relaxing)
 
-.debug_loc      0x0000000000000000     0x186e
+.debug_loc      0x0000000000000000     0x13d1
  *(.debug_loc)
- .debug_loc     0x0000000000000000     0x186e build/bootloader_atmega324p_115200_12MHz_u1_uart1.o
+ .debug_loc     0x0000000000000000     0x13d1 build/bootloader_atmega324p_115200_12MHz_u2.o
 
 .debug_macinfo
  *(.debug_macinfo)
@@ -493,16 +491,16 @@ END GROUP
 .debug_pubtypes
  *(.debug_pubtypes)
 
-.debug_ranges   0x0000000000000000      0x110
+.debug_ranges   0x0000000000000000       0xc0
  *(.debug_ranges)
- .debug_ranges  0x0000000000000000      0x110 build/bootloader_atmega324p_115200_12MHz_u1_uart1.o
+ .debug_ranges  0x0000000000000000       0xc0 build/bootloader_atmega324p_115200_12MHz_u2.o
 
 .debug_macro
  *(.debug_macro)
-OUTPUT(dist/bootloader_atmega324p_115200_12MHz_u1_uart1.elf elf32-avr)
+OUTPUT(dist/bootloader_atmega324p_115200_12MHz_u2.elf elf32-avr)
 LOAD linker stubs
 
 .table          0x0000000000007fc0       0x3c
- .table         0x0000000000007fc0       0x3c build/bootloader_atmega324p_115200_12MHz_u1_uart1.o
+ .table         0x0000000000007fc0       0x3c build/bootloader_atmega324p_115200_12MHz_u2.o
                 0x0000000000007fc0                table
                 0x0000000000007fc6                welcomeMsg

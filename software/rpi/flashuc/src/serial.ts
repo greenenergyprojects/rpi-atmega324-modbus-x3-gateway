@@ -161,7 +161,7 @@ export class Serial {
         });
     }
 
-    public async flash (address: number, buffer?: Buffer): Promise<{ address: number, buffer: Buffer, error?: Error}> {
+    public async flash (target: ITarget, address: number, buffer?: Buffer): Promise<{ address: number, buffer: Buffer, error?: Error}> {
         if (address < 0 || address > 0xffffff) {
             throw new SerialFlashError('address out of range' + address, address, buffer);
         }
@@ -187,7 +187,13 @@ export class Serial {
         } else {
             buffer = b;
         }
-        const cmd = '@0w' + buffer.toString('base64');
+        const slave_channel = target.index;
+        const cmd = '@' + slave_channel + 'w' + buffer.toString('base64');
+        // let cmd = '@' + slave_channel + 'w';
+        // for (let i = 0; i < buffer.length; i++) {
+        //     cmd = cmd + (i % 10);
+        // }
+        // debug.info('%s', cmd);
         // if (address !== 0x80) {
         //     return Promise.resolve({address: address, buffer: buffer });
         // }
@@ -195,7 +201,7 @@ export class Serial {
             await this.send(sprintf('write page addr 0x%04x', address), cmd);
             return { address: address, buffer: buffer };
         } catch (err) {
-            throw new SerialFlashError('sending @0w command to bootloader fails', address, buffer, err);
+            throw new SerialFlashError('sending ' + cmd.substr(0, 3) + ' command to bootloader fails', address, buffer, err);
         }
 
     }
@@ -277,6 +283,7 @@ export class Serial {
         if (debug.finest.enabled) {
             debug.finest('serial receive %s bytes: %h', buf.length, buf);
         }
+        debug.info('serial receive %s bytes: %h', buf.length, buf);
         for (const b of buf.values()) {
             const c = b >= 32 && b < 127 ? String.fromCharCode(b) : undefined;
             if (c === undefined || c === '#' || c === '@' || c === '$') {
@@ -428,6 +435,7 @@ export class Serial {
         }
 
         debug.finer('serial write with \\n on end:\n%s', requ.cmd);
+        debug.info('serial write with \\n on end:\n%s', requ.cmd);
         this._port.write(requ.cmd + '\n', (err) => {
             if (err) {
                 requ.error = err;

@@ -39,6 +39,7 @@ LINKONLYOBJECTS =
 TARGETS =  dist/$(PROJECT)_115200_12MHz_u1_uart0.hex
 TARGETS += dist/$(PROJECT)_115200_12MHz_u1_uart1.hex
 # TARGETS += dist/$(PROJECT)_115200_12MHz_u1_uart01.hex
+TARGETS += dist/$(PROJECT)_115200_12MHz_u2.hex
 
 ## Intel Hex file production flags
 HEX_FLASH_FLAGS = -R .eeprom -R .fuse -R .lock -R .signature
@@ -60,6 +61,8 @@ dist/$(PROJECT)_115200_12MHz_u1_uart1.hex: dist/$(PROJECT)_115200_12MHz_u1_uart1
 dist/$(PROJECT)_115200_12MHz_u1_uart01.hex: dist/$(PROJECT)_115200_12MHz_u1_uart01.elf
 	avr-objcopy -O ihex $(HEX_FLASH_FLAGS)  $< $@
 
+dist/$(PROJECT)_115200_12MHz_u2.hex: dist/$(PROJECT)_115200_12MHz_u2.elf
+	avr-objcopy -O ihex $(HEX_FLASH_FLAGS)  $< $@
 
 
 dist/$(PROJECT)_115200_12MHz_u1_uart0.elf: build/$(PROJECT)_115200_12MHz_u1_uart0.o
@@ -71,28 +74,33 @@ dist/$(PROJECT)_115200_12MHz_u1_uart1.elf: build/$(PROJECT)_115200_12MHz_u1_uart
 dist/$(PROJECT)_115200_12MHz_u1_uart01.elf: build/$(PROJECT)_115200_12MHz_u1_uart01.o
 	avr-gcc $(LDFLAGS) $(LINKONLYOBJECTS) $(LIBDIRS) $(LIBS) -o $@ $<
 
+dist/$(PROJECT)_115200_12MHz_u2.elf: build/$(PROJECT)_115200_12MHz_u2.o
+	avr-gcc $(LDFLAGS) $(LINKONLYOBJECTS) $(LIBDIRS) $(LIBS) -o $@ $<
 
 
-build/$(PROJECT)_115200_12MHz_u1_uart0.o: src/$(PROJECT).c
-	#avr-gcc $(INCLUDES) $(CFLAGS) -DBAUDRATE=115200 -DSPI_MASTER -DSPI_SLAVES=1 -DF_CPU=12000000L -DUART0 -c  -o $@ $<
-	avr-gcc $(INCLUDES) $(CFLAGS) -DBAUDRATE=115200 -DF_CPU=12000000L -DUART0 -c  -o $@ $<
+#build/$(PROJECT)_115200_12MHz_u1_uart0.o: src/$(PROJECT).c
+#	avr-gcc $(INCLUDES) $(CFLAGS) -DBAUDRATE=115200 -DSPI_MASTER -DSPI_SLAVES=1 -DF_CPU=12000000L -DUART0 -c  -o $@ $<
+#
+#build/$(PROJECT)_115200_12MHz_u1_uart1.o: src/$(PROJECT).c
+#	avr-gcc $(INCLUDES) $(CFLAGS) -DBAUDRATE=115200 -DSPI_MASTER -DSPI_SLAVES=1 -DF_CPU=12000000L -DUART1 -c  -o $@ $<
+#
+#build/$(PROJECT)_115200_12MHz_u1_uart01.o: src/$(PROJECT).c
+#	avr-gcc $(INCLUDES) $(CFLAGS) -DBAUDRATE=115200 -DSPI_MASTER -DSPI_SLAVES=1 -DF_CPU=12000000L -DUART1 -DUART0 -c  -o $@ $<
 
-build/$(PROJECT)_115200_12MHz_u1_uart1.o: src/$(PROJECT).c
-	#avr-gcc $(INCLUDES) $(CFLAGS) -DBAUDRATE=115200 -DSPI_MASTER -DSPI_SLAVES=1 -DF_CPU=12000000L -DUART1 -c  -o $@ $<
-	avr-gcc $(INCLUDES) $(CFLAGS) -DBAUDRATE=115200 -DSPI_SLAVES=1 -DF_CPU=12000000L -DUART1 -c  -o $@ $<
-
-build/$(PROJECT)_115200_12MHz_u1_uart01.o: src/$(PROJECT).c
-	#avr-gcc $(INCLUDES) $(CFLAGS) -DBAUDRATE=115200 -DSPI_MASTER -DSPI_SLAVES=1 -DF_CPU=12000000L -DUART1 -DUART0 -c  -o $@ $<
-	avr-gcc $(INCLUDES) $(CFLAGS) -DBAUDRATE=115200 -DSPI_SLAVES=1 -DF_CPU=12000000L -DUART1 -DUART0 -c  -o $@ $<
+build/$(PROJECT)_115200_12MHz_u2.o: src/$(PROJECT).c
+	#avr-gcc $(INCLUDES) $(CFLAGS) -DBAUDRATE=115200 -DSPI_SLAVE=1 -DF_CPU=12000000L -DUART0_DEBUG -c  -o $@ $<
+	avr-gcc $(INCLUDES) $(CFLAGS) -DBAUDRATE=115200 -DF_CPU=12000000L -DUART0_DEBUG -c  -o $@ $<
 
 
+#u1: all
+#	avrdude -c usbasp -p atmega324p -e -U flash:w:dist/$(PROJECT)_115200_12MHz_u1_uart0.hex:i
 
-u1: all
-	avrdude -c usbasp -p atmega324p -e -U flash:w:dist/$(PROJECT)_115200_12MHz_u1_uart0.hex:i
+u2: all
+	avrdude -c usbasp -p atmega324p -e -U flash:w:dist/$(PROJECT)_115200_12MHz_u2.hex:i
 
 #u1_uart1: all
-#	avrdude -c usbasp -p atmega324p -e -U flash:w:dist/$(PROJECT)_115200_12MHz_u1_uart1.hex:i
-#
+	#avrdude -c usbasp -p atmega324p -e -U flash:w:dist/$(PROJECT)_115200_12MHz_u1_uart1.hex:i
+
 #u1_uart01: all
 #	avrdude -c usbasp -p atmega324p -e -U flash:w:dist/$(PROJECT)_115200_12MHz_u1_uart01.hex:i
 

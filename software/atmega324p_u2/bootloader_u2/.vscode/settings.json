@@ -1,0 +1,26 @@
+{
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/.gitignore": true,
+        "**/build": true,
+        "**/.vscode": true,
+        "**/dist": true,
+        "**/Makefile": true
+    },
+    "files.associations": {
+        "global.h": "c",
+        "stdio.h": "c",
+        "io.h": "c",
+        "inttypes.h": "c",
+        "cinttypes": "c"
+    },
+    "cpplint": {
+        "lineLength": 140,
+        "root": "src",
+        "filters": [ "-whitespace/parens", "-whitespace/blank_line", "-readability/casting", "-legal/copyright", "-build/include" ]
+    }
+}

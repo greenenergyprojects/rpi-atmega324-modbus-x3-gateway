@@ -2,8 +2,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as nconf from 'nconf';
 
-
-
 process.on('unhandledRejection', (reason, p) => {
     const now = new Date();
     console.log(now.toLocaleDateString() + '/' + now.toLocaleTimeString() + ': unhandled rejection at: Promise', p, 'reason:', reason);
@@ -13,9 +11,20 @@ process.on('unhandledRejection', (reason, p) => {
 // configuration, logging
 // ***********************************************************
 
+let configFilename = path.join(__dirname, '..', 'config.json');
+for (let i = 2; i < process.argv.length; i++) {
+    const v = process.argv[i];
+    if (v === '--config' || v === '-c') {
+        configFilename = process.argv[i + 1];
+        if (!configFilename.startsWith('/')) {
+            path.join(__dirname, '..', configFilename);
+        }
+    }
+}
 nconf.argv().env();
-const configFilename = path.join(__dirname, '..', 'config.json');
+
 try {
+    console.log('using config file %s', configFilename);
     fs.accessSync(configFilename, fs.constants.R_OK);
     nconf.file(configFilename);
 } catch (err) {
@@ -100,7 +109,7 @@ async function main () {
             const elf = await Elf.createFromFile(elfFilename);
             const d: Device = new Device(t.program.cpu, elf);
             // console.log(d.hexdump());
-            await d.flash();
+            await d.flash(t);
         }
         await serial.close();
         Gpio.shutdown();

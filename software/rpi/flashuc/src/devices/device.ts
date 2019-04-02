@@ -5,7 +5,7 @@ const debug: debugsx.IDefaultLogger = debugsx.createDefaultLogger('device');
 
 import { devices, IDevice } from './devices';
 import { Elf } from '../elf/elf';
-import { Serial } from '../serial';
+import { Serial, ITarget } from '../serial';
 import { sprintf } from 'sprintf-js';
 import { stringify } from 'querystring';
 
@@ -48,7 +48,7 @@ export class Device {
         return this._program;
     }
 
-    public async flash (serial?: Serial) {
+    public async flash (target: ITarget, serial?: Serial) {
         serial = serial || Serial.instance;
         const firstAddr = this._deviceDescription.flashStart;
         const pageSize = this._deviceDescription.spmPageSize;
@@ -77,7 +77,7 @@ export class Device {
         for (let a = firstAddr; a <= lastAddr; a += pageSize) {
             const b = this.flashMemory(a, pageSize);
             if (b && b.length > 0) {
-                promisses.push(serial.flash(a, b));
+                promisses.push(serial.flash(target, a, b));
             }
         }
         let segOkCnt = 0, segErrCnt = 0;

@@ -58,6 +58,35 @@
             ]
         },
         {
+            "label": "buildForRemote",
+            "command": "node_modules/gulp/bin/gulp.js",
+            "type": "shell",
+            "args": [
+                "--gulpfile",
+                "gulpfile.js",
+                "buildForRemote"
+            ],
+            "group": "build",
+            "presentation" : { "reveal": "always" },
+            "problemMatcher": [
+                {
+                    "owner": "gulp-typescript",
+                    "fileLocation": [
+                        "relative",
+                        "${workspaceRoot}"
+                    ],
+                    "pattern": {
+                        "regexp": "(.*)\\((\\d*),(\\d*)\\): (error|warning) (.*)",
+                        "file": 1,
+                        "line": 2,
+                        "column": 3,
+                        "severity": 4,
+                        "message": 5
+                    }
+                }
+            ]
+        },
+        {
             "label": "buildAndLaunchOnRemote",
             "command": "node_modules/gulp/bin/gulp.js",
             "type": "shell",

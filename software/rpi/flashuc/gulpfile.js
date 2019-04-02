@@ -166,6 +166,7 @@ gulp.task('remoteStart', function (done) {
 });
 
 gulp.task('build', gulp.series(['transpile', 'copyFiles']));
+gulp.task('buildForRemote', gulp.series(['build', 'remotePlatform' ]));
 gulp.task('buildAndLaunchOnRemote', gulp.series(['build', 'remotePlatform', 'remoteStart' ]));
 gulp.task('start', gulp.series(['build', 'remoteStart']));
 gulp.task('default', gulp.series('start'));
