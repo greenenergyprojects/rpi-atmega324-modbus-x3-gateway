@@ -473,7 +473,7 @@ uint8_t send2Slave (uint16_t len) {
                     sei();
                     return 1; // status 1 - SPI communication error
                 }
-                if (len == 0) {
+                if (len <= 1) {
                     spi.skipUart = 0;
                     PORTA ^= (1 << PA2);                                        
                 }

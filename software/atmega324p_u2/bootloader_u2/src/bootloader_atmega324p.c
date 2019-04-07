@@ -76,6 +76,8 @@
     #define BOOTADR 0x7000
 #endif
 
+#undef UART0 
+#undef UART0_DEBUG 
 
 typedef void (*pFunc)(char);
 typedef struct Table {
@@ -262,9 +264,6 @@ void sendUartByte (char ch) {
 
 
 void sendSpiByte (char c) {
-    if (c == '$') {
-        PORTA ^= (1 << PA2);
-    }
     spi.toSend = c;
 }
 
@@ -279,13 +278,22 @@ uint8_t readByte (char *c) {
 
 
 void sendByte (char c) {
+    PORTA |= (1 << PA2);
+    sendSpiByte(c);
+    uint8_t delay = 1;
     #if defined(UART0) || defined(UART0_DEBUG)
         sendUartByte(c);
+        delay = 0;
     #endif
     #ifdef UART1
         sendUartByte(c);
+        delay = 0;
     #endif
-    sendSpiByte(c);
+    if (delay) {
+        TCNT0 = 0;
+        while (TCNT0 < 20);
+    }
+    PORTA &= ~(1 << PA2);
 }
 
 void sendLineFeed () {
@@ -298,6 +306,13 @@ void sendStr (const char *s) {
         sendByte(*s++);
     }
 }
+
+void sendUartStr (const char *s) {
+    while (*s) {
+        sendUartByte(*s++);
+    }
+}
+
 
 void sendStrPgm (const char *s) {
     uint8_t byte;
@@ -320,6 +335,16 @@ void sendHexByte (uint8_t b) {
     }
 }
 
+void sendUartHexByte (uint8_t b) {
+    for (int i = 0; i < 2; i++) {
+        uint8_t x = b >> 4;
+        if (x < 10) { sendUartByte('0' + x); }
+        else { sendUartByte('a' + x - 10); }
+        b = b << 4;
+    }
+}
+
+
 // void send16BitValueAsBase64 (uint16_t v) {
 //     sendUartByte(byteToBase64((uint8_t)(v >> 10)));
 //     sendUartByte(byteToBase64((uint8_t)(v >> 6)));
@@ -330,14 +355,14 @@ void sendHexByte (uint8_t b) {
 
 
 void sendResponse (uint8_t buf[], uint16_t length) {
-    sendUartByte(13);
-    sendUartByte(10);
-    sendStr("Result ");
-    for (int i = 0; i < length; i++) {
-        sendHexByte(buf[i]);
-    }
-    sendUartByte(13);
-    sendUartByte(10);
+    // sendUartByte(13);
+    // sendUartByte(10);
+    // sendUartStr("Result ");
+    // for (int i = 0; i < length; i++) {
+    //     sendUartHexByte(buf[i]);
+    // }
+    // sendUartByte(13);
+    // sendUartByte(10);
 
 
     sendByte('$');
@@ -371,12 +396,13 @@ void sendResponse (uint8_t buf[], uint16_t length) {
         case 0: break;
         case 1: {
             sendByte(byteToBase64(b));
-            sendStr("==");
+            sendByte('=');
+            sendByte('=');
             break;
         }
         case 2: {
             sendByte(b);
-            sendStr("=");
+            sendByte('=');
             break;
         }
     }
@@ -476,10 +502,10 @@ void executeBuffer (char buf[], uint16_t len) {
                 cli();
                 buf[0] = writeFlashSegment(&buf[1]);
                 sei();
-                if (buf[0] > 0) {
-                   sendResponseStatus(buf[0]);
+                if (buf[1] > 0) {
+                    sendResponseStatus(buf[0]);
                 } else {
-                    sendResponse(buf, 4);
+                    sendResponse(&buf[0], 5);
                 }
 
             } else {
@@ -523,8 +549,8 @@ uint8_t executeCommand () {
 
     spi.skipUart = 1;
 
-    sendUartByte(recBuffer[0]);
-    sendUartByte(recBuffer[1]);
+    // sendUartByte(recBuffer[0]);
+    // sendUartByte(recBuffer[1]);
 
     while (timer >= 0) {
         if (!readByte(&c)) {
@@ -538,14 +564,20 @@ uint8_t executeCommand () {
             } else {
                 if (c != 0 && len < (sizeof(recBuffer) - 1) ) {
                     recBuffer[len++] = c;
+                    if (c == '\n') {
+                        PORTA |= (1 << PA1);
+                    }
                     sendSpiByte(c);
-                    sendUartByte(c);
+                    // sendUartByte(c);
                 }
                 if (c == '\n' || c == '\r') {
-                    while (timer > 0 && spi.toSend > 0) {
-                        timer--;
+                    // while (timer > 0 && spi.toSend > 0) {
+                    //     timer--;
+                    // }
+                    while (spi.toSend > 0) {
+                        PORTA ^= (1 << PA1);
                     }
-                    PORTA ^= (1 << PA1);
+                    PORTA &= ~(1 << PA1);
                     recBuffer[len] = '\n';
                     if (channel == SPI_CHANNEL) {
                         PORTA |= (1 << PA0);
