@@ -199,7 +199,7 @@ int16_t recBufferBase64ToBin (char p[]) {
     uint8_t b = 0;
     char *pDest = p;
 
-    while (j < sizeof recBuffer && p[i] != 0) {
+    while (j < sizeof recBuffer && p[i] != 10) {
         int8_t v = base64ToByte(p[i]);
         if (v < 0) { return -(i + 1); }
         switch (i++ % 4) {
@@ -226,7 +226,7 @@ int16_t recBufferBase64ToBin (char p[]) {
             }
         }
     }
-    if (p[i] != 0) {
+    if (p[i] != 10) {
         return -(i + 1);
     }
     return j;
@@ -262,6 +262,9 @@ void sendUartByte (char ch) {
 
 
 void sendSpiByte (char c) {
+    if (c == '$') {
+        PORTA ^= (1 << PA2);
+    }
     spi.toSend = c;
 }
 
@@ -327,6 +330,16 @@ void sendHexByte (uint8_t b) {
 
 
 void sendResponse (uint8_t buf[], uint16_t length) {
+    sendUartByte(13);
+    sendUartByte(10);
+    sendStr("Result ");
+    for (int i = 0; i < length; i++) {
+        sendHexByte(buf[i]);
+    }
+    sendUartByte(13);
+    sendUartByte(10);
+
+
     sendByte('$');
     uint8_t b = 0;
     uint8_t i;
@@ -397,6 +410,11 @@ void boot_program_page (uint32_t addr, uint8_t buf[]) {
 
 uint8_t verifyPage (uint32_t addr, uint8_t buf[]) {
     // sendStr(" -> ");
+    // sendHexByte(addr >> 24);
+    // sendHexByte((addr >> 16) & 0xff);
+    // sendHexByte((addr >> 8) & 0xff);
+    // sendHexByte(addr & 0xff);
+    // sendStr(" -> ");
     for (uint16_t i = 0; i < SPM_PAGESIZE; i++) {
         uint8_t bFlash = pgm_read_byte(addr + i);
         uint8_t bProg = *buf++;
@@ -405,14 +423,14 @@ uint8_t verifyPage (uint32_t addr, uint8_t buf[]) {
         // sendHexByte(bProg);
         // sendUartByte(' ');
         if (bFlash != bProg) {
-           return 0;  // error
+           return 0;  // status 6  - verification failure
         }
     }
-    return 1;
+    return 0; // status 0  - OK
 }
 
-void readFlashSegment () {
-    uint8_t *p = (uint8_t *)(&recBuffer[1]);
+void readFlashSegment (char buf[]) {
+    uint8_t *p = (uint8_t *)(buf);
     int16_t size = recBufferBase64ToBin((char *)p);
     if (size != 3) {
         sendResponseStatus(4);  // status 4: error - illegal size
@@ -426,60 +444,55 @@ void readFlashSegment () {
     for (uint16_t i = 0; i < SPM_PAGESIZE; i++) {
         recBuffer[i + 4] = pgm_read_byte(addr + i);
     }
-    recBuffer[0] = 0;
-    sendResponse((uint8_t *)recBuffer, SPM_PAGESIZE + 4);
+    buf[0] = 0;
+    sendResponse((uint8_t *)buf, SPM_PAGESIZE + 4);
 }
 
-void writeFlashSegment () {
-    uint8_t *p = (uint8_t *)(&recBuffer[1]);
+uint8_t writeFlashSegment (char buf[]) {
+    uint8_t *p = (uint8_t *)(buf);
     int16_t size = recBufferBase64ToBin((char *)p);
     if (size < 4) {
-        sendResponseStatus(4);  // status 4: error - illegal size
-        return;
+        return 4; // status 4 - illegal size
     }
+
     uint16_t addr = (p[2] << 8) | p[3];
     if (p[0] != 0 || p[1] != 0 || addr > BOOTADR) {
-        sendResponseStatus(5);  // status 5: error - illegal address
-        return;
+        return 5; // status 5: error - illegal address
     }
     for (uint16_t i = size; i < SPM_PAGESIZE + 4; i++) {
         p[i] = 0xff;  // fill bytes
     }
     boot_program_page(addr, (uint8_t *)&p[4]);
 
-    if (verifyPage(addr, (uint8_t *)&p[4])) {
-        recBuffer[0] = 0;  // status 0: OK
-    } else {
-        recBuffer[0] = 3;  // status 3: error - verfication fails
-    }
-    sendResponse((uint8_t*)recBuffer, 4);
+    return verifyPage(addr, (uint8_t *)&p[4]);
 }
 
 
-void executeBuffer (uint16_t len) {
-    switch (recBuffer[0]) {
+void executeBuffer (char buf[], uint16_t len) {
+    switch (buf[0]) {
         case 'w': {
-            
-            for (int i = 0; i < len; i++) {
-                sendUartByte(recBuffer[i]);
-            }
-            
-            if ((len % 4) == 1) {
+            if ((len % 4) == 2) {
+                setLedRed(1);                            
                 cli();
-                writeFlashSegment();
+                buf[0] = writeFlashSegment(&buf[1]);
                 sei();
-            } else {
+                if (buf[0] > 0) {
+                   sendResponseStatus(buf[0]);
+                } else {
+                    sendResponse(buf, 4);
+                }
 
-                sendResponseStatus(2);
+            } else {
+                sendResponseStatus(2); // status 2 - invalid len
             }
             break;
         }
 
         case 'r': {
             if (len == 5) {
-                readFlashSegment();
+                readFlashSegment(&buf[1]);
             } else {
-                sendResponseStatus(2);
+                sendResponseStatus(2); // status 2 - invalid len
             }
             break;
         }
@@ -529,14 +542,15 @@ uint8_t executeCommand () {
                     sendUartByte(c);
                 }
                 if (c == '\n' || c == '\r') {
-                    setLedRed(1);
-                
-
-
-
+                    while (timer > 0 && spi.toSend > 0) {
+                        timer--;
+                    }
+                    PORTA ^= (1 << PA1);
                     recBuffer[len] = '\n';
                     if (channel == SPI_CHANNEL) {
-                        executeBuffer(len);
+                        PORTA |= (1 << PA0);
+                        executeBuffer(&recBuffer[2], len - 2);
+                        PORTA &= ~(1 << PA0);
                     }
                     return 0;
                 }
@@ -550,13 +564,9 @@ ISR (SPI_STC_vect) {
     setLedYellow(-1);
     uint8_t received = SPDR0;
     
-    if (spi.toSend > 0) {
-        PORTA ^= (1 << PA2);
-    }
     SPDR0 = spi.toSend;
     spi.toSend = 0;
     if (received != 0) {
-        PORTA ^= (1 << PA1);
         spi.received = received;
         if (!spi.skipUart) {
             sendUartByte(spi.received);

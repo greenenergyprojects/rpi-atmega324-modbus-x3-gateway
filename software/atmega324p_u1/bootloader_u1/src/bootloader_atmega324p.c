@@ -447,68 +447,44 @@ void writeFlashSegment (char buf[]) {
     boot_program_page(addr, (uint8_t *)&p[4]);
 
     if (verifyPage(addr, (uint8_t *)&p[4])) {
-        recBuffer[0] = 0;  // status 0: OK
+        buf[0] = 0;  // status 0: OK
     } else {
-        recBuffer[0] = 3;  // status 3: error - verfication fails
+        buf[0] = 3;  // status 3: error - verfication fails
     }
-    sendResponse((uint8_t*)recBuffer, 4);
+    sendResponse((uint8_t*)buf, 4);
 }
 
-
-uint8_t send2SlaveOld (uint16_t len) {
-    char *pb = recBuffer;
-    spi.received = 0;
-    while (len > 0) {
-        uint8_t b = *pb++;
-        sendSpiByte(b);
-        
-        volatile uint16_t timer = 0x2000;
-        while (timer > 0) {
-            
-            if (spi.received != 0) {
-                if (spi.received == b) {
-                    spi.received = 0;
-                    
-                    break;
-                } else {
-                    return 1;
-                }
-            }
-            if (timer == 0) {
-                
-                return 2;
-            }
-            timer--;
-        }
-        len--;
-    }
-    return 0;
-}
 
 uint8_t send2Slave (uint16_t len) {
     char *pb = recBuffer;
     spi.received = 0;
     while (len > 0) {
+        len--;
         uint8_t b = *pb++;
+        PORTA ^= (1 << PA0);
         sendSpiByte(b);
         
         volatile int16_t timer = 0x100;
         while (timer > 0) {
+            cli();
             if (spi.received != 0) {
+                PORTA ^= (1 << PA1);
                 if (b != spi.received) {
-                    setLedRed(1);
-                } else {
-                    
+                    sei();
+                    return 1; // status 1 - SPI communication error
+                }
+                if (len == 0) {
+                    spi.skipUart = 0;
+                    PORTA ^= (1 << PA2);                                        
                 }
                 spi.received = 0;
-                timer -= 4;
-                
+                timer = 0;
             } else {
                 timer--;
             }
+            sei();
             
         }
-        len--;
     }
     return 0;
 }
@@ -577,14 +553,13 @@ uint8_t executeCommand () {
 
                 if (c != 0 && len < (sizeof(recBuffer) - 1) ) {
                     recBuffer[len++] = c;
-                    
                     sendUartByte(c);
                 }
                 if (c == '\n' || c == '\r') {
                     
                     recBuffer[len] = 0;
                     if (channel != SPI_CHANNEL) {
-                        send2Slave(len);
+                        return send2Slave(len);
                     } else {
                         executeBuffer(&recBuffer[2], len - 2);
                     }
@@ -597,21 +572,16 @@ uint8_t executeCommand () {
 }
 
 ISR (SPI_STC_vect) {
-    PORTA ^= (1 << PA0);
     setLedYellow(-1);
     spi.received = SPDR0;
     if (spi.received != 0) {
-        PORTA ^= (1 << PA1);
-        if (!spi.skipUart) {
+        if (spi.skipUart == 0) {
             sendUartByte(spi.received);
         }
     }
     PORTB |= (1 << PB4); 
     spi.toSendShadow = spi.toSend;
     PORTB &= ~(1 << PB4);
-    if (spi.toSendShadow > 0) {
-        PORTA ^= (1 << PA2);
-    }
     SPDR0 = spi.toSendShadow;
     spi.toSend = 0x00;
 }
