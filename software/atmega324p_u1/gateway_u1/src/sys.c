@@ -12,8 +12,23 @@
 #include "./sys.h"
 #include "./app.h"
 
-// defines
+#ifndef COMPILE
+    typedef unsigned char uint8_t;
+    typedef unsigned short uint16_t;
+    typedef unsigned long uint32_t;
+    typedef signed char int8_t;
+    typedef signed short int16_t;
+    typedef signed long int32_t;
+    #define pgm_read_byte(address_short) address_short
+    #define boot_page_erase(address_short) address_short
+    #define boot_page_write(address_short) address_short
+    #define boot_page_fill(address_short, value) address_short
+    #define FDEV_SETUP_STREAM(handler, mem, type) {}
+#else 
+    #include <avr/pgmspace.h>
+#endif
 
+// defines
 
 #define SYS_UART_BYTE_RECEIVED (UCSR0A & (1 << RXC0))
 #define SYS_UART_UDR_IS_EMPTY (UCSR0A & (1 << UDRE0))
