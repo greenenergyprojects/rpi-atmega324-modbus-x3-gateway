@@ -24,7 +24,9 @@ HFUSE = 0xd0
 CFLAGS = -mmcu=$(MCU)
 CFLAGS += -Wall -gdwarf-2 -std=gnu99 -Os -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -DBOOTADR=$(BOOTADDR)
 CFLAGS += -DCOMPILE
-#CFLAGS += -MD -MP -MT $(*F).o -MF dep/$(@F).d 
+CFLAGS += -DBAUDRATE=115200
+CFLAGS += -DF_CPU=12000000L
+#CFLAGS += -DUART0_DEBUG
 
 ## Linker flagsq
 LDFLAGS = -mmcu=$(MCU)
@@ -36,73 +38,45 @@ LDFLAGS += -Wl,-section-start=.table=$(TABLESTART)
 LINKONLYOBJECTS =
 
 ## TARGETS
-TARGETS =  dist/$(PROJECT)_115200_12MHz_u1_uart0.hex
-TARGETS += dist/$(PROJECT)_115200_12MHz_u1_uart1.hex
-# TARGETS += dist/$(PROJECT)_115200_12MHz_u1_uart01.hex
 TARGETS += dist/$(PROJECT)_115200_12MHz_u2.hex
+TARGETS += dist/$(PROJECT)_115200_12MHz_u2_uart0.hex
 
 ## Intel Hex file production flags
 HEX_FLASH_FLAGS = -R .eeprom -R .fuse -R .lock -R .signature
 
 all: $(TARGETS)
-	@avr-size --mcu=atmega324p --format=avr dist/$(PROJECT)_115200_12MHz_u1_uart0.elf
-	@echo "  Use 'make u1' to flash bootloader on U1 for UART0"
+	@avr-size --mcu=atmega324p --format=avr dist/$(PROJECT)_115200_12MHz_u2.elf
+	@echo "  Use 'make u2_uart0' to flash bootloader on U2 with debug to UART0"
 	@echo "  Use 'make u2' to flash bootloader on U2"
-	@echo "  Use 'make u1_uart1' to flash bootloader on U1 for UART1"
-
 	@echo ""
 	
-dist/$(PROJECT)_115200_12MHz_u1_uart0.hex: dist/$(PROJECT)_115200_12MHz_u1_uart0.elf
-	avr-objcopy -O ihex $(HEX_FLASH_FLAGS)  $< $@
-
-dist/$(PROJECT)_115200_12MHz_u1_uart1.hex: dist/$(PROJECT)_115200_12MHz_u1_uart1.elf
-	avr-objcopy -O ihex $(HEX_FLASH_FLAGS)  $< $@
-
-dist/$(PROJECT)_115200_12MHz_u1_uart01.hex: dist/$(PROJECT)_115200_12MHz_u1_uart01.elf
-	avr-objcopy -O ihex $(HEX_FLASH_FLAGS)  $< $@
 
 dist/$(PROJECT)_115200_12MHz_u2.hex: dist/$(PROJECT)_115200_12MHz_u2.elf
 	avr-objcopy -O ihex $(HEX_FLASH_FLAGS)  $< $@
 
+dist/$(PROJECT)_115200_12MHz_u2_uart0.hex: dist/$(PROJECT)_115200_12MHz_u2_uart0.elf
+	avr-objcopy -O ihex $(HEX_FLASH_FLAGS)  $< $@
 
-dist/$(PROJECT)_115200_12MHz_u1_uart0.elf: build/$(PROJECT)_115200_12MHz_u1_uart0.o
-	avr-gcc $(LDFLAGS) $(LINKONLYOBJECTS) $(LIBDIRS) $(LIBS) -o $@ $<
-
-dist/$(PROJECT)_115200_12MHz_u1_uart1.elf: build/$(PROJECT)_115200_12MHz_u1_uart1.o
-	avr-gcc $(LDFLAGS) $(LINKONLYOBJECTS) $(LIBDIRS) $(LIBS) -o $@ $<
-
-dist/$(PROJECT)_115200_12MHz_u1_uart01.elf: build/$(PROJECT)_115200_12MHz_u1_uart01.o
-	avr-gcc $(LDFLAGS) $(LINKONLYOBJECTS) $(LIBDIRS) $(LIBS) -o $@ $<
 
 dist/$(PROJECT)_115200_12MHz_u2.elf: build/$(PROJECT)_115200_12MHz_u2.o
 	avr-gcc $(LDFLAGS) $(LINKONLYOBJECTS) $(LIBDIRS) $(LIBS) -o $@ $<
 
+dist/$(PROJECT)_115200_12MHz_u2_uart0.elf: build/$(PROJECT)_115200_12MHz_u2_uart0.o
+	avr-gcc $(LDFLAGS) $(LINKONLYOBJECTS) $(LIBDIRS) $(LIBS) -o $@ $<
 
-#build/$(PROJECT)_115200_12MHz_u1_uart0.o: src/$(PROJECT).c
-#	avr-gcc $(INCLUDES) $(CFLAGS) -DBAUDRATE=115200 -DSPI_MASTER -DSPI_SLAVES=1 -DF_CPU=12000000L -DUART0 -c  -o $@ $<
-#
-#build/$(PROJECT)_115200_12MHz_u1_uart1.o: src/$(PROJECT).c
-#	avr-gcc $(INCLUDES) $(CFLAGS) -DBAUDRATE=115200 -DSPI_MASTER -DSPI_SLAVES=1 -DF_CPU=12000000L -DUART1 -c  -o $@ $<
-#
-#build/$(PROJECT)_115200_12MHz_u1_uart01.o: src/$(PROJECT).c
-#	avr-gcc $(INCLUDES) $(CFLAGS) -DBAUDRATE=115200 -DSPI_MASTER -DSPI_SLAVES=1 -DF_CPU=12000000L -DUART1 -DUART0 -c  -o $@ $<
 
 build/$(PROJECT)_115200_12MHz_u2.o: src/$(PROJECT).c
-	#avr-gcc $(INCLUDES) $(CFLAGS) -DBAUDRATE=115200 -DSPI_SLAVE=1 -DF_CPU=12000000L -DUART0_DEBUG -c  -o $@ $<
-	avr-gcc $(INCLUDES) $(CFLAGS) -DBAUDRATE=115200 -DF_CPU=12000000L -DUART0_DEBUG -c  -o $@ $<
+	avr-gcc $(INCLUDES) $(CFLAGS) -c -o $@ $<
 
+build/$(PROJECT)_115200_12MHz_u2_uart0.o: src/$(PROJECT).c
+	avr-gcc $(INCLUDES) $(CFLAGS) -DUART0_DEBUG -c -o $@ $<
 
-#u1: all
-#	avrdude -c usbasp -p atmega324p -e -U flash:w:dist/$(PROJECT)_115200_12MHz_u1_uart0.hex:i
 
 u2: all
 	avrdude -c usbasp -p atmega324p -e -U flash:w:dist/$(PROJECT)_115200_12MHz_u2.hex:i
 
-#u1_uart1: all
-	#avrdude -c usbasp -p atmega324p -e -U flash:w:dist/$(PROJECT)_115200_12MHz_u1_uart1.hex:i
-
-#u1_uart01: all
-#	avrdude -c usbasp -p atmega324p -e -U flash:w:dist/$(PROJECT)_115200_12MHz_u1_uart01.hex:i
+u2_uart0: all
+	avrdude -c usbasp -p atmega324p -e -U flash:w:dist/$(PROJECT)_115200_12MHz_u2_uart0.hex:i
 
 
 # http://www.engbedded.com/fusecalc/
@@ -115,8 +89,7 @@ read:
 
 help:
 	-@echo "   make all"
-	-@echo "   make u1"
-	-@echo "   make u1_uart1"
+	-@echo "   make u2"
 	-@echo "   make clean"
 	-@echo "   make fuse"
 	-@echo "   make read"

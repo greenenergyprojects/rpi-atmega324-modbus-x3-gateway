@@ -34,10 +34,6 @@
     #include <avr/pgmspace.h>
 #endif
 
-#if !defined(UART0) && !defined(UART1) && !defined(UART0_DEBUG)
-    #define UART0_DEBUG
-#endif
-
 
 #if defined(UART0) || defined(UART0_DEBUG)
    #define UDR   UDR0
@@ -76,8 +72,6 @@
     #define BOOTADR 0x7000
 #endif
 
-#undef UART0 
-#undef UART0_DEBUG 
 
 typedef void (*pFunc)(char);
 typedef struct Table {
@@ -89,7 +83,7 @@ typedef struct Table {
 
 #if SPM_PAGESIZE == 128
     const char __attribute__ ((section (".table"))) welcomeMsg[54] =
-        "#1(atmega324p 128 uc1-bootloader V0.01 2019-03-17 sx)";
+        "#1(atmega324p 128 uc1-bootloader V1.00 2019-04-08 sx)";
 #else
     #error "Wrong SPM_PAGESIZE"
 #endif
@@ -278,7 +272,6 @@ uint8_t readByte (char *c) {
 
 
 void sendByte (char c) {
-    PORTA |= (1 << PA2);
     sendSpiByte(c);
     uint8_t delay = 1;
     #if defined(UART0) || defined(UART0_DEBUG)
@@ -293,13 +286,18 @@ void sendByte (char c) {
         TCNT0 = 0;
         while (TCNT0 < 20);
     }
-    PORTA &= ~(1 << PA2);
 }
 
 void sendLineFeed () {
     sendByte(13);
     sendByte(10);
 }
+
+void sendUartLineFeed () {
+    sendUartByte(13);
+    sendUartByte(10);
+}
+
 
 void sendStr (const char *s) {
     while (*s) {
@@ -355,15 +353,13 @@ void sendUartHexByte (uint8_t b) {
 
 
 void sendResponse (uint8_t buf[], uint16_t length) {
-    // sendUartByte(13);
-    // sendUartByte(10);
-    // sendUartStr("Result ");
-    // for (int i = 0; i < length; i++) {
-    //     sendUartHexByte(buf[i]);
-    // }
-    // sendUartByte(13);
-    // sendUartByte(10);
-
+    #if defined(UART0) || defined(UART0_DEBUG) || defined(UART1)
+        sendUartStr("Result ");
+        for (int i = 0; i < length; i++) {
+            sendUartHexByte(buf[i]);
+        }
+        sendUartLineFeed();
+    #endif
 
     sendByte('$');
     uint8_t b = 0;
@@ -435,23 +431,33 @@ void boot_program_page (uint32_t addr, uint8_t buf[]) {
 }
 
 uint8_t verifyPage (uint32_t addr, uint8_t buf[]) {
-    // sendStr(" -> ");
-    // sendHexByte(addr >> 24);
-    // sendHexByte((addr >> 16) & 0xff);
-    // sendHexByte((addr >> 8) & 0xff);
-    // sendHexByte(addr & 0xff);
-    // sendStr(" -> ");
+    #if defined(UART0) || defined(UART0_DEBUG) || defined(UART1)
+        sendUartStr("\rFlash ");
+        sendUartHexByte(addr >> 24);
+        sendUartHexByte((addr >> 16) & 0xff);
+        sendUartHexByte((addr >> 8) & 0xff);
+        sendUartHexByte(addr & 0xff);
+        sendUartStr(" -> ");
+    #endif
+
     for (uint16_t i = 0; i < SPM_PAGESIZE; i++) {
         uint8_t bFlash = pgm_read_byte(addr + i);
         uint8_t bProg = *buf++;
-        // sendHexByte(bFlash);
-        // sendUartByte(':');
-        // sendHexByte(bProg);
-        // sendUartByte(' ');
+        #if defined(UART0) || defined(UART0_DEBUG) || defined(UART1)
+            sendUartHexByte(bFlash);
+            sendUartByte(':');
+            sendUartHexByte(bProg);
+            sendUartByte(' ');
+        #endif
         if (bFlash != bProg) {
            return 0;  // status 6  - verification failure
         }
     }
+
+    #if defined(UART0) || defined(UART0_DEBUG) || defined(UART1)
+        sendUartLineFeed();
+    #endif
+
     return 0; // status 0  - OK
 }
 
@@ -549,8 +555,11 @@ uint8_t executeCommand () {
 
     spi.skipUart = 1;
 
-    // sendUartByte(recBuffer[0]);
-    // sendUartByte(recBuffer[1]);
+    #if defined(UART0) || defined(UART0_DEBUG) || defined(UART1)
+        sendUartLineFeed();
+        sendUartByte(recBuffer[0]);
+        sendUartByte(recBuffer[1]);
+    #endif
 
     while (timer >= 0) {
         if (!readByte(&c)) {
@@ -568,13 +577,13 @@ uint8_t executeCommand () {
                         PORTA |= (1 << PA1);
                     }
                     sendSpiByte(c);
-                    // sendUartByte(c);
+                    #if defined(UART0) || defined(UART0_DEBUG) || defined(UART1)
+                        sendUartByte(c);
+                    #endif
                 }
+                TCNT0 = 0;
                 if (c == '\n' || c == '\r') {
-                    // while (timer > 0 && spi.toSend > 0) {
-                    //     timer--;
-                    // }
-                    while (spi.toSend > 0) {
+                    while (TCNT0 < 128 && spi.toSend > 0) {
                         PORTA ^= (1 << PA1);
                     }
                     PORTA &= ~(1 << PA1);
@@ -659,8 +668,6 @@ int main () {
 
     sendLineFeed();
     sendStrPgm(welcomeMsg);
-    // sendStr("  ");
-    // sendByte(SPI_CHANNEL + '0');
     sendLineFeed();
     
 
