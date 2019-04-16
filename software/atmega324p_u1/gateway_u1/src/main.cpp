@@ -7,17 +7,9 @@
 // Created: Aug 23, 2016 (SX)
 //***********************************************************************
 
-#include "./global.h"
-
-#include <stdio.h>
-#include <string.h>
-
-#include <avr/io.h>
-#include <avr/interrupt.h>
-#include <util/delay.h>
-
-#include "./sys.h"
-#include "./app.h"
+#include "global.h"
+#include "sys.hpp"
+#include "app.hpp"
 
 // defines
 // ...
@@ -33,18 +25,17 @@ const char MAIN_HELP[] = "\r\n";
 
 
 int main () {
-    sys_init();
-
-    app_init();
+    uc1_sys::init();
+    uc1_app::init();
     printf("%s %s %s %s", MAIN_WELCOME, MAIN_DATE, MAIN_TIME, MAIN_HELP);
-    sys_newline();
+    uc1_sys::newline();
 
     // enable interrupt system
     sei();
 
     while (1) {
-        sys_main();
-        app_main();
+        uc1_sys::main();
+        uc1_app::main();
     }
     return 0;
 }

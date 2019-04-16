@@ -3,9 +3,11 @@
 $(shell mkdir -p dist >/dev/null)
 $(shell mkdir -p build >/dev/null)
 
+## Intel Hex file production flags
+HEX_FLASH_FLAGS = -R .eeprom -R .fuse -R .lock -R .signature
+
 all: dist/atmega324p_u2.hex
 	@avr-size --mcu=atmega324p --format=avr dist/atmega324p_u2.elf
-
 
 dist/atmega324p_u2.hex: dist/atmega324p_u2.elf
 	avr-objcopy -O ihex $< $@
@@ -13,14 +15,21 @@ dist/atmega324p_u2.hex: dist/atmega324p_u2.elf
 dist/atmega324p_u2.elf: build/main.o build/sys.o build/app.o
 	avr-gcc -o $@ -mmcu=atmega324p build/main.o build/sys.o build/app.o
 
-build/main.o: src/main.c src/global.h src/sys.h src/app.h
-	avr-gcc -o $@ -mmcu=atmega324p -Os -c -DCOMPILE src/main.c
+build/main.o: src/main.cpp src/global.h src/sys.hpp src/app.hpp
+	avr-g++ -o $@ -mmcu=atmega324p -Os -c -DCOMPILE $<
 
-build/sys.o: src/sys.c src/global.h src/sys.h
-	avr-gcc -o $@ -mmcu=atmega324p -Os -c -DCOMPILE src/sys.c
+build/sys.o: src/sys.cpp src/global.h src/sys.hpp
+	avr-g++ -o $@ -mmcu=atmega324p -Os -c -DCOMPILE $<
 
-build/app.o: src/app.c src/global.h src/app.h
-	avr-gcc -o $@ -mmcu=atmega324p -Os -c -DCOMPILE src/app.c
+build/app.o: src/app.cpp src/global.h src/app.hpp src/sys.hpp
+	avr-g++ -o $@ -mmcu=atmega324p -Os -c -DCOMPILE $<
+
+u2: dist/atmega324p_u2.hex
+	avrdude -c usbasp -p atmega324p -e -U flash:w:$<:i
+
+u2bl: dist/atmega324p_u2.hex ../bootloader_u2/dist/bootloader_atmega324p_115200_12MHz_u2.hex
+	avrdude -c usbasp -p atmega324p -e -U flash:w:$<:i
+	avrdude -c usbasp -p atmega324p -D -U flash:w:../bootloader_u2/dist/bootloader_atmega324p_115200_12MHz_u2.hex:i
 
 clean:
 	-@rm -r dist

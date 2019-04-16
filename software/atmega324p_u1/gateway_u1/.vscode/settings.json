@@ -1,20 +1,18 @@
 {
-    "files.exclude": {
-        "**/.git": true,
-        "**/.svn": true,
-        "**/.hg": true,
-        "**/CVS": true,
-        "**/.DS_Store": true,
-        "**/.gitignore": true,
-        "**/build": true,
-        "**/.vscode": true,
-        "**/dist": true,
-        "**/Makefile": true
-    },
     "files.associations": {
         "global.h": "c",
         "stdio.h": "c",
-        "io.h": "c"
+        "io.h": "c",
+        "cctype": "cpp",
+        "cmath": "cpp",
+        "cstdint": "cpp",
+        "cstdio": "cpp",
+        "cstdlib": "cpp",
+        "limits": "cpp",
+        "*.tcc": "cpp",
+        "cinttypes": "cpp",
+        "type_traits": "cpp",
+        "typeinfo": "cpp"
     },
     "cpplint": {
         "lineLength": 140,
