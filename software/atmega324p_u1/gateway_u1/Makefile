@@ -7,7 +7,7 @@ $(shell mkdir -p build >/dev/null)
 HEX_FLASH_FLAGS = -R .eeprom -R .fuse -R .lock -R .signature
 
 all: dist/atmega324p_u1.hex
-	@avr-size --mcu=atmega324p --format=avr dist/atmega324p_u2.elf
+	@avr-size --mcu=atmega324p --format=avr dist/atmega324p_u1.elf
 
 dist/atmega324p_u1.hex: dist/atmega324p_u1.elf
 	avr-objcopy -O ihex $< $@

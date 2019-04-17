@@ -3,6 +3,7 @@
 #include <gtk/gtk.h>
 
 #include "gui/gtkgui.hpp"
+#include "bridge/bridge.hpp"
 #include "uc1/sys.hpp"
 #include "uc1/app.hpp"
 #include "uc2/sys.hpp"
@@ -13,6 +14,7 @@ using namespace std;
 Gui *gui = NULL;
 
 void *mainLoop (void *tid) {
+    bridge::init();
     uc1_sys::init();
     uc2_sys::init();
     uc1_app::init();

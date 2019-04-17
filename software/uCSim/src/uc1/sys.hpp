@@ -39,8 +39,15 @@ namespace uc1_sys {
         struct Sys_Modbus modbus[1];
     };
 
+    struct SysCpu {
+        int sfirq;
+        int udr0;
+        int udr1;
+    };
+
     struct SysResorces {
         pthread_mutex_t lock;
+        struct SysCpu cpu;
         uint8_t ledGreen;
         uint8_t ledRed;
         uint8_t ledYellow;
@@ -94,6 +101,9 @@ namespace uc1_sys {
     void      toggleLedRed ();
     void      toggleLedGreen ();
     void      toggleLedYellow ();
+
+    void uart0_isr (uint8_t receivedByte);
+    
 
 }
 

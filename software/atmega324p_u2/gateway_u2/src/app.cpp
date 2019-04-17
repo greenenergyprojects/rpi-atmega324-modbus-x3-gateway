@@ -38,25 +38,31 @@ namespace uc2_app {
         static uint8_t timer = 0;
         timer = timer >= 8 ? 0 : timer + 1;
 
-        if (timer % 2 == 1) {
-            uc2_sys::toggleLedGreen();
+        if (timer == 0) {
+            uc2_sys::setLedGreen(1);
         } 
-        if (timer % 4 == 0 ) {
-            uc2_sys::toggleLedRed();
+        if (timer == 1 ) {
+            uc2_sys::setLedGreen(0);
         }
         
     }
 
-    void app_handleUart0Byte (uint8_t b) {
+    void handleUart0Byte (uint8_t b) {
 
     }
 
-    void app_handleUart1Byte (uint8_t b) {
+    void handleUart1Byte (uint8_t b) {
 
     }
 
-    void app_handleSpiByte (uint8_t b) {
-        
+    uint8_t handleSpiByte (uint8_t b) {
+        static uint16_t timer = 0;
+        timer++;
+        if (timer >= 4096) {
+            uc2_sys::toggleLedYellow();
+            timer = 0;
+        }
+        return ~b;
     }
 
 }

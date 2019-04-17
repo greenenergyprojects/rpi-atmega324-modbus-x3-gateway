@@ -21,7 +21,7 @@ class GtkGui : public Gui {
     private:
         GtkWidget *u1LabelG, *u1LabelR, *u1LabelY, *u1Text, *u1Tab;
         GtkWidget *u2LabelG, *u2LabelR, *u2LabelY, *u2Text, *u2Tab;
-        
+        GObject *u1ButtonTest, *u2ButtonTest;
 
         static void callbackOnButtonTest1Clicked (GtkWidget* button, gpointer* data) {
             reinterpret_cast<GtkGui*>(data)->onButtonClicked(button);

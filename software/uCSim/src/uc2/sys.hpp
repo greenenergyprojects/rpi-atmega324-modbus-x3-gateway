@@ -95,6 +95,8 @@ namespace uc2_sys {
     void      toggleLedGreen ();
     void      toggleLedYellow ();
 
+    uint8_t   spi_slave_isr ( uint8_t b);
+
 }
 
 #endif // UC2_SYS_H_

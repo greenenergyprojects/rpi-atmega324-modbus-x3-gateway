@@ -39,6 +39,8 @@
         "cstdarg": "cpp",
         "ctime": "cpp",
         "memory": "cpp",
-        "ratio": "cpp"
+        "ratio": "cpp",
+        "cstring": "cpp",
+        "list": "cpp"
     }
 }

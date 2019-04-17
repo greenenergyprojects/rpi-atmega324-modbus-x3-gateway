@@ -3,18 +3,29 @@
 #include <iostream>
 #include <string.h>
 #include <thread>
+#include <cstring>
 
 #include "gtkgui.hpp"
+#include "../bridge/bridge.hpp"
+
 
 void GtkGui::onButtonClicked(GtkWidget *widget) {
-     g_print ("Hello World\n");
+    if (widget == (void *)u1ButtonTest) {
+        std::string frame(":010300000001BA");
+        std::string rawFrame = frame + "\r\n";
+        int rv = bridge::sendStringToUc1Uart0(115200, (uint8_t *)rawFrame.c_str(), rawFrame.length());
+        std::string msg = "PI: Send(\"" + frame + "\\r\\n\") to U1:UART0 => " + std::to_string(rv) + "\n";
+        appendU1Text(msg.c_str());
+    }
+    if (widget == (void *)u2ButtonTest) {
+        g_print ("Test U2 not implemented\n");
+    }
 }
 
 void GtkGui::activate (GtkApplication* app) {
 
     GtkBuilder *builder;
     GtkWidget *window;
-    GObject *u1ButtonTest, *u2ButtonTest;
     GError *error = NULL;
 
     builder = gtk_builder_new ();

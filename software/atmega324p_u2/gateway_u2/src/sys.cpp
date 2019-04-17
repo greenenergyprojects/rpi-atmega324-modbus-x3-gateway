@@ -78,8 +78,8 @@ namespace uc2_sys {
         OCR1A = sys.modbus[0].dT1_35;
 
         // SPI Slave
-        // SPCR0 = (1 << SPIE0) | (1 << SPE0) | (1 << CPOL0);
-        // DDRB |= (1 << PB6); // MISO
+        DDRB  |= (1 << PB6);  // MISO
+        SPCR0  = (1 << SPE0) | (1 << SPIE0);
 
         // connect libc functions printf(), gets()... to UART
         // fdevopen(sys_monitor_putch, sys_monitor_getch);
@@ -346,4 +346,5 @@ ISR (TIMER1_COMPA_vect) {
 }
 
 ISR (SPI_STC_vect) {
+    SPDR0 = uc2_app::handleSpiByte(SPDR0); 
 }

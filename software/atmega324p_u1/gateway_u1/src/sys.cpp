@@ -77,10 +77,14 @@ namespace uc1_sys {
         sys.modbus[0].dT1_15 = 30 * 12000000L / 16 / GLOBAL_UC1_SYS_UART1_BITRATE;  // correct for even parity ?
         OCR1A = sys.modbus[0].dT1_35;
 
-        // SPI Slave
-        // SPCR0 = (1 << SPIE0) | (1 << SPE0) | (1 << CPOL0);
-        // DDRB |= (1 << PB6); // MISO
-
+        // SPI Master
+        DDRB  |= (1 << PB7) | (1 << PB5) | (1 << PB4);  // SCLK, MOSI, nSS
+        PORTB |= (1 << PB4);
+        // SPSR0 |= (1 << SPI2X0);
+        SPCR0  = (1 << SPE0) | (1 << MSTR0) | (1 << SPIE0) | (1 << SPR10);
+        PORTB &= ~(1 << PB4);
+        SPDR0 = 0x00;
+        
         // connect libc functions printf(), gets()... to UART
         // fdevopen(sys_monitor_putch, sys_monitor_getch);
         stdout = &sys_stdout;
@@ -346,4 +350,8 @@ ISR (TIMER1_COMPA_vect) {
 }
 
 ISR (SPI_STC_vect) {
+    PORTB |= (1 << PB4); 
+    uint8_t toSend = uc1_app::handleSpiByte(SPDR0);
+    PORTB &= ~(1 << PB4);
+    SPDR0 = toSend;
 }

@@ -17,17 +17,18 @@ namespace uc2_sys {
     struct SysResorces res;
 
 
-    pthread_t tid[1];
+    pthread_t tid_timer0;
 
     void init () {
       memset(&sys, 0, sizeof sys);
       memset(&res, 0, sizeof res);
       res.lock = PTHREAD_MUTEX_INITIALIZER;
-      int rc = pthread_create(&tid[0], NULL, timer0_isr, NULL);
+      int rc = pthread_create(&tid_timer0, NULL, timer0_isr, NULL);
       if (rc) {
          std::cout << "Error:unable to create thread," << rc << std::endl;
          exit(-1);
       }
+
       printf("uc2_sys::init() done\n");
     }
 
@@ -51,6 +52,30 @@ namespace uc2_sys {
         } 
     }
 
+    void setLedGreen (uint8_t on) {
+        lock(); {
+            res.ledGreen = on;
+        }
+        unlock();
+        gui->setU2LedGreen(on);
+    }
+
+    void setLedYellow (uint8_t on) {
+        lock(); {
+            res.ledYellow = on;
+        }
+        unlock();
+        gui->setU2LedYellow(on);
+    }
+
+    void setLedYRed (uint8_t on) {
+        lock(); {
+            res.ledRed = on;
+        }
+        unlock();
+        gui->setU2LedRed(on);
+    }
+
     void toggleLedGreen () {
         bool on;
         lock(); {
@@ -59,7 +84,7 @@ namespace uc2_sys {
         }
         unlock();
         gui->setU2LedGreen(res.ledGreen);
-        gui->appendU2Text("toggle Green U2\n");
+        // gui->appendU2Text("toggle Green U2\n");
     }
 
     void toggleLedYellow () {
@@ -84,10 +109,10 @@ namespace uc2_sys {
 
     // **************************************************
 
-    void *timer0_isr (void * threadid) {
+    void *timer0_isr (void *threadid) {
         static uint8_t cnt500us = 0;
         try {
-            std::cout << "Thread starting..." << std::endl;
+            std::cout << "Thread for timer0_isr starting..." << std::endl;
             while (true) {
                 struct timeval tm;
                 tm.tv_sec = 0;
@@ -108,6 +133,10 @@ namespace uc2_sys {
 
         }
         pthread_exit(NULL);
+    }
+
+    uint8_t spi_slave_isr (uint8_t b) {
+        return uc2_app::handleSpiByte(b);
     }
 
 }
