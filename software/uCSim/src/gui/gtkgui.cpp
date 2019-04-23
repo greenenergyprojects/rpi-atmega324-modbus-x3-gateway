@@ -11,14 +11,18 @@
 
 void GtkGui::onButtonClicked(GtkWidget *widget) {
     if (widget == (void *)u1ButtonTest) {
-        std::string frame(":010300000001BA");
+        std::string frame(":010300000001BB");
         std::string rawFrame = frame + "\r\n";
         int rv = bridge::sendStringToUc1Uart0(115200, (uint8_t *)rawFrame.c_str(), rawFrame.length());
-        std::string msg = "PI: Send(\"" + frame + "\\r\\n\") to U1:UART0 => " + std::to_string(rv) + "\n";
+        std::string msg = "PI -> U1-UART0:  " + frame + "\\r\\n\"" + "\n";
         appendU1Text(msg.c_str());
     }
     if (widget == (void *)u2ButtonTest) {
-        g_print ("Test U2 not implemented\n");
+        std::string frame(":020300000001BA");
+        std::string rawFrame = frame + "\r\n";
+        int rv = bridge::sendStringToUc1Uart0(115200, (uint8_t *)rawFrame.c_str(), rawFrame.length());
+        std::string msg = "PI -> U1:UART0:  " + frame + "\\r\\n\"" + "\n";
+        appendU1Text(msg.c_str());
     }
 }
 

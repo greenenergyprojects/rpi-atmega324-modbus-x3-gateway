@@ -28,7 +28,7 @@ int main () {
     uc1_sys::init();
     uc1_app::init();
     printf("%s %s %s %s", MAIN_WELCOME, MAIN_DATE, MAIN_TIME, MAIN_HELP);
-    uc1_sys::newline();
+    printf("\r\n");
 
     // enable interrupt system
     sei();

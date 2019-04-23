@@ -24,6 +24,26 @@ namespace uc1_sys {
     pthread_t tid_timer0;
     pthread_t tid_spiMaster;
 
+    // ********************************************************
+
+    void lock () {
+        int status = pthread_mutex_lock(&res.lock);
+        if (status != 0) {
+            perror("Lock mutex error");
+            exit(1);
+        } 
+    }
+
+    void unlock () {
+        int status = pthread_mutex_unlock(&res.lock);
+        if (status != 0) {
+            perror("Lock mutex error");
+            exit(1);
+        } 
+    }
+
+    // ********************************************************
+
     void init () {
         memset(&sys, 0, sizeof sys);
         memset(&res, 0, sizeof res);
@@ -52,7 +72,7 @@ namespace uc1_sys {
         // printf("uc2_sys::main() done\n");
     }
 
-    void sei () {
+    void saveSei () {
         int uart0Byte = -1;
         int uart1Byte = -1;
         
@@ -74,28 +94,44 @@ namespace uc1_sys {
 
     }
 
-    void cli () {
+    void saveCli () {
         lock(); {
             res.cpu.sfirq = 0;
         } 
         unlock();
     }
 
-    void lock () {
-        int status = pthread_mutex_lock(&res.lock);
-        if (status != 0) {
-            perror("Lock mutex error");
-            exit(1);
-        } 
+    
+    //****************************************************************************
+    // Event Handling
+    //****************************************************************************
+
+    Sys_Event setEvent (Sys_Event event) {
+        saveCli();
+        uint8_t eventIsPending = ((sys.eventFlag & event) != 0);
+        sys.eventFlag |= event;
+        saveSei();
+        return eventIsPending;
     }
 
-    void unlock () {
-        int status = pthread_mutex_unlock(&res.lock);
-        if (status != 0) {
-            perror("Lock mutex error");
-            exit(1);
-        } 
+
+    Sys_Event clearEvent (Sys_Event event) {
+        saveCli();
+        uint8_t eventIsPending = ((sys.eventFlag & event) != 0);
+        sys.eventFlag &= ~event;
+        saveSei();
+        return eventIsPending;
     }
+
+
+    Sys_Event isEventPending (Sys_Event event) {
+        return (sys.eventFlag & event) != 0;
+    }
+
+
+    //****************************************************************************
+    // LED Handling
+    //****************************************************************************
 
     void setLedGreen (uint8_t on) {
         lock(); {
@@ -150,6 +186,34 @@ namespace uc1_sys {
         }
         unlock();
         gui->setU1LedRed(on);
+    }
+
+    // **************************************************
+
+    void sendViaUart0 (uint8_t typ, uint8_t buf[], uint8_t size) {
+        gui->appendU1Text("U1-UART0 -> PI:  ");
+        char s[2];
+        s[1] = 0;
+        for (uint8_t i = 0; i < size; i++) {
+            char c = buf[i];
+            s[0] = c;
+            if (c == ':' || (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F')) {
+                gui->appendU1Text(s);
+            } else if (c == '\r') {
+                gui->appendU1Text("\\r");
+            } else if (c == '\n') {
+                gui->appendU1Text("\\n");
+            } else {
+                gui->appendU1Text("?");
+            }
+        }
+        gui->appendU1Text("\n");
+        uc1_app::uart0ReadyToSent(typ, 0);
+    }
+
+    void sendViaUart1 (uint8_t buf[], uint8_t size) {
+        bridge::receiveBufferFromUc1Uart1(buf, size);
+        uc1_app::uart1ReadyToSent(0);
     }
 
     // **************************************************
@@ -217,7 +281,22 @@ namespace uc1_sys {
     }
 
     void uart1_isr (uint8_t receivedByte) {
-        uc1_app::handleUart1Byte(receivedByte);
+        int16_t b = -1;
+        lock(); {
+            if (res.cpu.sfirq) {
+                b = receivedByte;
+            } else {
+                res.cpu.udr1 = receivedByte;
+            }
+        }
+        unlock();
+        if (b >= 0) {
+            uc1_app::handleUart1Byte(b);
+        }
+    }
+
+    void uart1_timeout () {
+        uc1_app::handleUart1Byte(-1);
     }
 
 }

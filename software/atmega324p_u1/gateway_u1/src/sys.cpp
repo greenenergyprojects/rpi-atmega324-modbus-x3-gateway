@@ -5,11 +5,11 @@
 // defines
 
 
-#define SYS_UART_BYTE_RECEIVED (UCSR0A & (1 << RXC0))
-#define SYS_UART_UDR_IS_EMPTY (UCSR0A & (1 << UDRE0))
-#define SYS_UDR UDR0
-#define SYS_UART_RECEIVE_VECTOR USART0_RX_vect
-#define SYS_TIMER0_VECTOR TIMER0_COMPA_vect
+// #define SYS_UART_BYTE_RECEIVED (UCSR0A & (1 << RXC0))
+// #define SYS_UART_UDR_IS_EMPTY (UCSR0A & (1 << UDRE0))
+// #define SYS_UDR UDR0
+// #define SYS_UART_RECEIVE_VECTOR USART0_RX_vect
+// #define SYS_TIMER0_VECTOR TIMER0_COMPA_vect
 
 
 namespace uc1_sys {
@@ -27,11 +27,11 @@ namespace uc1_sys {
     // static FILE sys_stdin = fdev_setup_stream(NULL, sys_uart_getch, _FDEV_SETUP_READ);
 
     static FILE sys_stdout;
-    static FILE sys_stdin;
+    // static FILE sys_stdin;
 
     void init () {
         fdev_setup_stream(&sys_stdout, uart_putch, NULL, _FDEV_SETUP_WRITE);
-        fdev_setup_stream(&sys_stdin, NULL, uart_getch, _FDEV_SETUP_READ);
+        // fdev_setup_stream(&sys_stdin, NULL, uart_getch, _FDEV_SETUP_READ);
         memset((void *)&sys, 0, sizeof(sys));
         _delay_ms(1);
 
@@ -89,7 +89,7 @@ namespace uc1_sys {
         // fdevopen(sys_monitor_putch, sys_monitor_getch);
         stdout = &sys_stdout;
         stderr = &sys_stdout;
-        stdin  = &sys_stdin;
+        // stdin  = &sys_stdin;
     }
 
 
@@ -108,14 +108,14 @@ namespace uc1_sys {
     }
 
 
-    void sysSEI () {
+    void saveSei () {
         if (sys.flags & SYS_FLAG_SREG_I) {
             sei();
         }
     }
 
 
-    void sysCLI (void) {
+    void saveCli (void) {
         if (SREG & 0x80) {
             sys.flags |= SYS_FLAG_SREG_I;
         } else {
@@ -124,96 +124,38 @@ namespace uc1_sys {
         cli();
     }
 
-
-    void newline () {
-        printf("\n\r");
-    }
-
-    //----------------------------------------------------------------------------
-
-    int uart_getch (FILE *f) {
-        if (f != stdin) {
-            return EOF;
-        }
-        if (sys.uart.wpos_u8 == sys.uart.rpos_u8) {
-            return EOF;
-        }
-        uint8_t c = sys.uart.rbuffer_u8[sys.uart.rpos_u8++];
-        if (sys.uart.rpos_u8 >= GLOBAL_UC1_SYS_UART0_RECBUFSIZE) {
-            sys.uart.rpos_u8 = 0;
-        }
-        return (int) c;
-    }
-
+    //****************************************************************************
+    // Uart Handling
+    //****************************************************************************
 
     int uart_putch (char c, FILE *f) {
         if (f != stdout) {
             return EOF;
         }
-        while (!SYS_UART_UDR_IS_EMPTY) {
+        while (!(UCSR0A & (1 << UDRE0))) {
         }
-        SYS_UDR = c;
+        UDR0 = c;
         return (int)c;
     }
-
-
-    uint8_t uart_available (void) {
-        return sys.uart.wpos_u8 >= sys.uart.rpos_u8
-                ? sys.uart.wpos_u8 - sys.uart.rpos_u8
-                : ((int16_t)sys.uart.wpos_u8) + GLOBAL_UC1_SYS_UART0_RECBUFSIZE - sys.uart.rpos_u8;
-    }
-
-
-    //----------------------------------------------------------------------------
-
-    int16_t uart_getBufferByte (uint8_t pos) {
-        int16_t value;
-        sysCLI();
-
-        if (pos >= uart_available()) {
-            value = -1;
-        } else {
-            uint8_t bufpos = sys.uart.rpos_u8 + pos;
-            if (bufpos >= GLOBAL_UC1_SYS_UART0_RECBUFSIZE)
-                bufpos -= GLOBAL_UC1_SYS_UART0_RECBUFSIZE;
-            value = sys.uart.rbuffer_u8[bufpos];
-        }
-
-        sysSEI();
-        return value;
-    }
-
-
-    void uart_flush (void) {
-        sysCLI();
-        while (SYS_UART_BYTE_RECEIVED)
-            sys.uart.rbuffer_u8[0] = SYS_UDR;
-
-        sys.uart.rpos_u8 = 0;
-        sys.uart.wpos_u8 = 0;
-        sys.uart.errcnt_u8 = 0;
-        sysSEI();
-    }
-
 
     //****************************************************************************
     // Event Handling
     //****************************************************************************
 
     Sys_Event setEvent (Sys_Event event) {
-        sysCLI();
+        saveCli();
         uint8_t eventIsPending = ((sys.eventFlag & event) != 0);
         sys.eventFlag |= event;
-        sysSEI();
+        saveSei();
         return eventIsPending;
     }
 
 
     Sys_Event clearEvent (Sys_Event event) {
-        sysCLI();
+        saveCli();
         uint8_t eventIsPending = ((sys.eventFlag & event) != 0);
         sys.eventFlag &= ~event;
-        sysSEI();
+        saveSei();
         return eventIsPending;
     }
 
@@ -284,7 +226,7 @@ ISR (USART0_RX_vect) {
     }
     lastChar = c;
 
-    // app_handleUart0Byte(c);
+    uc1_app::handleUart0Byte(c);
 }
 
 ISR (USART1_RX_vect) {

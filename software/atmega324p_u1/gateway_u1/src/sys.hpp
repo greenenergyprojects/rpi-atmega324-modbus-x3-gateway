@@ -99,21 +99,15 @@ namespace uc1_sys {
     void      init ();
     void      main ();
 
-    void      sysSEI ();
-    void      sysCLI ();
+    void      saveSei ();
+    void      saveCli ();
 
     uint8_t   inc8BitCnt (uint8_t count);
     uint16_t  inc16BitCnt (uint16_t count);
 
-    void      newline (void);
-
     Sys_Event setEvent (Sys_Event event);
     Sys_Event clearEvent (Sys_Event event);
     Sys_Event isEventPending (Sys_Event event);
-
-    uint8_t   uart_available ();
-    int16_t   uart_getBufferByte (uint8_t pos);
-    void      uart_flush ();
 
     void      setLedRed (uint8_t on);
     void      setLedGreen (uint8_t on);

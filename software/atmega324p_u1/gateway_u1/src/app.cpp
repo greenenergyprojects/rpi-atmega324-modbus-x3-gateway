@@ -4,6 +4,8 @@
 
 namespace uc1_app {
 
+    struct App app;
+
     // defines
 
     // declarations and definations
@@ -13,22 +15,252 @@ namespace uc1_app {
     // ------------------------------------------------------------------------
 
     void init (void) {
+        memset(&app, 0, sizeof app);
+        app.uart0State = CHECK_UART0;
+        // local modbus device address
+        app.modbus.localAddresses[0] = '0'; app.modbus.localAddresses[1] = '1';
+        // device addresses for Modbus B1 (UART1)
+        app.modbus.localAddresses[2] = '0'; app.modbus.localAddresses[3] = '2';
+        app.modbus.localAddresses[4] = 'A'; app.modbus.localAddresses[5] = '0';
     }
+
+    void incErrCnt8 (uint8_t *pCnt) {
+        if (*pCnt < 0xff) {
+            (*pCnt)++;
+        }
+    }
+
+    int8_t hex2Dec (uint8_t hex) {
+        if (hex >= '0' && hex <= '9') {
+            return hex - '0';
+        } else if (hex >= 'A' && hex <= 'F') {
+            return hex - 'A' + 10;
+        } else {
+            return -1;
+        }
+    }
+
+    char dec2Hex (uint8_t dec) {
+        if (dec >= 0 && dec <= 9) {
+            return dec + '0';
+        } else if (dec <= 15) {
+            return dec - 10 + 'A';
+        } else {
+            return 0;
+        }
+    }
+
+
+    uint16_t modbusUpdateCRC (uint8_t b, uint16_t crc) {
+        uint8_t i;
+ 
+        crc = crc ^ (uint16_t)b;
+        for (i=0; i<8; i++) {
+            if (crc & 0x0001) {
+                crc = (crc >> 1) ^ 0xa001;
+            } else {
+                crc = crc >> 1;
+            }
+        }
+        
+        return crc;
+    }
+
+
+    uint8_t modbusAsciToRtu (uint8_t buf[], uint8_t maxSize) {
+        if (buf[0] != ':') {
+            return 0;
+        }
+
+        uint8_t index = 0;
+        uint8_t lrc = 0;
+        uint16_t crc = 0xffff;
+
+        for (uint8_t i = 1; i < maxSize; i += 2) {
+            uint8_t bh = buf[i];
+            uint8_t bl = buf[i+1];
+            int8_t h = hex2Dec(bh);
+            int8_t l = hex2Dec(bl);
+            if (h < 0 || l < 0) { return 0; }
+            uint8_t b = h * 16  + l;
+            
+            if (buf[i + 2] == '\r') {
+                if (buf[i + 3] == '\n') {
+                    lrc = (uint8_t)( -(int8_t)lrc);
+                    if (lrc != b) {
+                        return 0; // LRC error
+                    }
+                    buf[index++] = crc & 0xff;
+                    buf[index++] = crc >> 8;
+                    return index;
+                }
+                return 0;
+            
+            } else {
+                buf[index++] = b;
+                lrc = lrc + bh + bl;
+                crc = modbusUpdateCRC(b, crc);
+            }
+        }
+
+        return 0;
+    }
+
+    
+    uint8_t modbusRtuToAscii (uint8_t buf[], uint8_t size, uint8_t maxSize, uint8_t checkCrc) {
+        if ((2 * size) > maxSize) { return 0; }
+        uint8_t lrc = 0;
+        
+        uint16_t crc = 0xffff;
+        if (checkCrc) {
+            for (uint8_t i = 0; i < size; i++) {  
+               crc = modbusUpdateCRC(buf[i], crc);
+            }
+        } else {
+            crc = 0x0000;
+        }
+
+        for (uint8_t i = size - 2; i > 0; i--) {
+            uint8_t b = buf[i - 1];
+            char bl = dec2Hex(b & 0x0f);
+            char bh = dec2Hex(b >> 4);
+            lrc = lrc + bl + bh;
+            buf[i * 2] = bl;
+            buf[i * 2 - 1] = bh;
+        }
+        lrc = (uint8_t)(-(int8_t)lrc);
+
+        if (crc != 0x0000) {
+            lrc++;
+        }
+
+        buf[0] = ':';
+        uint8_t i = size * 2 - 3;
+        buf[i++] = dec2Hex(lrc >> 4);
+        buf[i++] = dec2Hex(lrc & 0x0f);
+        buf[i++] = '\r';
+        buf[i++] = '\n';
+        
+        return i;
+    }
+
+
+    uint8_t executeModbusReadHoldRegisters (uint8_t buf[]) {
+        uint8_t rv = 3;
+        uint16_t addr = ((uint16_t)buf[2] << 8) + buf[3];
+        uint16_t quantity  = ((uint16_t)buf[4] << 8) + buf[5];
+        if (quantity < 1 || quantity > 0x7d) {
+            buf[1] |= 0x80;
+            buf[2] = 0x03; // Exception code: quantity out of range
+            return 3;
+        }
+        buf[2] = quantity * 2;
+        uint8_t i;
+
+        for (i = 3; quantity > 0; quantity--, addr++, i++) {
+            switch (addr) {
+                case 0: {
+                    buf[i++] = APP_VERSION_MAJOR;
+                    buf[i]  = APP_VERSION_MINOR;
+                    break;
+                }
+
+                default: {
+                    buf[1] |= 0x80;
+                    buf[2] = 0x02; // Exception code: address out of range
+                    return 3;
+                }
+            }
+            rv += 2;
+        }
+        return rv;
+    }
+
+    uint8_t parseModbusRequest (uint8_t buf[], uint8_t size) {
+        if (buf[0] != UC1_APP_MODBUS_DEVICE_ADDRESS) {
+            return 0;
+        }
+        uint8_t rv = 0;
+        switch (buf[1]) {
+            case 0x03: {
+                if (size == 8) {
+                    rv = executeModbusReadHoldRegisters (buf);
+                }
+                break;
+            }
+
+            default: {
+                buf[1] = buf[1] | 0x80;
+                buf[2] = 0x01; // Exception code: Function code not supported
+                rv = 3;
+                break;
+            }
+        }
+        return rv;
+    }
+
+
 
     void main (void) {
+        if (app.modbus.local.buffer.state == RequestReady) {
+            uint8_t size = modbusAsciToRtu(app.modbus.local.buffer.buffer, sizeof app.modbus.local.buffer.buffer);
+            if (size > 0) {
+                // size = modbusRtuToAscii(app.modbus.local.buffer.buffer, size, sizeof app.modbus.local.buffer.buffer, 1);
+                app.modbus.local.buffer.state = ResponseInProgress;
+                size = parseModbusRequest(app.modbus.local.buffer.buffer, size);
+            }
+            if (size > 0) {
+                size = modbusRtuToAscii(app.modbus.local.buffer.buffer, size + 2, sizeof app.modbus.local.buffer.buffer, 0);
+            }
+            if (size >0) {
+                app.modbus.local.buffer.state = ResponseReady;
+                uc1_sys::sendViaUart0(0, app.modbus.local.buffer.buffer, size);
+            } else {
+                incErrCnt8(&app.modbus.local.buffer.errCnt);
+                app.modbus.local.buffer.size = 0;
+                app.modbus.local.buffer.state = Idle;
+            }
+
+        } else if (app.modbus.uart1.buffer.state == RequestReady) {
+             // --_> move to isr -> uART1 transmit interrupt
+            uint8_t size = modbusAsciToRtu(app.modbus.uart1.buffer.buffer, sizeof app.modbus.uart1.buffer.buffer);
+            if (size == 0) {
+                incErrCnt8(&app.modbus.uart1.buffer.errCnt);
+                app.modbus.uart1.buffer.state = Idle;
+            } else {
+                uc1_sys::sendViaUart1(app.modbus.uart1.buffer.buffer, size);
+            }
+
+        } else if (app.modbus.uart1.buffer.state == ResponseReady) {
+            struct ModbusBuffer *p = (struct ModbusBuffer *)&app.modbus.uart1.buffer;
+            uint8_t size = modbusRtuToAscii(p->buffer, p->size, sizeof app.modbus.uart1.buffer.buffer, 1);
+            if (size == 0) {
+                incErrCnt8(&p->errCnt);
+                app.modbus.uart1.buffer.state = Idle;
+            } else {
+                uc1_sys::sendViaUart0(1, p->buffer, size);
+            }
+        }
     }
 
-    //--------------------------------------------------------
 
-    void task_1ms (void) {}
+    // --------------------------------------------------------
+
+    void task_1ms (void) {
+    }
+
     void task_2ms (void) {}
 
     void task_4ms (void) {
+        if (app.spi.timerLed > 0) {
+            app.spi.timerLed--;
+            uc1_sys::setLedYellow(app.spi.timerLed > 0x10);
+        }
     }
 
     void task_8ms (void) {
-    }
 
+    }
 
     void task_16ms (void) {}
     void task_32ms (void) {}
@@ -47,23 +279,161 @@ namespace uc1_app {
 
     }
 
-    void handleUart0Byte (uint8_t b) {
+
+    void uart0ReadyToSent (uint8_t typ, uint8_t err) {
+        struct ModbusBuffer *p = NULL;
+        switch (typ) {
+            case 0: p = (struct ModbusBuffer *)&app.modbus.local.buffer; break;
+            case 1: p = (struct ModbusBuffer *)&app.modbus.uart1.buffer; break;
+        }
+
+        if (p != NULL) {
+            if (err) {
+                incErrCnt8(&p->errCnt); 
+            }
+            p->size = 0;
+            p->state = Idle;
+        }
+    }
+
+
+    void uart1ReadyToSent (uint8_t err) {
+        if (err) {
+            incErrCnt8(&app.modbus.uart1.buffer.errCnt); 
+            app.modbus.uart1.buffer.state = Idle;
+        } else {
+            app.modbus.uart1.buffer.state = WaitForResponse;
+        }
+        app.modbus.uart1.buffer.size = 0;
+    }
+
+
+    int8_t addByteToModbusBuffer (uint8_t b, struct ModbusBuffer *pmb, uint8_t maxSize) {
+        if (pmb->size >= maxSize) {
+            incErrCnt8(&pmb->errCnt);
+            return -1;
+        }
+        uint8_t index = pmb->size;
+        if (index >= maxSize) {
+            index = index - maxSize;
+        }
+        pmb->buffer[index] = b;
+        pmb->size++;
+        return 0;
+    }
+
+
+    void handleModbusByte (uint8_t b) {
+        struct Modbus *pm = &app.modbus;
+        struct ModbusBuffer *pmb = NULL;
+        uint8_t maxSize = 0;
+
+        if (b == ':') {
+            // start of Modbus-ASCII frame
+            if (pm->rIndex > 0) {
+                incErrCnt8(&pm->errCnt);
+            }
+            pm->rIndex = 1;
+        
+        } else if (pm->rIndex > 0 && ((b >= '0' && b <= '9') || (b >= 'A' && b <= 'F') || b == '\r' || b == '\n')) {
+            // Modbus-ASCII frame byte
+            if (pm->rIndex < 3) {
+                pm->rAddr[pm->rIndex - 1] = b;
+            } else {
+                for (uint8_t i = 0; i < sizeof pm->localAddresses; i += 2) {
+                    if (pm->localAddresses[i + 1] == pm->rAddr[1] && pm->localAddresses[i] == pm->rAddr[0]) {
+                        if (i == 0) {
+                            pmb = (struct ModbusBuffer *)&pm->local.buffer;
+                            maxSize = sizeof pm->local.buffer.buffer;
+                        } else {
+                            pmb = (struct ModbusBuffer *)&pm->uart1.buffer;
+                            maxSize = sizeof pm->uart1.buffer.buffer;
+                        }
+                        break;
+                    }
+                }
+
+                if (pm->rIndex == 3) {
+                    if (pmb->state != Idle) {
+                        incErrCnt8(&pm->errCnt);
+                    }
+                    pmb->state = RequestInProgress;
+                    addByteToModbusBuffer(':', pmb, maxSize); 
+                    addByteToModbusBuffer(pm->rAddr[0], pmb, maxSize); 
+                    addByteToModbusBuffer(pm->rAddr[1], pmb, maxSize); 
+                }
+                
+                if (pmb != NULL) {
+                    addByteToModbusBuffer(b, pmb, maxSize);
+                }
+            }
+
+            if (b == '\n') {
+                pm->rIndex = 0;
+                if (pmb != NULL) {
+                    pmb->state = RequestReady;
+                    // frame handling is done by main loop
+                }
+            
+            } else if (pm->rIndex < 0xff) {
+                pm->rIndex++;
+            }
+
+
+        } else {
+            // Error: invalid byte value
+            incErrCnt8(&pm->errCnt);
+            pm->rIndex = 0;
+        }
+    }
+
+    void handleDebugByte (uint8_t b) {
 
     }
 
-    void handleUart1Byte (uint8_t b) {
 
+    void handleUart0Byte (uint8_t b) {
+        app.spi.toSend = b;
+        if (app.spi.timerLed == 0 ) {
+            app.spi.timerLed = 0xff;
+        }
+        if (b < 0x80) {
+            handleModbusByte(b);
+        } else {
+            handleDebugByte(b & 0x7f);
+        }
+    }
+
+    void handleUart1Byte (int16_t b) {
+        struct ModbusBuffer *p = (struct ModbusBuffer *)&app.modbus.uart1.buffer; 
+        if (p->state != WaitForResponse) {
+            incErrCnt8(&p->errCnt);
+        } else if (b >= 0 && b <= 255){
+            if (p->size >= sizeof app.modbus.uart1.buffer.buffer) {
+                incErrCnt8(&p->errCnt);
+            } else {
+                p->buffer[p->size++] = (uint8_t)b;
+            }
+        } else {
+            p->state = ResponseReady;
+        }
     }
 
     uint8_t handleSpiByte (uint8_t b) {
-        static uint8_t nextToSend = 0;
-        static uint16_t timer = 0;
-        timer++;
-        if (timer >= 4096) {
-            uc1_sys::toggleLedYellow();
-            timer = 0;
+        uint8_t rv = app.spi.toSend;
+        app.spi.toSend = 0;
+        if (rv > 0 && app.spi.cntSent < 0xff) {
+           app.spi.cntSent++;
         }
-        return nextToSend++;
+        if (app.spi.timerLed == 0) {
+            if (app.spi.cntSent > 0) {
+                app.spi.cntSent = 0;
+                app.spi.timerLed = 0xff;
+            } else {
+                app.spi.timerLed = 0x12;
+            }
+        }
+        return rv;
     }
 
 }
