@@ -2,6 +2,8 @@
 #include "sys.hpp"
 #include "app.hpp"
 
+#include <string.h>
+
 namespace uc1_app {
 
     struct App app;
@@ -22,6 +24,12 @@ namespace uc1_app {
         // device addresses for Modbus B1 (UART1)
         app.modbus.localAddresses[2] = '0'; app.modbus.localAddresses[3] = '2';
         app.modbus.localAddresses[4] = 'A'; app.modbus.localAddresses[5] = '0';
+
+        app.modbus.uart1Config.ubrr1l = (F_CPU / 9600 + 4) / 8 - 1;
+        app.modbus.uart1Config.ucsr1c = (1 << UCSZ11) | (1 << UCSZ10); // 8N1 mode
+        app.modbus.uart1Config.ocr1a = (uint16_t)(12000000L / 8 / 9600 * 35); // 5468;
+        app.modbus.uart1Config.tccr1b = (1 << CS11);  // Timer 1 f = 12MHz / 8
+        uc1_sys::setUart1Config(app.modbus.uart1Config.ubrr1l, app.modbus.uart1Config.ucsr1c);
     }
 
     void incErrCnt8 (uint8_t *pCnt) {
@@ -165,6 +173,48 @@ namespace uc1_app {
                     break;
                 }
 
+                case 1: {
+                    buf[i++] = uc1_sys::sys.taskErr_u8;
+                    buf[i] = app.errCnt;
+                    break;
+                }
+
+                case 2: {
+                    buf[i++] = 0;
+                    buf[i] = app.modbus.errCnt;
+                    break;
+                }
+                
+                case 3: {
+                    buf[i++] = 0;
+                    buf[i] = app.modbus.local.buffer.errCnt;
+                    break;
+                }
+
+                case 4: {
+                    buf[i++] = 0;
+                    buf[i] = app.modbus.uart1.buffer.errCnt;
+                    break;
+                }
+
+                case 8: {
+                    buf[i++] = 0;
+                    buf[i] = uc1_sys::sys.uart0Mode;
+                    break;
+                }
+
+                case 9: {
+                     buf[i++] = app.modbus.uart1Config.ucsr1c;
+                     buf[i] = app.modbus.uart1Config.ubrr1l;
+                     break;
+                }
+
+                case 10: {
+                     buf[i++] = app.modbus.uart1Config.ocr1a;
+                     buf[i] = app.modbus.uart1Config.tccr1b;
+                     break;                     
+                }
+
                 default: {
                     buf[1] |= 0x80;
                     buf[2] = 0x02; // Exception code: address out of range
@@ -176,6 +226,72 @@ namespace uc1_app {
         return rv;
     }
 
+    uint8_t executeModbusWriteHoldRegister (uint8_t buf[]) {
+        uint8_t rv = 5;
+        uint16_t addr = ((uint16_t)buf[2] << 8) + buf[3];
+        uint8_t valueHigh = buf[4];
+        uint8_t valueLow = buf[5];
+        uint8_t i;
+
+        switch (addr) {
+            case 0: {
+                uc1_sys::sys.taskErr_u8 = 0;
+                app.errCnt = 0;
+                app.modbus.errCnt = 0;
+                app.modbus.local.buffer.errCnt = 0;
+                app.modbus.uart1.buffer.errCnt = 0;
+                break;
+            }
+
+            case 1: {
+                uc1_sys::sys.taskErr_u8 = 0;
+                app.errCnt = 0;
+                break;
+            }
+
+            case 2: {
+                app.modbus.errCnt = 0;
+                break;
+            }
+
+            case 3: {
+                app.modbus.local.buffer.errCnt = 0;
+                break;
+            }
+
+            case 4: {
+                app.modbus.uart1.buffer.errCnt = 0;
+                break;
+            }
+
+            case 8: {
+                uc1_sys::sys.uart0Mode = (uc1_sys::Uart0Mode) valueLow;
+                break;
+            }
+
+            case 9: {
+                app.modbus.uart1Config.ucsr1c = valueHigh;
+                app.modbus.uart1Config.ubrr1l = valueLow;
+                break;
+            }
+
+            case 10: {
+                app.modbus.uart1Config.ocr1a = valueHigh;
+                app.modbus.uart1Config.tccr1b = valueLow;
+                break;                     
+            }
+
+            default: {
+                buf[1] |= 0x80;
+                buf[2] = 0x02; // Exception code: address out of range
+                return 3;
+            }
+        }
+
+        return rv;
+    }
+
+
     uint8_t parseModbusRequest (uint8_t buf[], uint8_t size) {
         if (buf[0] != UC1_APP_MODBUS_DEVICE_ADDRESS) {
             return 0;
@@ -183,6 +299,13 @@ namespace uc1_app {
         uint8_t rv = 0;
         switch (buf[1]) {
             case 0x03: {
+                if (size == 8) {
+                    rv = executeModbusWriteHoldRegister (buf);
+                }
+                break;
+            }
+
+            case 0x06: {
                 if (size == 8) {
                     rv = executeModbusReadHoldRegisters (buf);
                 }
@@ -228,17 +351,34 @@ namespace uc1_app {
                 incErrCnt8(&app.modbus.uart1.buffer.errCnt);
                 app.modbus.uart1.buffer.state = Idle;
             } else {
+                // for (uint8_t i = 0; i < size; i++) {
+                //     printf("%02x ", app.modbus.uart1.buffer.buffer[i]);
+                // }
+                // printf(" -> ");
+
                 uc1_sys::sendViaUart1(app.modbus.uart1.buffer.buffer, size);
             }
 
         } else if (app.modbus.uart1.buffer.state == ResponseReady) {
+            PORTA &= ~(1 << PA2);
             struct ModbusBuffer *p = (struct ModbusBuffer *)&app.modbus.uart1.buffer;
+            printf("size=%d = ", p->size);
+            for (uint8_t i = 0; i < p->size; i++) {
+                printf("%02x ", app.modbus.uart1.buffer.buffer[i]);
+            }
+            printf(" -> ");
+
             uint8_t size = modbusRtuToAscii(p->buffer, p->size, sizeof app.modbus.uart1.buffer.buffer, 1);
             if (size == 0) {
                 incErrCnt8(&p->errCnt);
                 app.modbus.uart1.buffer.state = Idle;
             } else {
+                // for (uint8_t i = 0; i < size; i++) {
+                //     printf("%c", app.modbus.uart1.buffer.buffer[i]);
+                // }
+                // printf("\r\n");
                 uc1_sys::sendViaUart0(1, p->buffer, size);
+                app.modbus.uart1.buffer.state = Idle;
             }
         }
     }
@@ -272,6 +412,10 @@ namespace uc1_app {
 
         if (timer == 0) {
             uc1_sys::setLedGreen(1);
+            strcpy((char *)uc1_app::app.modbus.uart1.buffer.buffer, ":010300000004B8\r\n");
+            app.modbus.uart1.buffer.size = 17;
+            app.modbus.uart1.buffer.state = RequestReady;
+            // uc1_sys::sendViaUart1(app.modbus.uart1.buffer.buffer, app.modbus.uart1.buffer.size);
         } 
         if (timer == 1 ) {
             uc1_sys::setLedGreen(0);
@@ -409,6 +553,11 @@ namespace uc1_app {
         if (p->state != WaitForResponse) {
             incErrCnt8(&p->errCnt);
         } else if (b >= 0 && b <= 255){
+            if (p->size == 11) {
+                PORTA |= (1 << PA0);
+            } else {
+                PORTA &= ~(1 << PA0);
+            }
             if (p->size >= sizeof app.modbus.uart1.buffer.buffer) {
                 incErrCnt8(&p->errCnt);
             } else {

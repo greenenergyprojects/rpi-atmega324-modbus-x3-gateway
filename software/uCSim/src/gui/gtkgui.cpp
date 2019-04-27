@@ -11,6 +11,11 @@
 
 void GtkGui::onButtonClicked(GtkWidget *widget) {
     if (widget == (void *)u1ButtonTest) {
+        
+        // Modbus E-Meter
+        // Request  :010300000004B8 -> RTU: 01 03 00 00 00 04 44 09
+        // Response RTU: 01 03 08 00 00 00 27 00 00 00 00 a1 d0 -> :0103080000002700000000CB
+        
         std::string frame(":010300000001BB");
         std::string rawFrame = frame + "\r\n";
         int rv = bridge::sendStringToUc1Uart0(115200, (uint8_t *)rawFrame.c_str(), rawFrame.length());

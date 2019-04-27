@@ -33,7 +33,10 @@ namespace uc1_sys {
         fdev_setup_stream(&sys_stdout, uart_putch, NULL, _FDEV_SETUP_WRITE);
         // fdev_setup_stream(&sys_stdin, NULL, uart_getch, _FDEV_SETUP_READ);
         memset((void *)&sys, 0, sizeof(sys));
+        uc1_sys::sys.uart0Typ = 0xff;
         _delay_ms(1);
+
+        DDRA |= 0x07;
 
         DDRB |= 0x0f;  // Debug
         PORTB = 0;
@@ -55,8 +58,8 @@ namespace uc1_sys {
 
         // Timer 1 for Modbus-RTU timing measurments
         TCCR1A = 0;
-        TCCR1B = (1 << CS11);  // f=12MHz
-        OCR1A  = 0xffff;
+        TCCR1B = (1 << CS11);  // f=12MHz/8
+        OCR1A  = 2734; // 35 * 12000000L / 8 / 19200; // 2734; 
         TIMSK1 = (1 << OCIE1A);
 
         // UART0
@@ -67,15 +70,13 @@ namespace uc1_sys {
         UCSR0B = (1 << RXCIE0) | (1 << TXEN0) | (1 << RXEN0);
 
         // UART1
-        UBRR1L = (F_CPU/GLOBAL_UC1_SYS_UART1_BITRATE + 4)/8 - 1;
-        UBRR1H = 0x00;
+        UBRR1L = 0;
+        UBRR1H = 0;
         UCSR1A = (1 << U2X1);
         // UCSR1C = (1 << UPM11) | (1 << UCSZ11) | (1 << UCSZ10);
-        UCSR1C = (1 << UCSZ11) | (1 << UCSZ10);
-        UCSR1B = (1 << RXCIE1) | (1 << TXEN1) | (1 << RXEN1);
-        sys.modbus[0].dT1_35 = 70 * 12000000L / 16 / GLOBAL_UC1_SYS_UART1_BITRATE;  // correct for even parity ?
-        sys.modbus[0].dT1_15 = 30 * 12000000L / 16 / GLOBAL_UC1_SYS_UART1_BITRATE;  // correct for even parity ?
-        OCR1A = sys.modbus[0].dT1_35;
+        // UCSR1C = (1 << UCSZ11) | (1 << UCSZ10); // 8 Bit mode
+        // UCSR1B = (1 << RXCIE1) | (1 << TXCIE1) | (1 << TXEN1) | (1 << RXEN1);
+        // OCR1A = sys.modbus[0].dT1_35;
 
         // SPI Master
         DDRB  |= (1 << PB7) | (1 << PB5) | (1 << PB4);  // SCLK, MOSI, nSS
@@ -132,9 +133,33 @@ namespace uc1_sys {
         if (f != stdout) {
             return EOF;
         }
-        while (!(UCSR0A & (1 << UDRE0))) {
+
+        if (sys.uart0Mode == STDOUT) {
+            while (!(UCSR0A & (1 << UDRE0))) {}
+            UDR0 = c;
+        
+        } else if (sys.uart0Mode != MIXED && sys.uart0Mode != DEBUG) {
+            return EOF;
+        
+        } else {
+           saveCli();
+           if ( (UCSR0B & (1 << TXCIE0)) == 0) {
+                UCSR0B |= (1 << TXCIE0) | (1 << TXEN0);
+                UDR0 = sys.uart0Mode == DEBUG ? c : 0x80 | c;
+                saveSei();
+
+           } else {
+                if (sys.uart0DebugByte == 0) {
+                    sys.uart0DebugByte = c;
+                    saveSei();
+                } else {
+                    saveSei();
+                    while (sys.uart0DebugByte > 0);
+                    uart_putch(c, f);
+                }
+           }
         }
-        UDR0 = c;
+
         return (int)c;
     }
 
@@ -206,14 +231,65 @@ namespace uc1_sys {
         PORTC ^= (1 << PC3);
     }
 
+    void setUart0Mode (enum Uart0Mode mode) {
+        sys.uart0Mode = mode;
+    }
+
+    void setUart1Config (uint8_t ubrr1l, uint8_t ucsr1c) {
+        UCSR1B = 0;
+        UBRR1L = ubrr1l;
+        UCSR1C = ucsr1c;
+        UCSR1B = (1 << RXCIE1) | (1 << TXCIE1) | (1 << TXEN1) | (1 << RXEN1);
+    }
+    
+    void sendViaUart0 (uint8_t typ, uint8_t buf[], uint8_t size) {
+        if (buf == NULL || size < 1) {
+            uc1_app::uart0ReadyToSent(typ, 1);
+        
+        } else if (sys.uart0Size > 0) {
+            sys.uart0Size = 0;
+            uc1_app::uart0ReadyToSent(typ, 2);
+        
+        } else if (sys.uart0Mode != ModbusASCII && sys.uart0Mode != MIXED && sys.uart0Mode != DEBUG) {
+            sys.uart0Size = 0;
+            uc1_app::uart0ReadyToSent(typ, 3);
+        
+        } else {
+            sys.uart0Buf = buf;
+            sys.uart0Size = size - 1;
+            UCSR0B = (1 << TXCIE0) | (1 << TXEN0);
+            UDR0 = *sys.uart0Buf++;
+        }
+    }
+    
+    
+    void sendViaUart1 (uint8_t buf[], uint8_t size) {
+        if (buf == NULL || size < 1) {
+            uc1_app::uart1ReadyToSent(1);
+        }
+        if (sys.uart1Size > 0) {
+            sys.uart1Size = 0;
+            uc1_app::uart1ReadyToSent(2);
+        }
+        sys.uart1Buf = buf;
+        sys.uart1Size = size - 1;
+        UCSR1B = (1 << TXCIE1) | (1 << TXEN1);
+        PORTD |= (1 << PD6); // MODBUS1-DE = 1
+        PORTD |= (1 << PD7); // MODBUS1-nRE = 1
+        UDR1 = *sys.uart1Buf++;
+    }
 
     
 
 }   
 
+
+
 // ------------------------------------
 // Interrupt Service Routinen
 // ------------------------------------
+
+// Modbus ASCII to/from PI B1 -------------------
 
 ISR (USART0_RX_vect) {
     static uint8_t lastChar;
@@ -229,33 +305,58 @@ ISR (USART0_RX_vect) {
     uc1_app::handleUart0Byte(c);
 }
 
-ISR (USART1_RX_vect) {
-    volatile uint8_t data = UDR1;
-    uint8_t status = 0;
-    uint16_t tcnt1 = TCNT1;
-    if (TCCR1B & (1 << CS11)) {
-    if (tcnt1 > uc1_sys::sys.modbus[0].dT1_35) {
-        status |= (1 << SYS_MODBUS_STATUS_NEWFRAME);
-    }
-    } else {
-        status |= (1 << SYS_MODBUS_STATUS_NEWFRAME);
-    }
-    TCNT1 = 0;
-    TCCR1B = (1 << CS11);  // restart timer
+ISR (USART0_TX_vect) {
+    if (uc1_sys::sys.uart0DebugByte > 0) {
+        UDR0 = uc1_sys::sys.uart0Mode == uc1_sys::DEBUG ? uc1_sys::sys.uart0DebugByte : 0x80 | uc1_sys::sys.uart0DebugByte;
+        uc1_sys::sys.uart0DebugByte = 0;
 
-    // UPE1 = 2  DOR1 = 3  FE1 = 4
-    uint8_t errors = UCSR1A & ( (1 << FE1) | (1 << DOR1) | (1 << UPE1) );
-    if (errors) {
-        uc1_sys::sys.modbus[0].errorCnt = uc1_sys::inc16BitCnt(uc1_sys::sys.modbus[0].errorCnt);
-    } else {
-        uc1_sys::sys.modbus[0].receivedByteCnt = uc1_sys::inc16BitCnt(uc1_sys::sys.modbus[0].receivedByteCnt);
-    }
-    // sei();
+    } else if (uc1_sys::sys.uart0Size > 0) {
+        UDR0 = *uc1_sys::sys.uart0Buf++;
+        uc1_sys::sys.uart0Size--;
 
-    if (errors != 0) { status |= ((errors << 3) | (1 << SYS_MODBUS_STATUS_ERR_FRAME)); }
-    if (tcnt1 > uc1_sys::sys.modbus[0].dT1_35) status |= (1 << SYS_MODBUS_STATUS_NEWFRAME);
-    // app_handleUart1Byte(data, status);
+    } else {
+        if (uc1_sys::sys.uart0Typ == 0 || uc1_sys::sys.uart0Typ == 1) {
+            uc1_app::uart0ReadyToSent(uc1_sys::sys.uart0Typ, 0);
+        }
+        uc1_sys::sys.uart0Typ = 0xff;
+        UCSR0B &= ~((1 << TXCIE0) | (1 << TXEN0));
+    }
 }
+
+// Modbus RTU B1 ------------------------------------
+
+ISR (USART1_RX_vect) {
+    uint8_t c = UDR1;
+    uc1_sys::toggleLedRed();
+    PORTA ^= (1 << PA1);
+    TCNT1 = 0;
+    // OCR1A  = 5870; // uc1_app::app.modbus.uart1Config.ocr1a; // 35 * 12000000L / 8 / 9600; // 5870; 
+    OCR1A  = uc1_app::app.modbus.uart1Config.ocr1a; // 35 * 12000000L / 8 / 9600; // 5870; 
+    TCCR1B = uc1_app::app.modbus.uart1Config.tccr1b; // (1 << CS11);  // Timer 1 f = 12MHz / 8
+    PORTA = (1 << PA2);
+    uc1_app::handleUart1Byte(c);
+}
+
+ISR (USART1_TX_vect) {
+    if (uc1_sys::sys.uart1Size > 0) {
+        UDR1 = *uc1_sys::sys.uart1Buf++;
+        uc1_sys::sys.uart1Size--;
+    } else {
+        PORTD &= ~(1 << PD6); // MODBUS1-DE = 0
+        PORTD &= ~(1 << PD7); // MODBUS1-nRE = 0
+        UCSR1B |= (1 << RXCIE1) | (1 << RXEN1);
+        UCSR1B &= ~((1 << TXCIE1) | (1 << TXEN1));
+        uc1_app::uart1ReadyToSent(0);
+    }
+}
+
+ISR (TIMER1_COMPA_vect) {
+    TCCR1B = 0;  // disable timer 1
+    TCNT1 = 0;
+    uc1_app::handleUart1Byte(-1);
+}
+
+// ---------------------------------------------
 
 // Timer 0 Output/Compare Interrupt
 // called every 100us
@@ -286,10 +387,6 @@ ISR (TIMER0_COMPA_vect) {
     }
 }
 
-ISR (TIMER1_COMPA_vect) {
-    TCCR1B = 0;  // disable timer 1
-    // app_handleUart1Timeout();
-}
 
 ISR (SPI_STC_vect) {
     PORTB |= (1 << PB4); 

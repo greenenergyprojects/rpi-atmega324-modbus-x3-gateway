@@ -52,26 +52,35 @@ namespace uc1_sys {
 
     typedef uint8_t Sys_Event;
 
-    struct Sys_Modbus {
-        uint16_t dT1_35;
-        uint16_t dT1_15;
-        uint16_t errorCnt;
-        uint16_t receivedByteCnt;
-    };
+    enum Uart0Mode { OFF = 0, ModbusASCII = 1, STDOUT = 2, DEBUG = 4, MIXED = 8 };
 
-    struct Sys_Uart {
-        uint8_t rpos_u8;
-        uint8_t wpos_u8;
-        uint8_t errcnt_u8;
-        uint8_t rbuffer_u8[GLOBAL_UC1_SYS_UART0_RECBUFSIZE];
-    };
+    // struct Sys_Modbus {
+    //     uint16_t dT1_35;
+    //     uint16_t dT1_15;
+    //     uint16_t errorCnt;
+    //     uint16_t receivedByteCnt;
+    // };
+
+    // struct Sys_Uart {
+    //     uint8_t rpos_u8;
+    //     uint8_t wpos_u8;
+    //     uint8_t errcnt_u8;
+    //     uint8_t rbuffer_u8[GLOBAL_UC1_SYS_UART0_RECBUFSIZE];
+    // };
 
     struct Sys {
         uint8_t flags;
         uint8_t taskErr_u8;
         Sys_Event  eventFlag;
-        struct Sys_Uart uart;
-        struct Sys_Modbus modbus[1];
+        enum Uart0Mode uart0Mode;
+        uint8_t *uart0Buf;
+        uint8_t  uart0Size;
+        uint8_t  uart0Typ;
+        uint8_t  uart0DebugByte;
+        uint8_t *uart1Buf;
+        uint8_t  uart1Size;
+        // struct Sys_Uart uart;
+        // struct Sys_Modbus modbus[1];
     };
 
 
@@ -84,11 +93,11 @@ namespace uc1_sys {
     // SYS_FLAG_SREG_I must have same position as I-Bit in Status-Register!!
     #define SYS_FLAG_SREG_I          0x80
 
-    #define SYS_MODBUS_STATUS_ERR7      7
-    #define SYS_MODBUS_STATUS_ERR6      6
-    #define SYS_MODBUS_STATUS_ERR5      5
-    #define SYS_MODBUS_STATUS_ERR_FRAME 1
-    #define SYS_MODBUS_STATUS_NEWFRAME  0
+    // #define SYS_MODBUS_STATUS_ERR7      7
+    // #define SYS_MODBUS_STATUS_ERR6      6
+    // #define SYS_MODBUS_STATUS_ERR5      5
+    // #define SYS_MODBUS_STATUS_ERR_FRAME 1
+    // #define SYS_MODBUS_STATUS_NEWFRAME  0
 
 
 
@@ -115,6 +124,11 @@ namespace uc1_sys {
     void      toggleLedRed ();
     void      toggleLedGreen ();
     void      toggleLedYellow ();
+
+    void      setUart0Mode (enum Uart0Mode mode);
+    void      setUart1Config (uint8_t ubrr1l, uint8_t ucsr1c);
+    void      sendViaUart0 (uint8_t typ, uint8_t buf[], uint8_t size);
+    void      sendViaUart1 (uint8_t buf[], uint8_t size);
 
 }
 

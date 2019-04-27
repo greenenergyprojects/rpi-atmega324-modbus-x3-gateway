@@ -73,6 +73,13 @@ namespace uc1_app {
         uint8_t buffer[254];
     };
 
+    struct Uart1Config {
+        uint16_t ocr1a;
+        uint8_t tccr1b;
+        uint8_t ubrr1l;
+        uint8_t ucsr1c;
+    };
+
     struct ModbusLocal {
         struct ModbusBufferLocal buffer;
     };
@@ -90,6 +97,7 @@ namespace uc1_app {
         uint8_t rAddr[2];
         uint8_t localAddresses[6];
         uint8_t errCnt;
+        struct Uart1Config uart1Config;
         struct ModbusLocal local;
         struct ModbusUart1 uart1;
         struct ModbusSpi   spi;
