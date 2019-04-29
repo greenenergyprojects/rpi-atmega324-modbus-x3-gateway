@@ -25,9 +25,12 @@ const char MAIN_HELP[] = "\r\n";
 
 
 int main () {
+    MCUSR = 0;
+    wdt_disable();
+    
     uc1_sys::init();
+    uc1_sys::setUart0Mode(uc1_sys::STDOUT);
     uc1_app::init();
-    // uc1_sys::setUart0Mode(uc1_sys::STDOUT);
     printf("%s %s %s %s", MAIN_WELCOME, MAIN_DATE, MAIN_TIME, MAIN_HELP);
     printf("\r\n");
     

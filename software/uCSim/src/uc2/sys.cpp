@@ -76,6 +76,20 @@ namespace uc2_sys {
         gui->setU2LedRed(on);
     }
 
+    void setPortA (uint8_t index) {
+        lock(); {
+            res.cpu.porta |= (1 << index);
+        }
+        unlock();
+    }
+
+    void clrPortA (uint8_t index) {
+        lock(); {
+            res.cpu.porta &= ~(1 << index);
+        }
+        unlock();
+    }
+    
     void toggleLedGreen () {
         bool on;
         lock(); {
@@ -105,6 +119,18 @@ namespace uc2_sys {
         }
         unlock();
         gui->setU2LedRed(on);
+    }
+
+    void togglePortA (uint8_t index) {
+        lock(); {
+            res.cpu.porta ^= (1 << index);
+        }
+        unlock();
+    }
+
+
+    void setUart1Config (uint8_t ubrr1l, uint8_t ucsr1c) {
+
     }
 
     // **************************************************

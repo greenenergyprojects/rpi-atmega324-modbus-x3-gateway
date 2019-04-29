@@ -619,6 +619,7 @@ int main () {
     #ifdef UART1
         UCSR1A = 0x02; // double the UART speed
         UCSR1B = 0x18; // RX + TX enable
+        UCSR1C = (1 << UCSZ11) | (1 << UCSZ10); // 8 Bit
         UBRR1H = 0;
         UBRR1L = (F_CPU / BAUDRATE + 4) / 8 - 1;
     #endif
@@ -626,18 +627,25 @@ int main () {
     #if defined(UART0) || defined(UART0_DEBUG)
         UCSR0A = 0x02; // double the UART speed
         UCSR0B = 0x18; // RX + TX enable
+        UCSR0C = (1 << UCSZ01) | (1 << UCSZ00); // 8 Bit
         UBRR0H = 0;
-        UBRR0L = (F_CPU / BAUDRATE + 4) / 8 - 1;
+        // UBRR0L = (F_CPU / BAUDRATE + 4) / 8 - 1;
+        UBRR0L = (12000000L / 115200 + 4) / 8 - 1;
     #endif
+
 
     // SPI f = fcpu / 4 = 3MHz@12MHz
     DDRB  |= (1 << PB7) | (1 << PB5) | (1 << PB4);  // SCLK, MOSI, nSS
     PORTB |= (1 << PB4);
     // SPSR0 |= (1 << SPI2X0);
+    
+    
     SPCR0  = (1 << SPE0) | (1 << MSTR0) | (1 << SPIE0) | (1 << SPR10);
     PORTB |= (1 << PB4); 
+    
     MCUCR = (1 << IVCE);
     MCUCR = (1 << IVSEL); 
+    
     sei();
     PORTB &= ~(1 << PB4);
     SPDR0 = 0x00;

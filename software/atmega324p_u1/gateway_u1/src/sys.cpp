@@ -91,8 +91,19 @@ namespace uc1_sys {
         stdout = &sys_stdout;
         stderr = &sys_stdout;
         // stdin  = &sys_stdin;
+
+        wdt_enable(WDTO_15MS);
     }
 
+    void initUart1 (uint16_t baudrate, uint8_t t35x10) {
+        UBRR1H = 0;
+        UBRR1L = (F_CPU / baudrate + 4) / 8 - 1;
+        UCSR1A = (1 << U2X1);
+        UCSR1B = 0; // (1 << RXCIE1) | (1 << TXCIE1) | (1 << TXEN1) | (1 << RXEN1);
+        UCSR1C = (1 << UCSZ11) | (1 << UCSZ10); // 8N1 mode
+        sys.tccr1bInit = (1 << CS11);  // Timer 1 f = 12MHz / 8
+        sys.ocr1aInit = (uint16_t)(F_CPU / 8 / baudrate * t35x10); // 5468;
+    }
 
     void main () {
     }
@@ -219,6 +230,14 @@ namespace uc1_sys {
         }
     }
 
+    void setPortA (uint8_t index) {
+        PORTA |= (1 << index);
+    }
+
+    void clrPortA (uint8_t index) {
+        PORTA &= ~(1 << index);
+    }
+
     void toggleLedGreen () {
         PORTC ^= (1 << PC5);
     }
@@ -231,8 +250,59 @@ namespace uc1_sys {
         PORTC ^= (1 << PC3);
     }
 
+    void togglePortA (uint8_t index) {
+        PORTA ^= (1 << index);
+    }
+
+
     void setUart0Mode (enum Uart0Mode mode) {
         sys.uart0Mode = mode;
+    }
+
+    void setUart1Ubrr1 (uint16_t ubrr1) {
+        UBRR1 = ubrr1;
+        // UBRR1H = ubrr1 >> 8;
+        // UBRR1L = ubrr1 & 0xff;
+    }
+
+    void setUart1Ucsr1b (uint8_t ucsr1b) {
+        UCSR1B = ucsr1b;
+    }
+
+    void setUart1Ucsr1c (uint8_t ucsr1c) {
+        UCSR1C = ucsr1c;
+    }
+
+    void setUart1Ocr1a (uint16_t ocr1a) {
+        OCR1A = ocr1a;
+    }
+
+    void setUart1Tccr1b (uint8_t tccr1b) {
+        TCCR1B = tccr1b;
+    }
+
+    enum Uart0Mode getUart0Mode () {
+        return sys.uart0Mode;
+    }
+
+    uint16_t getUart1Ubrr1 () {
+        return UBRR1;
+    }
+
+    uint8_t getUart1Ucsr1b () {
+        return UCSR1B;
+    }
+
+    uint8_t getUart1Ucsr1c () {
+        return UCSR1C;
+    }
+
+    uint16_t getUart1Ocr1a () {
+        return OCR1A;
+    }
+
+    uint8_t getUart1Tccr1b () {
+        return TCCR1B;
     }
 
     void setUart1Config (uint8_t ubrr1l, uint8_t ucsr1c) {
@@ -257,7 +327,8 @@ namespace uc1_sys {
         } else {
             sys.uart0Buf = buf;
             sys.uart0Size = size - 1;
-            UCSR0B = (1 << TXCIE0) | (1 << TXEN0);
+            sys.uart0Typ = typ;
+            UCSR0B |= (1 << TXCIE0) | (1 << TXEN0);
             UDR0 = *sys.uart0Buf++;
         }
     }
@@ -273,7 +344,7 @@ namespace uc1_sys {
         }
         sys.uart1Buf = buf;
         sys.uart1Size = size - 1;
-        UCSR1B = (1 << TXCIE1) | (1 << TXEN1);
+        UCSR1B = (1 << TXCIE1) | (1 << TXEN1); // no |= otherwise echo received !!
         PORTD |= (1 << PD6); // MODBUS1-DE = 1
         PORTD |= (1 << PD7); // MODBUS1-nRE = 1
         UDR1 = *sys.uart1Buf++;
@@ -295,9 +366,16 @@ ISR (USART0_RX_vect) {
     static uint8_t lastChar;
     uint8_t c = UDR0;
 
+    PORTA ^= (1 << PA2);
+
     if (c == 'R' && lastChar == '@') {
         wdt_enable(WDTO_15MS);
         wdt_reset();
+        cli();
+        while (1) {}
+    }
+    if (c == 'T' && lastChar == '@') {
+        cli();
         while (1) {}
     }
     lastChar = c;
@@ -327,13 +405,10 @@ ISR (USART0_TX_vect) {
 
 ISR (USART1_RX_vect) {
     uint8_t c = UDR1;
-    uc1_sys::toggleLedRed();
-    PORTA ^= (1 << PA1);
     TCNT1 = 0;
     // OCR1A  = 5870; // uc1_app::app.modbus.uart1Config.ocr1a; // 35 * 12000000L / 8 / 9600; // 5870; 
-    OCR1A  = uc1_app::app.modbus.uart1Config.ocr1a; // 35 * 12000000L / 8 / 9600; // 5870; 
-    TCCR1B = uc1_app::app.modbus.uart1Config.tccr1b; // (1 << CS11);  // Timer 1 f = 12MHz / 8
-    PORTA = (1 << PA2);
+    OCR1A  = uc1_sys::sys.ocr1aInit; // 35 * 12000000L / 8 / 9600; // 5870; 
+    TCCR1B = uc1_sys::sys.tccr1bInit; // (1 << CS11);  // Timer 1 f = 12MHz / 8
     uc1_app::handleUart1Byte(c);
 }
 
@@ -374,6 +449,7 @@ ISR (TIMER0_COMPA_vect) {
         } else {
             busy = 1;
             sei();
+            wdt_reset();
             if      (cnt500us & 0x01) uc1_app::task_1ms();
             else if (cnt500us & 0x02) uc1_app::task_2ms();
             else if (cnt500us & 0x04) uc1_app::task_4ms();

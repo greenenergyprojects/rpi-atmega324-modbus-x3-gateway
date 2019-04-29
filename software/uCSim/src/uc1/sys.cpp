@@ -9,6 +9,14 @@
 #include <pthread.h>
 #include <sys/signal.h>
 
+#define F_CPU 12000000L
+#define TXEN1  3
+#define RXEN1  4
+#define TXCIE1 6
+#define RXCIE1 7
+#define UCSZ10 1
+#define UCSZ11 2
+#define CS11   1
 
 namespace uc1_sys {
 
@@ -68,8 +76,33 @@ namespace uc1_sys {
 
     }
 
+    void initUart1(uint16_t baudrate, uint8_t t35x10) {
+        lock(); {
+            res.cpu.ubrr1h = 0;
+            res.cpu.ubrr1l = (F_CPU / baudrate + 4) / 8 - 1;
+            res.cpu.ucsr1c = (1 << UCSZ11) | (1 << UCSZ10); // 8N1 mode
+            res.cpu.ocr1a = (uint16_t)(F_CPU / 8 / baudrate * t35x10); // 5468;
+            res.cpu.tccr1b = (1 << CS11);  // Timer 1 f = 12MHz / 8
+        }
+        unlock();
+    }
+
     void main () {
         // printf("uc2_sys::main() done\n");
+    }
+
+    uint8_t inc8BitCnt (uint8_t count) {
+        if (count < 0xff) {
+            count++;
+        }
+        return count;
+    }
+
+    uint16_t inc16BitCnt (uint16_t count) {
+        if (count < 0xffff) {
+            count++;
+        }
+        return count;
     }
 
     void saveSei () {
@@ -157,6 +190,20 @@ namespace uc1_sys {
         gui->setU1LedRed(on);
     }
 
+    void setPortA (uint8_t index) {
+        lock(); {
+            res.cpu.porta |= (1 << index);
+        }
+        unlock();
+    }
+
+    void clrPortA (uint8_t index) {
+        lock(); {
+            res.cpu.porta &= ~(1 << index);
+        }
+        unlock();
+    }
+
     void toggleLedGreen () {
         bool on;
         lock(); {
@@ -188,6 +235,112 @@ namespace uc1_sys {
         gui->setU1LedRed(on);
     }
 
+    void togglePortA (uint8_t index) {
+        lock(); {
+            res.cpu.porta ^= (1 << index);
+        }
+        unlock();
+    }
+
+    void setUart0Mode (enum Uart0Mode mode) {
+        lock(); {
+            res.uart0Mode = mode;
+        }
+        unlock();
+    }
+
+    void setUart1Ubrr1 (uint16_t ubrr1) {
+        lock(); {
+            res.cpu.ubrr1h = ubrr1 >> 8;
+            res.cpu.ubrr1l = ubrr1 & 0xff;
+        }
+        unlock();
+    }
+
+    void setUart1Ucsr1b (uint8_t ucsr1b) {
+        lock(); {
+            res.cpu.ucsr1b = ucsr1b;
+        }
+        unlock();
+    }
+
+    void setUart1Ucsr1c (uint8_t ucsr1c) {
+        lock(); {
+            res.cpu.ucsr1c = ucsr1c;
+        }
+        unlock();
+    }    
+
+    void setUart1Ocr1a (uint16_t ocr1a) {
+        lock(); {
+            res.cpu.ocr1a = ocr1a;
+        }
+        unlock();
+    }
+
+    void setUart1Tccr1b (uint8_t tccr1b) {
+        lock(); {
+            res.cpu.tccr1b = tccr1b;
+        }
+        unlock();
+    }  
+
+    enum Uart0Mode getUart0Mode () {
+        enum Uart0Mode rv;
+        lock(); {
+            rv = res.uart0Mode;
+        }
+        unlock();
+        return rv;
+    }
+
+    uint16_t getUart1Ubrr1 () {
+        uint16_t rv;
+        lock(); {
+            rv = ((res.cpu.ubrr1h & 0xff) << 8) | (res.cpu.ubrr1l & 0xff);
+        }
+        unlock();
+        return rv;
+    }
+
+    uint8_t getUart1Ucsr1b () {
+        uint8_t rv;
+        lock(); {
+            rv = res.cpu.ucsr1b;
+        }
+        unlock();
+        return rv;
+    }
+
+    uint8_t getUart1Ucsr1c () {
+        uint8_t rv;
+        lock(); {
+            rv = res.cpu.ucsr1c;
+        }
+        unlock();
+        return rv;
+    }
+
+    uint16_t getUart1Ocr1a () {
+        uint16_t rv;
+        lock(); {
+            rv = res.cpu.ocr1a;
+        }
+        unlock();
+        return rv;
+    }
+
+    uint8_t getUart1Tccr1b () {
+        uint8_t rv;
+        lock(); {
+            rv = res.cpu.tccr1b;
+        }
+        unlock();
+        return rv;
+    }
+
+
+    
     // **************************************************
 
     void sendViaUart0 (uint8_t typ, uint8_t buf[], uint8_t size) {

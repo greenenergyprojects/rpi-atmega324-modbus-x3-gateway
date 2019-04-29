@@ -11,7 +11,7 @@ namespace uc1_app {
     // defines
 
     // declarations and definations
-
+    char dec2Hex (uint8_t dec);
 
 
     // ------------------------------------------------------------------------
@@ -19,17 +19,17 @@ namespace uc1_app {
     void init (void) {
         memset(&app, 0, sizeof app);
         app.uart0State = CHECK_UART0;
+        app.modbus.localAddress = UC1_APP_MODBUS_DEVICE_ADDRESS;
         // local modbus device address
-        app.modbus.localAddresses[0] = '0'; app.modbus.localAddresses[1] = '1';
+        app.modbus.addresses[0] = dec2Hex(app.modbus.localAddress >> 4);
+        app.modbus.addresses[1] = dec2Hex(app.modbus.localAddress & 0x0f);
+        
         // device addresses for Modbus B1 (UART1)
-        app.modbus.localAddresses[2] = '0'; app.modbus.localAddresses[3] = '2';
-        app.modbus.localAddresses[4] = 'A'; app.modbus.localAddresses[5] = '0';
+        app.modbus.addresses[2] = dec2Hex(UC1_B1_MODBUS_DEVICE_ADDRESS >> 4);
+        app.modbus.addresses[3] = dec2Hex(UC1_B1_MODBUS_DEVICE_ADDRESS & 0x0f);
+        app.modbus.addresses[4] = 'A'; app.modbus.addresses[5] = '0';
 
-        app.modbus.uart1Config.ubrr1l = (F_CPU / 9600 + 4) / 8 - 1;
-        app.modbus.uart1Config.ucsr1c = (1 << UCSZ11) | (1 << UCSZ10); // 8N1 mode
-        app.modbus.uart1Config.ocr1a = (uint16_t)(12000000L / 8 / 9600 * 35); // 5468;
-        app.modbus.uart1Config.tccr1b = (1 << CS11);  // Timer 1 f = 12MHz / 8
-        uc1_sys::setUart1Config(app.modbus.uart1Config.ubrr1l, app.modbus.uart1Config.ucsr1c);
+        uc1_sys::initUart1(9600, 35);
     }
 
     void incErrCnt8 (uint8_t *pCnt) {
@@ -154,6 +154,7 @@ namespace uc1_app {
 
 
     uint8_t executeModbusReadHoldRegisters (uint8_t buf[]) {
+        app.modbus.unlocked = 0;
         uint8_t rv = 3;
         uint16_t addr = ((uint16_t)buf[2] << 8) + buf[3];
         uint16_t quantity  = ((uint16_t)buf[4] << 8) + buf[5];
@@ -197,22 +198,37 @@ namespace uc1_app {
                     break;
                 }
 
-                case 8: {
+                case 10: {
                     buf[i++] = 0;
-                    buf[i] = uc1_sys::sys.uart0Mode;
+                    buf[i] = uc1_sys::getUart0Mode();
                     break;
                 }
 
-                case 9: {
-                     buf[i++] = app.modbus.uart1Config.ucsr1c;
-                     buf[i] = app.modbus.uart1Config.ubrr1l;
-                     break;
+                case 11: {
+                    buf[i++] = uc1_sys::getUart1Ucsr1c(); // app.modbus.uart1Config.ucsr1c;
+                    buf[i] = uc1_sys::getUart1Ubrr1() & 0xff; //app.modbus.uart1Config.ubrr1l;
+                    break;
                 }
 
-                case 10: {
-                     buf[i++] = app.modbus.uart1Config.ocr1a;
-                     buf[i] = app.modbus.uart1Config.tccr1b;
-                     break;                     
+                case 12: {
+                    uint16_t ocr1a = uc1_sys::getUart1Ocr1a();
+                    buf[i++] = ocr1a >> 8; // app.modbus.uart1Config.ocr1a;
+                    buf[i] = ocr1a & 0xff; // app.modbus.uart1Config.tccr1b;
+                    break;                     
+                }
+
+                case 13: {
+                    buf[i++] = 0;
+                    buf[i] = uc1_sys::getUart1Tccr1b(); // app.modbus.uart1Config.tccr1b;
+                    break;                     
+                }
+
+
+                case 18: case 19: case 20: {
+                    uint8_t index = (addr - 18) * 2;
+                    buf[i++] = app.modbus.addresses[index];
+                    buf[i] = app.modbus.addresses[index + 1];
+                    break;
                 }
 
                 default: {
@@ -231,6 +247,8 @@ namespace uc1_app {
         uint16_t addr = ((uint16_t)buf[2] << 8) + buf[3];
         uint8_t valueHigh = buf[4];
         uint8_t valueLow = buf[5];
+        uint8_t unlocked = app.modbus.unlocked;
+        app.modbus.unlocked = 0;
         uint8_t i;
 
         switch (addr) {
@@ -240,6 +258,9 @@ namespace uc1_app {
                 app.modbus.errCnt = 0;
                 app.modbus.local.buffer.errCnt = 0;
                 app.modbus.uart1.buffer.errCnt = 0;
+                if (valueHigh == 0x34 && valueLow == 0x12) {
+                    app.modbus.unlocked = 1;
+                }
                 break;
             }
 
@@ -264,22 +285,45 @@ namespace uc1_app {
                 break;
             }
 
-            case 8: {
-                uc1_sys::sys.uart0Mode = (uc1_sys::Uart0Mode) valueLow;
-                break;
-            }
-
-            case 9: {
-                app.modbus.uart1Config.ucsr1c = valueHigh;
-                app.modbus.uart1Config.ubrr1l = valueLow;
-                break;
-            }
-
             case 10: {
-                app.modbus.uart1Config.ocr1a = valueHigh;
-                app.modbus.uart1Config.tccr1b = valueLow;
+                uc1_sys::setUart0Mode((uc1_sys::Uart0Mode) valueLow);
+                break;
+            }
+
+            case 11: {
+                uc1_sys::setUart1Ucsr1c(valueHigh);
+                uc1_sys::setUart1Ubrr1(valueLow);
+                break;
+            }
+
+            case 12: {
+                uc1_sys::setUart1Ocr1a(valueHigh << 8 | valueLow);
                 break;                     
             }
+
+            case 13: {
+                uc1_sys::setUart1Tccr1b(valueLow);
+                break;                     
+            }
+
+            case 18: {
+                // local address change not allowed
+                // if (unlocked) {
+                //     app.modbus.addresses[0] = valueLow;
+                //     app.modbus.addresses[1] = valueHigh;
+                // }
+                break;
+            }
+
+            case 19: case 20: {
+                uint8_t index = (addr - 18) * 2;
+                if (unlocked) {
+                    app.modbus.addresses[index + 1] = valueLow;
+                    app.modbus.addresses[index] = valueHigh;
+                }
+                break;
+            }
+            
 
             default: {
                 buf[1] |= 0x80;
@@ -293,7 +337,7 @@ namespace uc1_app {
 
 
     uint8_t parseModbusRequest (uint8_t buf[], uint8_t size) {
-        if (buf[0] != UC1_APP_MODBUS_DEVICE_ADDRESS) {
+        if (buf[0] != app.modbus.localAddress) {
             return 0;
         }
         uint8_t rv = 0;
@@ -360,7 +404,6 @@ namespace uc1_app {
             }
 
         } else if (app.modbus.uart1.buffer.state == ResponseReady) {
-            PORTA &= ~(1 << PA2);
             struct ModbusBuffer *p = (struct ModbusBuffer *)&app.modbus.uart1.buffer;
             printf("size=%d = ", p->size);
             for (uint8_t i = 0; i < p->size; i++) {
@@ -412,10 +455,9 @@ namespace uc1_app {
 
         if (timer == 0) {
             uc1_sys::setLedGreen(1);
-            strcpy((char *)uc1_app::app.modbus.uart1.buffer.buffer, ":010300000004B8\r\n");
-            app.modbus.uart1.buffer.size = 17;
-            app.modbus.uart1.buffer.state = RequestReady;
-            // uc1_sys::sendViaUart1(app.modbus.uart1.buffer.buffer, app.modbus.uart1.buffer.size);
+            // strcpy((char *)uc1_app::app.modbus.uart1.buffer.buffer, ":010300000004B8\r\n");
+            // app.modbus.uart1.buffer.size = 17;
+            // app.modbus.uart1.buffer.state = RequestReady;
         } 
         if (timer == 1 ) {
             uc1_sys::setLedGreen(0);
@@ -435,6 +477,7 @@ namespace uc1_app {
             if (err) {
                 incErrCnt8(&p->errCnt); 
             }
+            uc1_sys::togglePortA(1);;
             p->size = 0;
             p->state = Idle;
         }
@@ -474,18 +517,21 @@ namespace uc1_app {
 
         if (b == ':') {
             // start of Modbus-ASCII frame
+            uc1_sys::togglePortA(0);
             if (pm->rIndex > 0) {
                 incErrCnt8(&pm->errCnt);
             }
             pm->rIndex = 1;
+
         
         } else if (pm->rIndex > 0 && ((b >= '0' && b <= '9') || (b >= 'A' && b <= 'F') || b == '\r' || b == '\n')) {
             // Modbus-ASCII frame byte
             if (pm->rIndex < 3) {
                 pm->rAddr[pm->rIndex - 1] = b;
             } else {
-                for (uint8_t i = 0; i < sizeof pm->localAddresses; i += 2) {
-                    if (pm->localAddresses[i + 1] == pm->rAddr[1] && pm->localAddresses[i] == pm->rAddr[0]) {
+
+                for (uint8_t i = 0; i < sizeof pm->addresses; i += 2) {
+                    if (pm->addresses[i + 1] == pm->rAddr[1] && pm->addresses[i] == pm->rAddr[0]) {
                         if (i == 0) {
                             pmb = (struct ModbusBuffer *)&pm->local.buffer;
                             maxSize = sizeof pm->local.buffer.buffer;
@@ -497,24 +543,25 @@ namespace uc1_app {
                     }
                 }
 
-                if (pm->rIndex == 3) {
-                    if (pmb->state != Idle) {
-                        incErrCnt8(&pm->errCnt);
-                    }
-                    pmb->state = RequestInProgress;
-                    addByteToModbusBuffer(':', pmb, maxSize); 
-                    addByteToModbusBuffer(pm->rAddr[0], pmb, maxSize); 
-                    addByteToModbusBuffer(pm->rAddr[1], pmb, maxSize); 
-                }
-                
                 if (pmb != NULL) {
+                    if (pm->rIndex == 3) {
+                        if (pmb->state != Idle) {
+                            incErrCnt8(&pm->errCnt);
+                        }
+                        pmb->state = RequestInProgress;
+                        addByteToModbusBuffer(':', pmb, maxSize); 
+                        addByteToModbusBuffer(pm->rAddr[0], pmb, maxSize); 
+                        addByteToModbusBuffer(pm->rAddr[1], pmb, maxSize); 
+                    }
                     addByteToModbusBuffer(b, pmb, maxSize);
                 }
             }
 
             if (b == '\n') {
+                uc1_sys::togglePortA(0);
                 pm->rIndex = 0;
                 if (pmb != NULL) {
+                    uc1_sys::togglePortA(1);
                     pmb->state = RequestReady;
                     // frame handling is done by main loop
                 }
@@ -553,11 +600,6 @@ namespace uc1_app {
         if (p->state != WaitForResponse) {
             incErrCnt8(&p->errCnt);
         } else if (b >= 0 && b <= 255){
-            if (p->size == 11) {
-                PORTA |= (1 << PA0);
-            } else {
-                PORTA &= ~(1 << PA0);
-            }
             if (p->size >= sizeof app.modbus.uart1.buffer.buffer) {
                 incErrCnt8(&p->errCnt);
             } else {

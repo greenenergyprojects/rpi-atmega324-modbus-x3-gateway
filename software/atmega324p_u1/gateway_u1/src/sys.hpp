@@ -54,20 +54,6 @@ namespace uc1_sys {
 
     enum Uart0Mode { OFF = 0, ModbusASCII = 1, STDOUT = 2, DEBUG = 4, MIXED = 8 };
 
-    // struct Sys_Modbus {
-    //     uint16_t dT1_35;
-    //     uint16_t dT1_15;
-    //     uint16_t errorCnt;
-    //     uint16_t receivedByteCnt;
-    // };
-
-    // struct Sys_Uart {
-    //     uint8_t rpos_u8;
-    //     uint8_t wpos_u8;
-    //     uint8_t errcnt_u8;
-    //     uint8_t rbuffer_u8[GLOBAL_UC1_SYS_UART0_RECBUFSIZE];
-    // };
-
     struct Sys {
         uint8_t flags;
         uint8_t taskErr_u8;
@@ -79,8 +65,8 @@ namespace uc1_sys {
         uint8_t  uart0DebugByte;
         uint8_t *uart1Buf;
         uint8_t  uart1Size;
-        // struct Sys_Uart uart;
-        // struct Sys_Modbus modbus[1];
+        uint8_t  tccr1bInit;
+        uint16_t ocr1aInit;
     };
 
 
@@ -105,11 +91,12 @@ namespace uc1_sys {
 
     // functions
 
-    void      init ();
-    void      main ();
+    void init ();
+    void initUart1(uint16_t baudrate, uint8_t t35x10);
+    void main ();
 
-    void      saveSei ();
-    void      saveCli ();
+    void saveSei ();
+    void saveCli ();
 
     uint8_t   inc8BitCnt (uint8_t count);
     uint16_t  inc16BitCnt (uint16_t count);
@@ -118,17 +105,32 @@ namespace uc1_sys {
     Sys_Event clearEvent (Sys_Event event);
     Sys_Event isEventPending (Sys_Event event);
 
-    void      setLedRed (uint8_t on);
-    void      setLedGreen (uint8_t on);
-    void      setLedYellow (uint8_t on);
-    void      toggleLedRed ();
-    void      toggleLedGreen ();
-    void      toggleLedYellow ();
+    void setLedRed (uint8_t on);
+    void setLedGreen (uint8_t on);
+    void setLedYellow (uint8_t on);
+    void setPortA (uint8_t index);
+    void clrPortA (uint8_t index);
+    void toggleLedRed ();
+    void toggleLedGreen ();
+    void toggleLedYellow ();
+    void togglePortA (uint8_t index);
 
-    void      setUart0Mode (enum Uart0Mode mode);
-    void      setUart1Config (uint8_t ubrr1l, uint8_t ucsr1c);
-    void      sendViaUart0 (uint8_t typ, uint8_t buf[], uint8_t size);
-    void      sendViaUart1 (uint8_t buf[], uint8_t size);
+    void setUart0Mode (enum Uart0Mode mode);
+    void setUart1Ubrr1 (uint16_t ubrr1);
+    void setUart1Ucsr1b (uint8_t ucsr1b);
+    void setUart1Ucsr1c (uint8_t ucsr1c);
+    void setUart1Ocr1a (uint16_t ocr1a);
+    void setUart1Tccr1b (uint8_t tccr1b);
+    
+    enum Uart0Mode getUart0Mode ();
+    uint16_t getUart1Ubrr1 ();
+    uint8_t getUart1Ucsr1b ();
+    uint8_t getUart1Ucsr1c ();
+    uint16_t getUart1Ocr1a ();
+    uint8_t getUart1Tccr1b ();
+
+    void sendViaUart0 (uint8_t typ, uint8_t buf[], uint8_t size);
+    void sendViaUart1 (uint8_t buf[], uint8_t size);
 
 }
 

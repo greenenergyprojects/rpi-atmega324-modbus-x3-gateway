@@ -11,8 +11,8 @@
 #define APP_VERSION_MAJOR 1
 #define APP_VERSION_MINOR 0
 
-#define UC1_APP_MODBUS_DEVICE_ADDRESS 1
-#define UC1_B1_MODBUS_DEVICE_ADDRESS  2
+#define UC1_APP_MODBUS_DEVICE_ADDRESS 128
+#define UC1_B1_MODBUS_DEVICE_ADDRESS  1
 
 #define UC1_APP_EVENT_0   0x01
 #define UC1_APP_EVENT_1   0x02
@@ -73,13 +73,6 @@ namespace uc1_app {
         uint8_t buffer[254];
     };
 
-    struct Uart1Config {
-        uint16_t ocr1a;
-        uint8_t tccr1b;
-        uint8_t ubrr1l;
-        uint8_t ucsr1c;
-    };
-
     struct ModbusLocal {
         struct ModbusBufferLocal buffer;
     };
@@ -93,11 +86,14 @@ namespace uc1_app {
     };
 
     struct Modbus {
+        uint8_t localAddress;
+        uint8_t unlocked;
         uint8_t rIndex;
         uint8_t rAddr[2];
-        uint8_t localAddresses[6];
+        uint8_t addresses[6];
         uint8_t errCnt;
-        struct Uart1Config uart1Config;
+        uint8_t ocr1a;
+        
         struct ModbusLocal local;
         struct ModbusUart1 uart1;
         struct ModbusSpi   spi;
