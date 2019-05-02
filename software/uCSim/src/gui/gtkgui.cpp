@@ -1,13 +1,36 @@
 
 #include <gtk/gtk.h>
-#include <iostream>
 #include <string.h>
+#include <iostream>
+#include <sstream>
 #include <thread>
 #include <cstring>
 
 #include "gtkgui.hpp"
 #include "../bridge/bridge.hpp"
 
+
+std::string GtkGui::createModbusAsciiFrame (const char f[]) {
+    int size = 0;
+    uint8_t lrc = 0;
+    if (f[0] != ':' || f[1] == 0) {
+        return ""; 
+    }
+    std::stringstream rv;
+    rv << ':';
+    for (int i = 1; f[i] != 0; i++) {
+        if (!((f[i] >= '0' && f[i] <= '9') || (f[i] >= 'A' && f[i] <= 'F'))) {
+            return "";
+        }
+        lrc = lrc + f[i];
+        rv << f[i];
+    }
+    lrc = (uint8_t)(-(int8_t)lrc);
+    char s[3];
+    snprintf(s, sizeof s, "%02X", lrc);
+    rv << s << "\r\n";
+    return rv.str();
+}
 
 void GtkGui::onButtonClicked(GtkWidget *widget) {
     if (widget == (void *)u1ButtonTest) {
@@ -20,18 +43,25 @@ void GtkGui::onButtonClicked(GtkWidget *widget) {
         // :01031200000027000000000000000000000000000010
         // 0000 0027 0000 0000 0000 0000 0000 0000 0000 10
 
-        
-        std::string frame(":010300000001BB");
+        // all registers: :010300000016B5
+        // response :01032C00000027000000000000000000000000000000050000002208B700000000000003E813890000000000000101DD
+        //           01032C00000027000000000000000000000000000000050000002208B700000000000003E813900000000000000101E5
+        // 0000 0027 0000 0000 0000 0000 0000 0000 0000 0005 0000 0022 08B7 0000 0000 0000 03E8 1390 0000 0000 0000 0101
+
+        // std::string frame(":010300110001B9");
+        std::string frame(":010300000016B5");
         std::string rawFrame = frame + "\r\n";
         int rv = bridge::sendStringToUc1Uart0(115200, (uint8_t *)rawFrame.c_str(), rawFrame.length());
         std::string msg = "PI -> U1-UART0:  " + frame + "\\r\\n\"" + "\n";
         appendU1Text(msg.c_str());
     }
     if (widget == (void *)u2ButtonTest) {
-        std::string frame(":020300000001BA");
-        std::string rawFrame = frame + "\r\n";
+        // std::string frame(":020300000001BA");
+        // std::string frame(":010300110001B9");
+        std::string frame(":012B01233239390D");
+        std::string rawFrame = createModbusAsciiFrame(frame.c_str());
         int rv = bridge::sendStringToUc1Uart0(115200, (uint8_t *)rawFrame.c_str(), rawFrame.length());
-        std::string msg = "PI -> U1:UART0:  " + frame + "\\r\\n\"" + "\n";
+        std::string msg = "PI -> U1:UART0:  " + rawFrame.substr(0, rawFrame.length() - 2) + "\\r\\n\"" + "\n";
         appendU1Text(msg.c_str());
     }
 }

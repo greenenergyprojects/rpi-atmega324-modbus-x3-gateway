@@ -8,8 +8,8 @@
 
 // defines
 
-#define APP_VERSION_MAJOR 1
-#define APP_VERSION_MINOR 0
+#define APP_VERSION_MAJOR 0
+#define APP_VERSION_MINOR 1
 
 #define UC1_APP_MODBUS_DEVICE_ADDRESS 128
 #define UC1_B1_MODBUS_DEVICE_ADDRESS  1
@@ -33,9 +33,11 @@ namespace uc1_app {
         Idle = 0,
         RequestInProgress = 1,
         RequestReady = 2,
-        WaitForResponse = 4,
-        ResponseInProgress = 8,
-        ResponseReady = 16
+        SendingRequest = 4,
+        WaitForResponse = 8,
+        ResponseInProgress = 16,
+        ResponseReady = 32,
+        RequestForTest =64
     };
 
 
@@ -45,10 +47,17 @@ namespace uc1_app {
         uint8_t toSend;
     };
 
+    struct ModbusMeiRequest {
+        uint8_t deviceAddress;
+        uint8_t functionCode;
+        uint8_t meiType;
+    };
+
     struct ModbusBuffer {
         uint8_t errCnt;
         enum ModbusBufferState state;
         uint8_t size;
+        struct ModbusMeiRequest mei;
         uint8_t buffer[];
     };
 
@@ -56,6 +65,7 @@ namespace uc1_app {
         uint8_t errCnt;
         enum ModbusBufferState state;
         uint8_t size;
+        struct ModbusMeiRequest mei;
         uint8_t buffer[29];
     };
     
@@ -63,6 +73,7 @@ namespace uc1_app {
         uint8_t errCnt;
         enum ModbusBufferState state;
         uint8_t size;
+        struct ModbusMeiRequest mei;
         uint8_t buffer[254];
     };
 
@@ -70,6 +81,7 @@ namespace uc1_app {
         uint8_t errCnt;
         enum ModbusBufferState state;
         uint8_t size;
+        uint8_t meiType;
         uint8_t buffer[254];
     };
 

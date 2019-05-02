@@ -153,6 +153,73 @@ namespace uc1_app {
     }
 
 
+    uint8_t modbusRTUToMei (struct ModbusBuffer *p) {
+        if (p->size < 4) {
+            return 0;
+        }
+        uint8_t *buf = p->buffer;
+        p->mei.functionCode = 0;
+        if (p->buffer[1] == 43) { // Function code 43 = 0x2b -> Encapsulated Interface Transport
+            if (p->buffer[2] == 1) { // AE Conversion protocol
+                p->mei.deviceAddress = p->buffer[0];
+                p->mei.functionCode = p->buffer[1];
+                p->mei.meiType = 1;
+                for (uint8_t i = 0; i < (p->size - 5); i++) {
+                    p->buffer[i] = p->buffer[i + 3];
+                }
+                p->size = p->size - 5;
+            }
+        }
+        return p->size;
+    }
+
+    uint8_t modbusMei2ModbusRtu (struct ModbusBuffer *p, uint8_t maxSize) {
+        if (p->mei.functionCode != 43) {
+            return p->size;
+        }
+
+        // printf("  -> MEI: ");
+        // for (uint8_t i = 0; i < p->size; i++) {
+        //     printf(" %02x", p->buffer[i]);
+        // }
+        // printf("\r\n");
+        printf("  -> ");
+        uint8_t space = 0;
+        for (uint8_t i = 0; i < p->size - 2; i++) {
+            char c = p->buffer[i];
+            if (c < ' ' || c > 126) { c = '.'; }
+            if (c != ' ' || space == 0) {
+                printf("%c", c);
+            }
+            space = (c == ' ') ? space + 1 : 0;
+        }
+        printf("\r\n");
+
+        if (maxSize < (p->size + 5)) {
+            p->buffer[0] = p->mei.deviceAddress;
+            p->buffer[1] = p->mei.functionCode | 0x80;
+            p->buffer[2] = 0x05; // Exception code for "out of memory";
+            return 3;
+        }
+        for (uint8_t i = p->size; i > 0; i--) {
+            p->buffer[i + 3] = p->buffer[i];
+        }
+        p->buffer[3] = p->buffer[0];
+        p->buffer[2] = p->mei.meiType;
+        p->buffer[1] = p->mei.functionCode;
+        p->buffer[0] = p->mei.deviceAddress;
+        
+        p->size = p->size + 3;
+        uint16_t crc = 0xffff;
+        for (uint8_t i = 0; i < p->size; i++) {
+            crc = modbusUpdateCRC(p->buffer[i], crc);
+        }
+        p->buffer[p->size++] = crc & 0xff;
+        p->buffer[p->size++] = crc >> 8;
+        return p->size; 
+    }
+
+
     uint8_t executeModbusReadHoldRegisters (uint8_t buf[]) {
         app.modbus.unlocked = 0;
         uint8_t rv = 3;
@@ -389,29 +456,34 @@ namespace uc1_app {
             }
 
         } else if (app.modbus.uart1.buffer.state == RequestReady) {
-             // --_> move to isr -> uART1 transmit interrupt
-            uint8_t size = modbusAsciToRtu(app.modbus.uart1.buffer.buffer, sizeof app.modbus.uart1.buffer.buffer);
-            if (size == 0) {
+            uc1_sys::setPortA(0);
+            struct ModbusBuffer *p = (struct ModbusBuffer *)&app.modbus.uart1.buffer;
+            p->size = modbusAsciToRtu(app.modbus.uart1.buffer.buffer, sizeof app.modbus.uart1.buffer.buffer);
+            uint8_t size = modbusRTUToMei(p);    
+            if (size < 4) {
                 incErrCnt8(&app.modbus.uart1.buffer.errCnt);
                 app.modbus.uart1.buffer.state = Idle;
+                uc1_sys::clrPortA(0);
+
             } else {
                 // for (uint8_t i = 0; i < size; i++) {
                 //     printf("%02x ", app.modbus.uart1.buffer.buffer[i]);
                 // }
                 // printf(" -> ");
-
                 uc1_sys::sendViaUart1(app.modbus.uart1.buffer.buffer, size);
+                app.modbus.uart1.buffer.state = SendingRequest;
             }
 
         } else if (app.modbus.uart1.buffer.state == ResponseReady) {
             struct ModbusBuffer *p = (struct ModbusBuffer *)&app.modbus.uart1.buffer;
-            printf("size=%d = ", p->size);
-            for (uint8_t i = 0; i < p->size; i++) {
-                printf("%02x ", app.modbus.uart1.buffer.buffer[i]);
-            }
-            printf(" -> ");
+            // printf("size=%d = ", p->size);
+            // for (uint8_t i = 0; i < p->size; i++) {
+            //     printf("%02x ", app.modbus.uart1.buffer.buffer[i]);
+            // }
+            // printf(" -> ");
 
-            uint8_t size = modbusRtuToAscii(p->buffer, p->size, sizeof app.modbus.uart1.buffer.buffer, 1);
+            uint8_t size = modbusMei2ModbusRtu(p, sizeof app.modbus.uart1.buffer.buffer);
+            size = modbusRtuToAscii(p->buffer, size, sizeof app.modbus.uart1.buffer.buffer, 1);
             if (size == 0) {
                 incErrCnt8(&p->errCnt);
                 app.modbus.uart1.buffer.state = Idle;
@@ -423,7 +495,30 @@ namespace uc1_app {
                 uc1_sys::sendViaUart0(1, p->buffer, size);
                 app.modbus.uart1.buffer.state = Idle;
             }
+        } else if (app.modbus.uart1.buffer.state == RequestForTest) {
+            struct ModbusBuffer *p = (struct ModbusBuffer *)&app.modbus.uart1.buffer;
+            printf(" TEST: size=%d ->", p->size);
+            for (uint8_t i = 0; i < p->size; i++) {
+                uint8_t b = p->buffer[i];
+                printf(" %02x ", b);
+            }
+            printf(" = '");
+            for (uint8_t i = 0; i < p->size; i++) {
+                uint8_t b = p->buffer[i];
+                char c = '.';
+                if (b >= 32 && b < 127) {
+                    c = (char)b;
+                }
+                printf("%c", c);
+            }
+            printf("'\r\n");
+
+            uc1_sys::sendViaUart1(app.modbus.uart1.buffer.buffer, p->size);
+            app.modbus.uart1.buffer.state = SendingRequest;
+
         }
+
+
     }
 
 
@@ -458,6 +553,55 @@ namespace uc1_app {
             // strcpy((char *)uc1_app::app.modbus.uart1.buffer.buffer, ":010300000004B8\r\n");
             // app.modbus.uart1.buffer.size = 17;
             // app.modbus.uart1.buffer.state = RequestReady;
+            
+            static uint8_t invAddr = 29;
+            static uint8_t step = 0;
+            uint8_t i = 0;
+            char saddr[3];
+
+            char cmd;
+            switch (step) {
+                case 0: cmd = '0'; break;
+                case 1: cmd = '9'; break;
+                case 2: cmd = 'P'; break;
+                case 3: cmd = 'F'; break;
+                default: cmd = '9'; step = 0; break;
+            }
+            sprintf(saddr, "%02d", (int)invAddr);
+            uc1_app::app.modbus.uart1.buffer.mei.deviceAddress = 0x01;
+            uc1_app::app.modbus.uart1.buffer.mei.functionCode = 43;
+            uc1_app::app.modbus.uart1.buffer.mei.meiType = 0x01;
+            uc1_app::app.modbus.uart1.buffer.buffer[i++] = '#';
+            uc1_app::app.modbus.uart1.buffer.buffer[i++] = saddr[0];
+            uc1_app::app.modbus.uart1.buffer.buffer[i++] = saddr[1];
+            uc1_app::app.modbus.uart1.buffer.buffer[i++] = cmd;
+            uc1_app::app.modbus.uart1.buffer.buffer[i++] = '\r';
+            uc1_app::app.modbus.uart1.buffer.size = i;
+            
+            if (uc1_app::app.modbus.uart1.buffer.state == uc1_app::Idle) {
+                // step++;
+                step = 4;
+            } else {
+                step = 4;
+            }
+            if (step > 3) {
+                invAddr++;
+                if (invAddr > 32) {
+                    invAddr = 1;
+                }
+                step = 0;
+            }
+            uc1_app::app.modbus.uart1.buffer.state = uc1_app::RequestForTest;
+
+            // 23  32  39  39  0d 
+            // 0A 2A 32 39 39 20 35 30 30 2D 39 30 20 39 0D => \n*299 500-90 Chksum 39
+            
+            // 23  33  32  39  0d
+            // 0A 2A 33 32 39 20 35 30 30 2D 39 30 20 33 0D => \n*329 500-90 Checksum 33
+
+
+            // 0A 2A 32 38 30 20 20 20 30 20 20 20 30 2E 30 20 20 30 2E 30 30 20 20 20 20 20 30 20 20 37 33 2E 33 20 20 30 2E 30 31 20 20 20 20 20 30 20 20 35 30 20 20 20 20 20 20 30 20 9F 0D 60 
+            //        2  8  0           0              .  0           .  0  0                 0        7  3  .  3        0  .  0  1                 0        5  0                    0
         } 
         if (timer == 1 ) {
             uc1_sys::setLedGreen(0);
@@ -477,7 +621,6 @@ namespace uc1_app {
             if (err) {
                 incErrCnt8(&p->errCnt); 
             }
-            uc1_sys::togglePortA(1);;
             p->size = 0;
             p->state = Idle;
         }
@@ -517,7 +660,6 @@ namespace uc1_app {
 
         if (b == ':') {
             // start of Modbus-ASCII frame
-            uc1_sys::togglePortA(0);
             if (pm->rIndex > 0) {
                 incErrCnt8(&pm->errCnt);
             }
@@ -549,6 +691,7 @@ namespace uc1_app {
                             incErrCnt8(&pm->errCnt);
                         }
                         pmb->state = RequestInProgress;
+                        pmb->size = 0;
                         addByteToModbusBuffer(':', pmb, maxSize); 
                         addByteToModbusBuffer(pm->rAddr[0], pmb, maxSize); 
                         addByteToModbusBuffer(pm->rAddr[1], pmb, maxSize); 
@@ -558,10 +701,8 @@ namespace uc1_app {
             }
 
             if (b == '\n') {
-                uc1_sys::togglePortA(0);
                 pm->rIndex = 0;
                 if (pmb != NULL) {
-                    uc1_sys::togglePortA(1);
                     pmb->state = RequestReady;
                     // frame handling is done by main loop
                 }

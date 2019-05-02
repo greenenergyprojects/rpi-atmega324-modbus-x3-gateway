@@ -38,6 +38,7 @@ class GtkGui : public Gui {
 
         void activate (GtkApplication* app);
         void onButtonClicked(GtkWidget *widget);
+        std::string createModbusAsciiFrame (const char f[]);
 
     public:
         GtkGui ();

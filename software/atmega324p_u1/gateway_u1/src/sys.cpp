@@ -413,6 +413,7 @@ ISR (USART1_RX_vect) {
 }
 
 ISR (USART1_TX_vect) {
+    uc1_sys::togglePortA(0);
     if (uc1_sys::sys.uart1Size > 0) {
         UDR1 = *uc1_sys::sys.uart1Buf++;
         uc1_sys::sys.uart1Size--;

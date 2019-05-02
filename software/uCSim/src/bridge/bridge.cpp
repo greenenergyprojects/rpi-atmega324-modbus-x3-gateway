@@ -168,11 +168,47 @@ namespace bridge {
             gui->appendU1Text("B1: CRC Error\n");
             return rv;
         }
-        if (buffer[0] != 2) {
-            gui->appendU1Text("B1: wrong address, frame not for this device\n");
+        if (buffer[0] != 1) {
+            gui->appendU1Text("\nB1: wrong address, frame not for this device\n");
             return rv;
         }
         switch (buffer[1]) {
+            case 3: {
+                if (size < 8) {
+                    rv.buffer[1] |= 0x80;
+                    rv.buffer[2] = 0x01;
+                    rv.size = 3;
+                    break;
+                }
+                int address = buffer[2] << 8 | buffer[3]; 
+                int quantity = buffer[4] << 8 | buffer[5];
+                if (quantity < 1 || quantity > 0x7d) {
+                    rv.buffer[1] |= 0x80;
+                    rv.buffer[2] = 0x03;
+                    rv.size = 3;
+                    break;
+                }
+                rv.buffer[2] = quantity * 2;
+                rv.size = 3;
+                int i = 3;
+                int mem[] = { 
+                    0x0000, 0x0027, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+                    0x0000, 0x0005, 0x0000, 0x0022, 0x08B7, 0x0000, 0x0000, 0x0000,
+                    0x03E8, 0x1389, 0x0000, 0x0000, 0x0000, 0x0101
+                };
+
+                for (int a = address; quantity > 0; quantity--, a++ ) {
+                    int v = 0;
+                    if (a < sizeof(mem) / sizeof(int)) {
+                        v = mem[a];
+                    }
+                    rv.buffer[i++] = (v >> 8) & 0xff;
+                    rv.buffer[i++] = v & 0xff;
+                    rv.size += 2;
+                }
+                break;
+            }
+
             default: {
                 rv.buffer[1] |= 0x80;
                 rv.buffer[2] = 0x01;
@@ -193,6 +229,46 @@ namespace bridge {
         return rv;
     }
 
+    struct ModbusResponse aeConversionHandleRequest(const uint8_t buf[], uint8_t size) {
+        struct ModbusResponse rv;
+        rv.size = 0;
+        rv.buffer[rv.size++] = '\n';
+
+        if (size != 5) {
+            gui->appendU1Text("\nB1 (AEConv): Frame to short\n");
+            return rv;
+        }
+        if (buf[0] != '#' || buf[4] != '\r') {
+            gui->appendU1Text("\nB1 (AEConv): illegal frame\n");
+            return rv;
+        }
+
+        int chksum = 0;
+        rv.buffer[rv.size++] = '*';    chksum += '*';
+        rv.buffer[rv.size++] = buf[1]; chksum += buf[1];
+        rv.buffer[rv.size++] = buf[2]; chksum += buf[2];
+        switch (buf[3]) {
+            case '9': {
+                char resp[] = "*XX9 500-90 ";
+                for (int i = 3; i < strlen(resp); i++) {
+                    chksum += resp[i];
+                    rv.buffer[rv.size++] = (uint8_t)resp[i];
+                }
+                break;
+            }
+            
+            default: {
+                gui->appendU1Text("\nB1 (AEConv): illegal frame\n");
+                return rv;
+            }
+        }
+
+        rv.buffer[rv.size++] = chksum & 0xff;
+        rv.buffer[rv.size++] = '\r';
+        chksum = chksum & 0xff;
+        return rv;
+    }
+
     int receiveBufferFromUc1Uart1 (const uint8_t buffer[], int size) {
         gui->appendU1Text("U1-UART1 -> B1:  ");
         char s[4];
@@ -201,7 +277,8 @@ namespace bridge {
             snprintf(s, 4, " %02x", b);
             gui->appendU1Text(s);
         }
-        struct ModbusResponse modbusResponse = modbusB1HandleRequest(buffer, size);
+        // struct ModbusResponse modbusResponse = modbusB1HandleRequest(buffer, size);
+        struct ModbusResponse modbusResponse = aeConversionHandleRequest(buffer, size);
         gui->appendU1Text("\n");
         if (modbusResponse.size > 0) {
             gui->appendU1Text("B1 -> U1-UART1: ");

@@ -1,4 +1,4 @@
-.PHONY: clean all
+.PHONY: clean all dist
 
 $(shell mkdir -p dist >/dev/null)
 $(shell mkdir -p build >/dev/null)
@@ -30,6 +30,9 @@ u1: dist/atmega324p_u1.hex
 u1bl: dist/atmega324p_u1.hex ../bootloader_u1/dist/bootloader_atmega324p_115200_12MHz_u1_uart0.hex
 	avrdude -c usbasp -p atmega324p -e -U flash:w:$<:i
 	avrdude -c usbasp -p atmega324p -D -U flash:w:../bootloader_u1/dist/bootloader_atmega324p_115200_12MHz_u1_uart0.hex:i
+
+dist: dist/atmega324p_u1.elf
+	rsync -aP $< pi-mbgwx3://home/pi/flashuc/atmega324p_u1_gateway_v0.1.elf
 
 clean:
 	-@rm -r dist
