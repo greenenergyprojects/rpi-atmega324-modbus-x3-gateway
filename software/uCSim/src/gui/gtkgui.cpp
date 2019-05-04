@@ -48,11 +48,11 @@ void GtkGui::onButtonClicked(GtkWidget *widget) {
         //           01032C00000027000000000000000000000000000000050000002208B700000000000003E813900000000000000101E5
         // 0000 0027 0000 0000 0000 0000 0000 0000 0000 0005 0000 0022 08B7 0000 0000 0000 03E8 1390 0000 0000 0000 0101
 
-        // std::string frame(":010300110001B9");
-        std::string frame(":010300000016B5");
-        std::string rawFrame = frame + "\r\n";
+        std::string frame(":800600000015");
+        //std::string frame(":800300000016B5");
+        std::string rawFrame = createModbusAsciiFrame(frame.c_str());
         int rv = bridge::sendStringToUc1Uart0(115200, (uint8_t *)rawFrame.c_str(), rawFrame.length());
-        std::string msg = "PI -> U1-UART0:  " + frame + "\\r\\n\"" + "\n";
+        std::string msg = "PI -> U1-UART0:  " + rawFrame.substr(0, rawFrame.length() - 2) + "\\r\\n\"" + "\n";
         appendU1Text(msg.c_str());
     }
     if (widget == (void *)u2ButtonTest) {

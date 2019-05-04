@@ -66,7 +66,7 @@ namespace uc1_app {
         enum ModbusBufferState state;
         uint8_t size;
         struct ModbusMeiRequest mei;
-        uint8_t buffer[29];
+        uint8_t buffer[128];
     };
     
     struct ModbusBufferUart1 {

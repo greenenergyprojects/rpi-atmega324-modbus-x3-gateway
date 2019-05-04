@@ -182,7 +182,7 @@ namespace uc1_sys {
         gui->setU1LedYellow(on);
     }
 
-    void setLedYRed (uint8_t on) {
+    void setLedRed (uint8_t on) {
         lock(); {
             res.ledRed = on;
         }
@@ -365,8 +365,21 @@ namespace uc1_sys {
     }
 
     void sendViaUart1 (uint8_t buf[], uint8_t size) {
-        bridge::receiveBufferFromUc1Uart1(buf, size);
-        uc1_app::uart1ReadyToSent(0);
+        lock(); {
+            res.uart1Sent.timer500usCnt = size * 2;
+            res.uart1Sent.handler = bridge::receiveBufferFromUc1Uart1;
+            res.uart1Sent.done = uc1_app::uart1ReadyToSent;
+            res.uart1Sent.buffer = (uint8_t *)malloc(size);
+            res.uart1Sent.size = size;
+            for (int i = 0; i < size; i++) {
+                res.uart1Sent.buffer[i] = buf[i];
+            }
+        };
+        unlock();
+
+
+        // bridge::receiveBufferFromUc1Uart1(buf, size);
+        // uc1_app::uart1ReadyToSent(0);
     }
 
     // **************************************************
@@ -389,6 +402,37 @@ namespace uc1_sys {
                 else if (cnt500us & 0x20) uc1_app::task_32ms();
                 else if (cnt500us & 0x40) uc1_app::task_64ms();
                 else if (cnt500us & 0x80) uc1_app::task_128ms();
+
+                struct UartSent x;
+                int expired = 0;
+                lock(); {
+                    struct UartSent *p = &res.uart1Sent;
+                    if (p->timer500usCnt > 0) {
+                        p->timer500usCnt--;
+                        if (p->timer500usCnt == 0) {
+                            x = *p;
+                            p->handler = NULL;
+                            p->done = NULL;
+                            p->buffer = NULL;
+                            p->size = 0;
+                            expired = 1;
+                        }
+                    }
+                }
+                unlock();
+                if (expired) {
+                    if (x.handler != NULL) {
+                        if (x.done != NULL) {
+                            (*x.done)(0);
+                        }
+                        int err = (x.handler)(x.buffer, x.size);
+                        if (x.buffer != NULL) {
+                            free(x.buffer);
+                        }
+                    }
+                }
+
+
             }
 
         } catch (...) {

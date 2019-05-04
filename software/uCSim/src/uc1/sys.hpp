@@ -40,6 +40,14 @@ namespace uc1_sys {
         uint8_t ucsr1c;
     };
 
+    struct UartSent {
+        uint16_t timer500usCnt;
+        int (*handler)(const uint8_t *, int);
+        void (*done)(uint8_t);
+        uint16_t size;
+        uint8_t *buffer;
+    };
+
     struct SysResorces {
         pthread_mutex_t lock;
         struct SysCpu cpu;
@@ -47,6 +55,8 @@ namespace uc1_sys {
         uint8_t ledRed;
         uint8_t ledYellow;
         enum Uart0Mode uart0Mode;
+        struct UartSent uart0Sent;
+        struct UartSent uart1Sent;
     };
 
 
