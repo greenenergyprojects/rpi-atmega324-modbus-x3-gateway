@@ -1,4 +1,5 @@
 #include "global.h"
+#include "../bridge/bridge.hpp"
 #include "sys.hpp"
 #include "app.hpp"
 
@@ -23,11 +24,11 @@ namespace uc2_sys {
       memset(&sys, 0, sizeof sys);
       memset(&res, 0, sizeof res);
       res.lock = PTHREAD_MUTEX_INITIALIZER;
-      int rc = pthread_create(&tid_timer0, NULL, timer0_isr, NULL);
-      if (rc) {
-         std::cout << "Error:unable to create thread," << rc << std::endl;
-         exit(-1);
-      }
+    //   int rc = pthread_create(&tid_timer0, NULL, timer0_isr, NULL);
+    //   if (rc) {
+    //      std::cout << "Error:unable to create thread," << rc << std::endl;
+    //      exit(-1);
+    //   }
 
       printf("uc2_sys::init() done\n");
     }
@@ -129,40 +130,265 @@ namespace uc2_sys {
     }
 
 
-    void setUart1Config (uint8_t ubrr1l, uint8_t ucsr1c) {
+    void setUart0Ubrr0 (uint16_t ubrr0) {
+        lock(); {
+            res.cpu.ubrr0h = ubrr0 >> 8;
+            res.cpu.ubrr0l = ubrr0 & 0xff;
+        }
+        unlock();
+    }
 
+    void setUart0Ucsr0b (uint8_t ucsr0b) {
+        lock(); {
+            res.cpu.ucsr0b = ucsr0b;
+        }
+        unlock();
+    }
+
+    void setUart0Ucsr0c (uint8_t ucsr0c) {
+        lock(); {
+            res.cpu.ucsr0c = ucsr0c;
+        }
+        unlock();
+    }    
+
+    void setUart0Ocr1a (uint16_t ocr1a) {
+        lock(); {
+            res.cpu.ocr1a = ocr1a;
+        }
+        unlock();
+    }
+
+    void setUart0Tccr1b (uint8_t tccr1b) {
+        lock(); {
+            res.cpu.tccr1b = tccr1b;
+        }
+        unlock();
+    }  
+
+    void setUart1Ubrr1 (uint16_t ubrr1) {
+        lock(); {
+            res.cpu.ubrr1h = ubrr1 >> 8;
+            res.cpu.ubrr1l = ubrr1 & 0xff;
+        }
+        unlock();
+    }
+
+    void setUart1Ucsr1b (uint8_t ucsr1b) {
+        lock(); {
+            res.cpu.ucsr1b = ucsr1b;
+        }
+        unlock();
+    }
+
+    void setUart1Ucsr1c (uint8_t ucsr1c) {
+        lock(); {
+            res.cpu.ucsr1c = ucsr1c;
+        }
+        unlock();
+    }    
+
+    void setUart1Ocr2a (uint8_t ocr2a) {
+        lock(); {
+            res.cpu.ocr2a = ocr2a;
+        }
+        unlock();
+    }
+
+    void setUart1Tccr2b (uint8_t tccr2b) {
+        lock(); {
+            res.cpu.tccr2b = tccr2b;
+        }
+        unlock();
+    }  
+
+    
+    uint16_t getUart0Ubrr0 () {
+        uint16_t rv;
+        lock(); {
+            rv = ((res.cpu.ubrr0h & 0xff) << 8) | (res.cpu.ubrr0l & 0xff);
+        }
+        unlock();
+        return rv;
+    }
+
+    uint8_t getUart0Ucsr0b () {
+        uint8_t rv;
+        lock(); {
+            rv = res.cpu.ucsr0b;
+        }
+        unlock();
+        return rv;
+    }
+
+    uint8_t getUart0Ucsr0c () {
+        uint8_t rv;
+        lock(); {
+            rv = res.cpu.ucsr0c;
+        }
+        unlock();
+        return rv;
+    }
+
+    uint16_t getUart0Ocr1a () {
+        uint16_t rv;
+        lock(); {
+            rv = res.cpu.ocr1a;
+        }
+        unlock();
+        return rv;
+    }
+
+    uint8_t getUart0Tccr1b () {
+        uint8_t rv;
+        lock(); {
+            rv = res.cpu.tccr1b;
+        }
+        unlock();
+        return rv;
+    }
+
+
+    uint16_t getUart1Ubrr1 () {
+        uint16_t rv;
+        lock(); {
+            rv = ((res.cpu.ubrr1h & 0xff) << 8) | (res.cpu.ubrr1l & 0xff);
+        }
+        unlock();
+        return rv;
+    }
+
+    uint8_t getUart1Ucsr1b () {
+        uint8_t rv;
+        lock(); {
+            rv = res.cpu.ucsr1b;
+        }
+        unlock();
+        return rv;
+    }
+
+    uint8_t getUart1Ucsr1c () {
+        uint8_t rv;
+        lock(); {
+            rv = res.cpu.ucsr1c;
+        }
+        unlock();
+        return rv;
+    }
+
+    uint8_t getUart1Ocr2a () {
+        uint16_t rv;
+        lock(); {
+            rv = res.cpu.ocr2a;
+        }
+        unlock();
+        return rv;
+    }
+
+    uint8_t getUart1Tccr2b () {
+        uint8_t rv;
+        lock(); {
+            rv = res.cpu.tccr2b;
+        }
+        unlock();
+        return rv;
+    }
+
+
+    // **************************************************
+
+
+    void sendViaUart0 (uint8_t buf[], uint8_t size) {
+        lock(); {
+            res.uart0Sent.timer500usCnt = size * 2;
+            res.uart0Sent.handler = bridge::receiveBufferFromUc2Uart0;
+            res.uart0Sent.done = uc2_app::uart0ReadyToSent;
+            res.uart0Sent.buffer = (uint8_t *)malloc(size);
+            res.uart0Sent.size = size;
+            for (int i = 0; i < size; i++) {
+                res.uart0Sent.buffer[i] = buf[i];
+            }
+        };
+        unlock();
+
+    }
+
+    void sendViaUart1 (uint8_t buf[], uint8_t size) {
+        lock(); {
+            res.uart1Sent.timer500usCnt = size * 2;
+            res.uart1Sent.handler = bridge::receiveBufferFromUc2Uart1;
+            res.uart1Sent.done = uc2_app::uart1ReadyToSent;
+            res.uart1Sent.buffer = (uint8_t *)malloc(size);
+            res.uart1Sent.size = size;
+            for (int i = 0; i < size; i++) {
+                res.uart1Sent.buffer[i] = buf[i];
+            }
+        };
+        unlock();
+
+
+        // bridge::receiveBufferFromUc1Uart1(buf, size);
+        // uc1_app::uart1ReadyToSent(0);
     }
 
     // **************************************************
 
-    void *timer0_isr (void *threadid) {
+    void timer0_isr () {
         static uint8_t cnt500us = 0;
-        try {
-            std::cout << "Thread for timer0_isr starting..." << std::endl;
-            while (true) {
-                struct timeval tm;
-                tm.tv_sec = 0;
-                tm.tv_usec = 500;
-                select(0 ,NULL, NULL, NULL, &tm);
-                cnt500us++;
-                if      (cnt500us & 0x01) uc2_app::task_1ms();
-                else if (cnt500us & 0x02) uc2_app::task_2ms();
-                else if (cnt500us & 0x04) uc2_app::task_4ms();
-                else if (cnt500us & 0x08) uc2_app::task_8ms();
-                else if (cnt500us & 0x10) uc2_app::task_16ms();
-                else if (cnt500us & 0x20) uc2_app::task_32ms();
-                else if (cnt500us & 0x40) uc2_app::task_64ms();
-                else if (cnt500us & 0x80) uc2_app::task_128ms();
-            }
-
-        } catch (...) {
-
-        }
-        pthread_exit(NULL);
+        cnt500us++;
+        if (cnt500us & 0x01) uc2_app::task_1ms();
+        else if (cnt500us & 0x02) uc2_app::task_2ms();
+        else if (cnt500us & 0x04) uc2_app::task_4ms();
+        else if (cnt500us & 0x08) uc2_app::task_8ms();
+        else if (cnt500us & 0x10) uc2_app::task_16ms();
+        else if (cnt500us & 0x20) uc2_app::task_32ms();
+        else if (cnt500us & 0x40) uc2_app::task_64ms();
+        else if (cnt500us & 0x80) uc2_app::task_128ms();
     }
 
     uint8_t spi_slave_isr (uint8_t b) {
         return uc2_app::handleSpiByte(b);
     }
+
+    void uart0_isr (uint8_t receivedByte) {
+        int16_t b = -1;
+        lock(); {
+            if (res.cpu.sfirq) {
+                b = receivedByte;
+            } else {
+                res.cpu.udr0 = receivedByte;
+            }
+        }
+        unlock();
+        if (b >= 0) {
+            uc2_app::handleUart0Byte((uint8_t)b);
+        }
+    }
+
+
+    void uart1_isr (uint8_t receivedByte) {
+        int16_t b = -1;
+        lock(); {
+            if (res.cpu.sfirq) {
+                b = receivedByte;
+            } else {
+                res.cpu.udr1 = receivedByte;
+            }
+        }
+        unlock();
+        if (b >= 0) {
+            uc2_app::handleUart1Byte(b);
+        }
+    }
+
+
+    void uart0_timeout () {
+        uc2_app::handleUart0Byte(-1);
+    }
+
+    void uart1_timeout () {
+        uc2_app::handleUart1Byte(-1);
+    }
+
 
 }

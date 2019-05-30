@@ -116,9 +116,11 @@ namespace uc1_sys {
     void  sendViaUart1 (uint8_t buf[], uint8_t size);
 
     // for simulation
+    void  timer0_isr ();
     void  uart0_isr (uint8_t receivedByte);
     void  uart1_isr (uint8_t receivedByte);
     void  uart1_timeout ();
+    void spi_master_isr ();
 }
 
 #endif // UC1_SYS_H_

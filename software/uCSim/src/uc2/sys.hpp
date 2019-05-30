@@ -29,12 +29,28 @@ namespace uc2_sys {
         int udr1;
         uint8_t porta;
         uint16_t ocr1a;
+        uint8_t ocr2a;
         uint8_t tccr1b;
+        uint8_t tccr2b;
+        uint8_t ubrr0h;
+        uint8_t ubrr0l;
+        uint8_t ucsr0a;
+        uint8_t ucsr0b;
+        uint8_t ucsr0c;
         uint8_t ubrr1h;
         uint8_t ubrr1l;
         uint8_t ucsr1a;
         uint8_t ucsr1b;
         uint8_t ucsr1c;
+
+    };
+
+    struct UartSent {
+        uint16_t timer500usCnt;
+        int (*handler)(const uint8_t *, int);
+        void (*done)(uint8_t);
+        uint16_t size;
+        uint8_t *buffer;
     };
 
     struct SysResorces {
@@ -43,6 +59,8 @@ namespace uc2_sys {
         uint8_t ledGreen;
         uint8_t ledRed;
         uint8_t ledYellow;
+        struct UartSent uart0Sent;
+        struct UartSent uart1Sent;
     };
 
 
@@ -81,24 +99,36 @@ namespace uc2_sys {
     void toggleLedYellow ();
     void togglePortA (uint8_t index);
 
+    void setUart0Ubrr0 (uint16_t ubrr1);
+    void setUart0Ucsr0b (uint8_t ucsr1b);
+    void setUart0Ucsr0c (uint8_t ucsr1c);
+    void setUart0Ocr1a (uint16_t ocr1a);
+    void setUart0Tccr1b (uint8_t tccr1b);
     void setUart1Ubrr1 (uint16_t ubrr1);
     void setUart1Ucsr1b (uint8_t ucsr1b);
     void setUart1Ucsr1c (uint8_t ucsr1c);
-    void setUart1Ocr1a (uint16_t ocr1a);
-    void setUart1Tccr1b (uint8_t tccr1b);
+    void setUart1Ocr2a (uint8_t ocr2a);
+    void setUart1Tccr2b (uint8_t tccr2b);
 
+    uint16_t getUart0Ubrr0 ();
+    uint8_t getUart0Ucsr0b ();
+    uint8_t getUart0Ucsr0c ();
+    uint16_t getUart0Ocr1a ();
+    uint8_t getUart0Tccr1b ();
     uint16_t getUart1Ubrr1 ();
     uint8_t getUart1Ucsr1b ();
     uint8_t getUart1Ucsr1c ();
-    uint16_t getUart1Ocr1a ();
-    uint8_t getUart1Tccr1b ();
+    uint8_t getUart1Ocr2a ();
+    uint8_t getUart1Tccr2b ();
 
-    void  sendViaUart0 (uint8_t typ, uint8_t buf[], uint8_t size);
+    void  sendViaUart0 (uint8_t buf[], uint8_t size);
     void  sendViaUart1 (uint8_t buf[], uint8_t size);
 
     void  uart0_isr (uint8_t receivedByte);
     void  uart1_isr (uint8_t receivedByte);
+    void  uart0_timeout ();
     void  uart1_timeout ();
+    void  timer0_isr ();
 
     uint8_t spi_slave_isr (uint8_t b);
 }

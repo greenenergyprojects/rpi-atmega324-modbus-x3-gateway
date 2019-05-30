@@ -15,21 +15,22 @@ Gui *gui = NULL;
 
 void *mainLoop (void *tid) {
     bridge::init();
-    uc1_sys::init();
-    uc2_sys::init();
-    uc1_app::init();
-    uc2_app::init();
+    // uc1_sys::init();
+    // uc2_sys::init();
+    // uc1_app::init();
+    // uc2_app::init();
 
-    while (true) {
-        uc1_sys::main();
-        uc2_sys::main();
-        uc1_app::main();
-        uc2_app::main();
-        struct timeval tm;
-        tm.tv_sec = 0;
-        tm.tv_usec = 20;
-        select(0 ,NULL, NULL, NULL, &tm);
-    }
+    // while (true) {
+    //     uc1_sys::main();
+    //     uc2_sys::main();
+    //     uc1_app::main();
+    //     uc2_app::main();
+    //     struct timeval tm;
+    //     tm.tv_sec = 0;
+    //     tm.tv_usec = 20;
+    //     select(0 ,NULL, NULL, NULL, &tm);
+    // }
+    bridge::doInBackground();
 }
 
 

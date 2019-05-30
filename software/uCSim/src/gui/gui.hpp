@@ -12,6 +12,9 @@ class Gui {
         virtual void setU1LedYellow (bool on) = 0;
         virtual void appendU1Text (const char *text) = 0;
 
+        virtual void appendSpiTextU1toU2 (const char *text) = 0;
+        virtual void appendSpiTextU2toU1 (const char *text) = 0;
+
         virtual void setU2LedGreen (bool on) = 0;
         virtual void setU2LedRed (bool on) = 0;
         virtual void setU2LedYellow (bool on) = 0;

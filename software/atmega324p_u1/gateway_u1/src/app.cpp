@@ -509,6 +509,7 @@ namespace uc1_app {
                 uc1_sys::sendViaUart0(1, p->buffer, size);
                 setState(p, Idle);
             }
+            
         } else if (app.modbus.uart1.buffer.state == RequestForTest) {
             struct ModbusBuffer *p = (struct ModbusBuffer *)&app.modbus.uart1.buffer;
             // printf(" TEST: size=%d ->", p->size);

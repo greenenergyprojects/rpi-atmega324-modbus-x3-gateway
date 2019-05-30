@@ -61,16 +61,16 @@ namespace uc1_sys {
         res.cpu.udr0 = -1;
         res.cpu.udr0 = -1;
 
-        int rc = pthread_create(&tid_timer0, NULL, timer0_isr, NULL);
-        if (rc) {
-            std::cout << "Error:unable to create thread," << rc << std::endl;
-            exit(-1);
-        }
-        rc = pthread_create(&tid_spiMaster, NULL, spi_master_isr, NULL);
-        if (rc) {
-            std::cout << "Error:unable to create thread," << rc << std::endl;
-            exit(-1);
-        }
+        // int rc = pthread_create(&tid_timer0, NULL, timer0_isr, NULL);
+        // if (rc) {
+        //     std::cout << "Error:unable to create thread," << rc << std::endl;
+        //     exit(-1);
+        // }
+        // rc = pthread_create(&tid_spiMaster, NULL, spi_master_isr, NULL);
+        // if (rc) {
+        //     std::cout << "Error:unable to create thread," << rc << std::endl;
+        //     exit(-1);
+        // }
 
         printf("uc2_sys::init() done\n");
 
@@ -384,82 +384,55 @@ namespace uc1_sys {
 
     // **************************************************
 
-    void *timer0_isr (void * threadid) {
+    void timer0_isr () {
         static uint8_t cnt500us = 0;
-        try {
-            std::cout << "U1 Info: Thread timer0_isr starting..." << std::endl;
-            while (true) {
-                struct timeval tm;
-                tm.tv_sec = 0;
-                tm.tv_usec = 500;
-                select(0 ,NULL, NULL, NULL, &tm);
-                cnt500us++;
-                if      (cnt500us & 0x01) uc1_app::task_1ms();
-                else if (cnt500us & 0x02) uc1_app::task_2ms();
-                else if (cnt500us & 0x04) uc1_app::task_4ms();
-                else if (cnt500us & 0x08) uc1_app::task_8ms();
-                else if (cnt500us & 0x10) uc1_app::task_16ms();
-                else if (cnt500us & 0x20) uc1_app::task_32ms();
-                else if (cnt500us & 0x40) uc1_app::task_64ms();
-                else if (cnt500us & 0x80) uc1_app::task_128ms();
+        cnt500us++;
+        if      (cnt500us & 0x01) uc1_app::task_1ms();
+        else if (cnt500us & 0x02) uc1_app::task_2ms();
+        else if (cnt500us & 0x04) uc1_app::task_4ms();
+        else if (cnt500us & 0x08) uc1_app::task_8ms();
+        else if (cnt500us & 0x10) uc1_app::task_16ms();
+        else if (cnt500us & 0x20) uc1_app::task_32ms();
+        else if (cnt500us & 0x40) uc1_app::task_64ms();
+        else if (cnt500us & 0x80) uc1_app::task_128ms();
 
-                struct UartSent x;
-                int expired = 0;
-                lock(); {
-                    struct UartSent *p = &res.uart1Sent;
-                    if (p->timer500usCnt > 0) {
-                        p->timer500usCnt--;
-                        if (p->timer500usCnt == 0) {
-                            x = *p;
-                            p->handler = NULL;
-                            p->done = NULL;
-                            p->buffer = NULL;
-                            p->size = 0;
-                            expired = 1;
-                        }
-                    }
+        struct UartSent x;
+        int expired = 0;
+        lock(); {
+            struct UartSent *p = &res.uart1Sent;
+            if (p->timer500usCnt > 0) {
+                p->timer500usCnt--;
+                if (p->timer500usCnt == 0) {
+                    x = *p;
+                    p->handler = NULL;
+                    p->done = NULL;
+                    p->buffer = NULL;
+                    p->size = 0;
+                    expired = 1;
                 }
-                unlock();
-                if (expired) {
-                    if (x.handler != NULL) {
-                        if (x.done != NULL) {
-                            (*x.done)(0);
-                        }
-                        int err = (x.handler)(x.buffer, x.size);
-                        if (x.buffer != NULL) {
-                            free(x.buffer);
-                        }
-                    }
-                }
-
-
             }
-
-        } catch (...) {
-            std::cout << "U1 Error: Thread spi_master_isr" << std::endl;
         }
-        std::cout << "U1 Info: Thread timer0_isr ends" << std::endl;
-        pthread_exit(NULL);
+        unlock();
+        if (expired) {
+            if (x.handler != NULL) {
+                if (x.done != NULL) {
+                    (*x.done)(0);
+                }
+                int err = (x.handler)(x.buffer, x.size);
+                if (x.buffer != NULL) {
+                    free(x.buffer);
+                }
+            }
+        }
     }
 
-    void *spi_master_isr (void *threadid) {
-        try {
-            std::cout << "U1 Info: Thread spi_master_isr starting..." << std::endl;
-            uint8_t b = 0;
-            while (true) {
-                struct timeval tm;
-                tm.tv_sec = 0;
-                tm.tv_usec = 45;
-                select(0 ,NULL, NULL, NULL, &tm);
-                b = bridge::spiMasterToSlave(b);
-                b = uc1_app::handleSpiByte(b);
-            }
-
-        } catch (...) {
-            std::cout << "U1 Error: Thread spi_master_isr error" << std::endl;
+    void spi_master_isr () {
+        static uint8_t nextByte = 0;
+        uint8_t b = bridge::spiMasterToSlave(nextByte);
+        if (b > 0) {
+            printf("--> %02x\n\r", b);
         }
-        std::cout << "U1 Info: spi_master_isr ends" << std::endl;
-        pthread_exit(NULL);
+        nextByte = uc1_app::handleSpiByte(b);
     }
 
     void uart0_isr (uint8_t receivedByte) {
