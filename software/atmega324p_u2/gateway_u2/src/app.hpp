@@ -31,21 +31,17 @@
 // functions
 namespace uc2_app {
 
-    struct Spi {
-        uint8_t timerLed;
-        uint8_t cntSent;
-        uint8_t toSend;
-    };
-
     enum ModbusBufferState { 
         Idle = 0,
         RequestInProgress = 1,
         RequestReady = 2,
-        SendingRequest = 4,
-        WaitForResponse = 8,
-        ResponseInProgress = 16,
-        ResponseReady = 32,
-        RequestForTest =64
+        SendingRequest = 3,
+        WaitForResponse = 4,
+        ResponseInProgress = 5,
+        ResponseFromUartReady = 6,
+        ResponseReadyForSpi = 7,
+        SendingResponse = 8,
+        RequestForTest = 128
     };
 
     struct ModbusMeiRequest {
@@ -106,13 +102,23 @@ namespace uc2_app {
         uint8_t unlocked;
         uint8_t rIndex;
         uint8_t rAddr[2];
-        uint8_t addresses[6];
+        uint8_t addressesLocal[2];
+        uint8_t addressesUart0[2];  // B2
+        uint8_t addressesUart1[2];  // B3
         uint8_t errCnt;
         uint8_t ocr1a;
         
         struct ModbusLocal local;
         struct ModbusUart0 uart0;
         struct ModbusUart1 uart1;
+    };
+
+    struct Spi {
+        struct ModbusBuffer *sender;
+        uint8_t senderIndex;
+        uint8_t timerLed;
+        uint8_t cntSent;
+        uint8_t toSend;
     };
 
     struct App {
@@ -137,8 +143,8 @@ namespace uc2_app {
 
     void uart0ReadyToSent (uint8_t err);
     void uart1ReadyToSent (uint8_t err);
-    void handleUart0Byte (uint8_t b);
-    void handleUart1Byte (uint8_t b);
+    void handleUart0Byte (int16_t b);
+    void handleUart1Byte (int16_t b);
     uint8_t handleSpiByte (uint8_t b);
 
 }

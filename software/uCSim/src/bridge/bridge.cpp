@@ -178,7 +178,7 @@ namespace bridge {
 
         bool rv = true;        
 
-        if (timeMicros > (uart0LastSentMicros + 1000000 / 115200 * 10 )) {
+        if (timeMicros > (uart0LastSentMicros + 1000000 / 19200 * 10 )) {
             int16_t b = -1;   
             bool lastByte = false; 
             pthread_mutex_lock(&lock); {
@@ -466,7 +466,7 @@ namespace bridge {
             gui->appendU2Text("B2: CRC Error\n");
             return rv;
         }
-        if (buffer[0] != 1) {
+        if (buffer[0] != 2) {
             gui->appendU2Text("\nB2: wrong address, frame not for this device\n");
             return rv;
         }
@@ -546,7 +546,7 @@ namespace bridge {
             gui->appendU2Text("B3: CRC Error\n");
             return rv;
         }
-        if (buffer[0] != 1) {
+        if (buffer[0] != 3) {
             gui->appendU2Text("\nB3: wrong address, frame not for this device\n");
             return rv;
         }
@@ -685,7 +685,7 @@ namespace bridge {
         // struct ModbusResponse modbusResponse = aeConversionHandleRequest(buffer, size);
         gui->appendU2Text("\n");
         if (modbusResponse.size > 0) {
-            gui->appendU1Text("B2 -> U2-UART0: ");
+            gui->appendU2Text("B2 -> U2-UART0: ");
             char s[4];
             for (uint8_t i = 0; i < modbusResponse.size; i++) {
                 uint8_t b = modbusResponse.buffer[i];
@@ -711,7 +711,7 @@ namespace bridge {
         // struct ModbusResponse modbusResponse = aeConversionHandleRequest(buffer, size);
         gui->appendU2Text("\n");
         if (modbusResponse.size > 0) {
-            gui->appendU1Text("B3 -> U2-UART1: ");
+            gui->appendU2Text("B3 -> U2-UART1: ");
             char s[4];
             for (uint8_t i = 0; i < modbusResponse.size; i++) {
                 uint8_t b = modbusResponse.buffer[i];

@@ -59,7 +59,7 @@ namespace uc1_sys {
         res.lock = PTHREAD_MUTEX_INITIALIZER;
         res.cpu.sfirq = 1;
         res.cpu.udr0 = -1;
-        res.cpu.udr0 = -1;
+        res.cpu.udr1 = -1;
 
         // int rc = pthread_create(&tid_timer0, NULL, timer0_isr, NULL);
         // if (rc) {
@@ -71,8 +71,6 @@ namespace uc1_sys {
         //     std::cout << "Error:unable to create thread," << rc << std::endl;
         //     exit(-1);
         // }
-
-        printf("uc2_sys::init() done\n");
 
     }
 
@@ -429,9 +427,6 @@ namespace uc1_sys {
     void spi_master_isr () {
         static uint8_t nextByte = 0;
         uint8_t b = bridge::spiMasterToSlave(nextByte);
-        if (b > 0) {
-            printf("--> %02x\n\r", b);
-        }
         nextByte = uc1_app::handleSpiByte(b);
     }
 

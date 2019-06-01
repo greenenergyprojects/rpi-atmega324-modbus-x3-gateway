@@ -21,20 +21,16 @@ namespace uc2_sys {
     pthread_t tid_timer0;
 
     void init () {
-      memset(&sys, 0, sizeof sys);
-      memset(&res, 0, sizeof res);
-      res.lock = PTHREAD_MUTEX_INITIALIZER;
-    //   int rc = pthread_create(&tid_timer0, NULL, timer0_isr, NULL);
-    //   if (rc) {
-    //      std::cout << "Error:unable to create thread," << rc << std::endl;
-    //      exit(-1);
-    //   }
-
-      printf("uc2_sys::init() done\n");
+        memset(&sys, 0, sizeof sys);
+        memset(&res, 0, sizeof res);
+        res.lock = PTHREAD_MUTEX_INITIALIZER;
+        res.cpu.sfirq = 1;
+        res.cpu.udr0 = -1;
+        res.cpu.udr1 = -1;
     }
 
     void main () {
-        // printf("uc2_sys::main() done\n");
+
     }
 
     void lock () {
@@ -344,6 +340,38 @@ namespace uc2_sys {
         else if (cnt500us & 0x20) uc2_app::task_32ms();
         else if (cnt500us & 0x40) uc2_app::task_64ms();
         else if (cnt500us & 0x80) uc2_app::task_128ms();
+
+        for (uint8_t i = 0; i < 2; i++) {
+            struct UartSent *p = i == 0 ? &res.uart0Sent : &res.uart1Sent;
+            struct UartSent x;
+            int expired = 0;
+            lock(); {
+                if (p->timer500usCnt > 0) {
+                    p->timer500usCnt--;
+                    if (p->timer500usCnt == 0) {
+                        x = *p;
+                        p->handler = NULL;
+                        p->done = NULL;
+                        p->buffer = NULL;
+                        p->size = 0;
+                        expired = 1;
+                    }
+                }
+            }
+            unlock();
+            if (expired) {
+                if (x.handler != NULL) {
+                    if (x.done != NULL) {
+                        (*x.done)(0);
+                    }
+                    int err = (x.handler)(x.buffer, x.size);
+                    if (x.buffer != NULL) {
+                        free(x.buffer);
+                    }
+                }
+            }
+        }
+
     }
 
     uint8_t spi_slave_isr (uint8_t b) {

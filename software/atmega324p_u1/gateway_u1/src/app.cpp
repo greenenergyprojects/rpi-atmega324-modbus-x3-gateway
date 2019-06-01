@@ -39,7 +39,7 @@ namespace uc1_app {
     }
 
     void setState (struct ModbusBuffer *p, ModbusBufferState newState) {
-        printf("state = %d\n", newState);
+        // ("U1: U2: modbus state = %d\n", newState);
         p->state = newState;
     }
 
@@ -188,18 +188,18 @@ namespace uc1_app {
         //     printf(" %02x", p->buffer[i]);
         // }
         // printf("\r\n");
-        printf("  -> ");
-        uint8_t space = 0;
-        for (uint8_t i = 0; i < p->size - 2; i++) {
-            char c = p->buffer[i];
-            if (c < ' ' || c > 126) { c = '.'; }
-            // if (c != ' ' || space == 0) {
-            //     printf("%c", c);
-            // }
-            printf("%c", c);
-            space = (c == ' ') ? space + 1 : 0;
-        }
-        printf("\r\n");
+        // printf(" U1 MEI  -> ");
+        // uint8_t space = 0;
+        // for (uint8_t i = 0; i < p->size - 2; i++) {
+        //     char c = p->buffer[i];
+        //     if (c < ' ' || c > 126) { c = '.'; }
+        //     // if (c != ' ' || space == 0) {
+        //     //     printf("%c", c);
+        //     // }
+        //     printf("%c", c);
+        //     space = (c == ' ') ? space + 1 : 0;
+        // }
+        // printf("\r\n");
 
         if (maxSize < (p->size + 5)) {
             p->buffer[0] = p->mei.deviceAddress;
@@ -507,7 +507,6 @@ namespace uc1_app {
                 // }
                 // printf("\r\n");
                 uc1_sys::sendViaUart0(1, p->buffer, size);
-                setState(p, Idle);
             }
             
         } else if (app.modbus.uart1.buffer.state == RequestForTest) {
@@ -531,9 +530,20 @@ namespace uc1_app {
             uc1_sys::sendViaUart1(app.modbus.uart1.buffer.buffer, p->size);
             setState(p, SendingRequest);
 
+        } else if (app.modbus.spi.buffer.state == ResponseReady) {
+            struct ModbusBuffer *p = (struct ModbusBuffer *)&app.modbus.spi.buffer;
+            if (p->size == 0) {
+                incErrCnt8(&p->errCnt);
+                p->size = 0;
+                setState(p, Idle);
+            } else {
+                // for (uint8_t i = 0; i < size; i++) {
+                //     printf("%c", app.modbus.uart1.buffer.buffer[i]);
+                // }
+                // printf("\r\n");
+                uc1_sys::sendViaUart0(2, p->buffer, p->size);
+            }
         }
-
-
     }
 
 
@@ -651,6 +661,7 @@ namespace uc1_app {
         switch (typ) {
             case 0: p = (struct ModbusBuffer *)&app.modbus.local.buffer; break;
             case 1: p = (struct ModbusBuffer *)&app.modbus.uart1.buffer; break;
+            case 2: p = (struct ModbusBuffer *)&app.modbus.spi.buffer; break;
         }
 
         if (p != NULL) {
@@ -777,7 +788,7 @@ namespace uc1_app {
     void handleUart1Byte (int16_t b) {
         struct ModbusBuffer *p = (struct ModbusBuffer *)&app.modbus.uart1.buffer; 
         if (p->state != WaitForResponse) {
-            printf("Error: handleUart1Byte %02x\n\r", b);
+            // printf("Error: handleUart1Byte %02x\n\r", b);
             incErrCnt8(&p->errCnt);
         } else if (b >= 0 && b <= 255){
             if (p->size >= sizeof app.modbus.uart1.buffer.buffer) {
@@ -791,6 +802,26 @@ namespace uc1_app {
     }
 
     uint8_t handleSpiByte (uint8_t b) {
+        if (b > 0) {
+            struct ModbusBuffer *p = (struct ModbusBuffer *)&app.modbus.spi.buffer;
+            if (b == ':') {
+                if (p->size > 0) {
+                    incErrCnt8(&p->errCnt);
+                }
+                p->buffer[0] = b;
+                p->size = 1;
+            } else {
+                if (p->size >=sizeof(app.modbus.spi.buffer.buffer)) {
+                    incErrCnt8(&p->errCnt);
+                    p->buffer[p->size - 1] = b;
+                } else {
+                    p->buffer[p->size++] = b;
+                }
+                if (b == '\n') {
+                    setState(p, ResponseReady);
+                }
+            }
+        }
         uint8_t rv = app.spi.toSend;
         app.spi.toSend = 0;
         if (rv > 0 && app.spi.cntSent < 0xff) {
