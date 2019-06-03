@@ -29,6 +29,14 @@ namespace uc2_sys {
         res.cpu.udr1 = -1;
     }
 
+    void initUart0(enum Uart0Mode mode, uint16_t baudrate, uint8_t t35x10) {
+
+    }
+
+    void initUart1(uint16_t baudrate, uint8_t t35x10) {
+        
+    }
+
     void main () {
 
     }

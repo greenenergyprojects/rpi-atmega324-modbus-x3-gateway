@@ -52,26 +52,32 @@ namespace uc2_sys {
 
     typedef uint8_t Sys_Event;
 
-    struct Sys_Modbus {
-        uint16_t dT1_35;
-        uint16_t dT1_15;
-        uint16_t errorCnt;
-        uint16_t receivedByteCnt;
-    };
+    enum Uart0Mode { OFF = 0, ModbusRTU = 1, STDOUT = 2, DEBUG = 4, MIXED = 8 };
+    enum SpiMode { SPIMODE_MODBUS = 0, SPIMODE_STDOUT = 1, SPIMODE_MIXED = 2 };
 
-    struct Sys_Uart {
-        uint8_t rpos_u8;
-        uint8_t wpos_u8;
-        uint8_t errcnt_u8;
-        uint8_t rbuffer_u8[GLOBAL_UC2_SYS_UART0_RECBUFSIZE];
+    struct Spi {
+        enum SpiMode mode;
+        uint8_t toSendFromStdout;
     };
 
     struct Sys {
         uint8_t flags;
         uint8_t taskErr_u8;
         Sys_Event  eventFlag;
-        struct Sys_Uart uart;
-        struct Sys_Modbus modbus[1];
+        struct Spi spi;
+        enum Uart0Mode uart0Mode;
+        uint8_t *uart0Buf;
+        uint8_t  uart0Size;
+        uint8_t  uart0Typ;
+        uint8_t  uart0DebugByte;
+        uint8_t  tccr1bInit;
+        uint16_t ocr1aInit;
+        uint8_t *uart1Buf;
+        uint8_t  uart1Size;
+        uint8_t  tccr2bInit;
+        uint8_t  ocr2aInit;
+        
+
     };
 
 
@@ -84,44 +90,57 @@ namespace uc2_sys {
     // SYS_FLAG_SREG_I must have same position as I-Bit in Status-Register!!
     #define SYS_FLAG_SREG_I          0x80
 
-    #define SYS_MODBUS_STATUS_ERR7      7
-    #define SYS_MODBUS_STATUS_ERR6      6
-    #define SYS_MODBUS_STATUS_ERR5      5
-    #define SYS_MODBUS_STATUS_ERR_FRAME 1
-    #define SYS_MODBUS_STATUS_NEWFRAME  0
-
-
-
     extern volatile struct Sys sys;
 
     // functions
 
-    void      init ();
-    void      main ();
+    void init ();
+    void initSpi(enum SpiMode mode);
+    void initUart0(enum Uart0Mode mode, uint32_t baudrate, uint8_t t35x10);
+    void initUart1(uint16_t baudrate, uint8_t t35x10);
+    void main ();
 
-    void      sysSEI ();
-    void      sysCLI ();
-
-    uint8_t   inc8BitCnt (uint8_t count);
-    uint16_t  inc16BitCnt (uint16_t count);
-
-    void      newline (void);
+    void saveSei ();
+    void saveCli ();
 
     Sys_Event setEvent (Sys_Event event);
     Sys_Event clearEvent (Sys_Event event);
     Sys_Event isEventPending (Sys_Event event);
 
-    uint8_t   uart_available ();
-    int16_t   uart_getBufferByte (uint8_t pos);
-    void      uart_flush ();
+    void setLedRed (uint8_t on);
+    void setLedGreen (uint8_t on);
+    void setLedYellow (uint8_t on);
+    void setPortA (uint8_t index);
+    void clrPortA (uint8_t index);
+    void toggleLedRed ();
+    void toggleLedGreen ();
+    void toggleLedYellow ();
+    void togglePortA (uint8_t index);
 
-    void      setLedRed (uint8_t on);
-    void      setLedGreen (uint8_t on);
-    void      setLedYellow (uint8_t on);
-    void      toggleLedRed ();
-    void      toggleLedGreen ();
-    void      toggleLedYellow ();
+    void setUart0Ubrr0 (uint16_t ubrr0);
+    void setUart0Ucsr0b (uint8_t ucsr0b);
+    void setUart0Ucsr0c (uint8_t ucsr0c);
+    void setUart0Ocr1a (uint16_t ocr1a);
+    void setUart0Tccr1b (uint8_t tccr1b);
+    void setUart1Ubrr1 (uint16_t ubrr1);
+    void setUart1Ucsr1b (uint8_t ucsr1b);
+    void setUart1Ucsr1c (uint8_t ucsr1c);
+    void setUart1Ocr2a (uint8_t ocr2a);
+    void setUart1Tccr2b (uint8_t tccr2b);
 
+    uint16_t getUart0Ubrr0 ();
+    uint8_t getUart0Ucsr0b ();
+    uint8_t getUart0Ucsr0c ();
+    uint16_t getUart0Ocr1a ();
+    uint8_t getUart0Tccr1b ();
+    uint16_t getUart1Ubrr1 ();
+    uint8_t getUart1Ucsr1b ();
+    uint8_t getUart1Ucsr1c ();
+    uint8_t getUart1Ocr2a ();
+    uint8_t getUart1Tccr2b ();
+
+    void  sendViaUart0 (uint8_t buf[], uint8_t size);
+    void  sendViaUart1 (uint8_t buf[], uint8_t size);
 }
 
 #endif // SYS_H_

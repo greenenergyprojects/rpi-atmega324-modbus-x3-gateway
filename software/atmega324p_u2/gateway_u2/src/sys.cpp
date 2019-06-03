@@ -27,13 +27,15 @@ namespace uc2_sys {
     // static FILE sys_stdin = fdev_setup_stream(NULL, sys_uart_getch, _FDEV_SETUP_READ);
 
     static FILE sys_stdout;
-    static FILE sys_stdin;
+    // static FILE sys_stdin;
 
     void init () {
         fdev_setup_stream(&sys_stdout, uart_putch, NULL, _FDEV_SETUP_WRITE);
-        fdev_setup_stream(&sys_stdin, NULL, uart_getch, _FDEV_SETUP_READ);
+        // fdev_setup_stream(&sys_stdin, NULL, uart_getch, _FDEV_SETUP_READ);
         memset((void *)&sys, 0, sizeof(sys));
         _delay_ms(1);
+
+        DDRA |= 0x07;
 
         DDRB |= 0x0f;  // Debug
         PORTB = 0;
@@ -44,7 +46,7 @@ namespace uc2_sys {
         PORTD |= ((1 << PD7) | (1 << PD5));
         PORTD &= ~(1 << PD6);
         PORTD &= ~(1 << PD4);
-        DDRD |= 0xf0;  // PD7=nRE1, PD6=DE1, PD5=nRE2, PD4=DE2
+        DDRD |= 0xf0;  // B3: PD7=nRE, PD6=DE --- B2: PD5=nRE, PD4=DE
 
         // Timer 0 for task machine
         OCR0A  = (F_CPU + 4) / 8 / 10000 - 1;
@@ -53,29 +55,28 @@ namespace uc2_sys {
         TIMSK0 = (1 << OCIE0A);
         TIFR0  = (1 << OCF0A);
 
-        // Timer 1 for Modbus-RTU timing measurments
+        // Timer 1 for Modbus-RTU timing measurments on B2 (UART0)
         TCCR1A = 0;
-        TCCR1B = (1 << CS11);  // f=12MHz
-        OCR1A  = 0xffff;
+        TCCR1B = (1 << CS11);  // f=12MHz/8
+        OCR1A  = 2734; // 35 * 12000000L / 8 / 19200; // 2734; 
         TIMSK1 = (1 << OCIE1A);
 
-        // UART0
-        UBRR0L = (F_CPU/GLOBAL_UC2_SYS_UART0_BITRATE + 4)/8 - 1;
-        UBRR0H = 0x00;
-        UCSR0A = (1 << U2X0);
-        UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
-        UCSR0B = (1 << RXCIE0) | (1 << TXEN0) | (1 << RXEN0);
+        // Timer 2 for Modbus-RTU timing measurments on B3 (UART1)
+        TCCR2A = 0;
+        TCCR2B = (1 << CS22) | (1 << CS20);  // f=12MHz/128
+        OCR2A  = 171; // 35 * 12000000L / 128 / 19200; // 171; 
+        TIMSK2 = (1 << OCIE2A);
 
-        // UART1
-        UBRR1L = (F_CPU/GLOBAL_UC2_SYS_UART1_BITRATE + 4)/8 - 1;
-        UBRR1H = 0x00;
+        // UART0 (B2)
+        // to do, config if DEBUG desired
+        UBRR0L = 0;
+        UBRR0H = 0;
+        UCSR0A = (1 << U2X1);
+
+         // UART1 (B3)
+        UBRR1L = 0;
+        UBRR1H = 0;
         UCSR1A = (1 << U2X1);
-        // UCSR1C = (1 << UPM11) | (1 << UCSZ11) | (1 << UCSZ10);
-        UCSR1C = (1 << UCSZ11) | (1 << UCSZ10);
-        UCSR1B = (1 << RXCIE1) | (1 << TXEN1) | (1 << RXEN1);
-        sys.modbus[0].dT1_35 = 70 * 12000000L / 16 / GLOBAL_UC2_SYS_UART1_BITRATE;  // correct for even parity ?
-        sys.modbus[0].dT1_15 = 30 * 12000000L / 16 / GLOBAL_UC2_SYS_UART1_BITRATE;  // correct for even parity ?
-        OCR1A = sys.modbus[0].dT1_35;
 
         // SPI Slave
         DDRB  |= (1 << PB6);  // MISO
@@ -85,7 +86,86 @@ namespace uc2_sys {
         // fdevopen(sys_monitor_putch, sys_monitor_getch);
         stdout = &sys_stdout;
         stderr = &sys_stdout;
-        stdin  = &sys_stdin;
+        // stdin  = &sys_stdin;
+    }
+
+
+    void initSpi (enum SpiMode mode) {
+        sys.spi.mode = mode;
+    }
+
+
+    void initUart0 (enum Uart0Mode mode, uint32_t baudrate, uint8_t t35x10) {
+        UBRR0H = 0;
+        UBRR0L = (F_CPU / baudrate + 4) / 8 - 1;
+        UCSR0A = (1 << U2X0);
+        UCSR0C = (1 << UCSZ01) | (1 << UCSZ00); // 8N1 mode
+        sys.uart0Mode = mode;
+        sys.tccr1bInit = (1 << CS11);  // Timer 1 f = 12MHz / 8
+        sys.ocr1aInit = (uint16_t)(F_CPU / 8 / baudrate * t35x10); // 5468;
+
+        switch (mode) {
+            case OFF: {
+                break;
+            }
+            case ModbusRTU: {
+                break;
+            }
+            case STDOUT: {
+                UCSR0B = (1 << RXCIE0) | (1 << TXEN0) | (1 << RXEN0);
+                break;
+            }
+            case DEBUG: {
+                break;
+            }
+            case MIXED: {
+                break;
+            }
+            default: {
+                sys.uart0Mode = ModbusRTU; break;
+            }
+
+        }
+        
+    }
+
+    
+    void initUart1 (uint16_t baudrate, uint8_t t35x10) {
+        UBRR1H = 0;
+        UBRR1L = (F_CPU / baudrate + 4) / 8 - 1;
+        UCSR1A = (1 << U2X1);
+        UCSR1B = 0; // (1 << RXCIE1) | (1 << TXCIE1) | (1 << TXEN1) | (1 << RXEN1);
+        UCSR1C = (1 << UCSZ11) | (1 << UCSZ10); // 8N1 mode
+        
+        uint32_t x = F_CPU / baudrate * t35x10;
+        uint8_t csxx = 0;
+        while (csxx < 7) {
+            csxx++;
+            if (x < 255) {
+                sys.tccr2bInit = csxx;
+                sys.ocr2aInit = (uint8_t)(x) + 1;
+                break;
+            }
+            switch (csxx) {
+                case 1: // fTimer = fCpu / 8
+                    x = x / 8;
+                    break; 
+                case 2: // fTimer = fCpu / 32
+                    x = x / 4;
+                    break; 
+                case 3: // fTimer = fCpu / 64
+                case 4: // fTimer = fCpu / 128
+                case 5: // fTimer = fCpu / 256
+                    x = x / 2;
+                    break; 
+                case 6: // fTimer = fCpu / 1024
+                    x = x / 4;
+                    break; 
+                case 7: // error
+                    x = 255;
+                    break;
+            }
+        }
     }
 
 
@@ -104,41 +184,29 @@ namespace uc2_sys {
     }
 
 
-    void sysSEI () {
-        if (sys.flags & SYS_FLAG_SREG_I) {
-            sei();
-        }
+    void saveSei () {
+        
+        // if (sys.flags & SYS_FLAG_SREG_I) {
+        //     sei(); // error sometimes hanging
+        // }
+        sei(); 
     }
 
 
-    void sysCLI (void) {
-        if (SREG & 0x80) {
-            sys.flags |= SYS_FLAG_SREG_I;
-        } else {
-            sys.flags &= ~SYS_FLAG_SREG_I;
-        }
+    void saveCli (void) {
+        // if (SREG & 0x80) {
+        //     sys.flags |= SYS_FLAG_SREG_I;
+        // } else {
+        //     sys.flags &= ~SYS_FLAG_SREG_I;
+        // }
         cli();
     }
 
 
-    void newline () {
-        printf("\n\r");
-    }
-
     //----------------------------------------------------------------------------
 
     int uart_getch (FILE *f) {
-        if (f != stdin) {
-            return EOF;
-        }
-        if (sys.uart.wpos_u8 == sys.uart.rpos_u8) {
-            return EOF;
-        }
-        uint8_t c = sys.uart.rbuffer_u8[sys.uart.rpos_u8++];
-        if (sys.uart.rpos_u8 >= GLOBAL_UC2_SYS_UART0_RECBUFSIZE) {
-            sys.uart.rpos_u8 = 0;
-        }
-        return (int) c;
+        return (int) EOF;
     }
 
 
@@ -146,70 +214,54 @@ namespace uc2_sys {
         if (f != stdout) {
             return EOF;
         }
-        while (!SYS_UART_UDR_IS_EMPTY) {
+        if (sys.uart0Mode == STDOUT) {
+            while (!(UCSR0A & (1 << UDRE0))) {}
+            UDR0 = c;
+        
+        } else if (sys.uart0Mode != MIXED && sys.uart0Mode != DEBUG) {
+            return EOF;
+        
+        } else {
+            saveCli();
+            if ( (UCSR0B & (1 << TXCIE0)) == 0) {
+                UCSR0B |= (1 << TXCIE0) | (1 << TXEN0);
+                UDR0 = sys.uart0Mode == DEBUG ? c : 0x80 | c;
+                saveSei();
+
+            } else {
+                if (sys.uart0DebugByte == 0) {
+                    sys.uart0DebugByte = c;
+                    saveSei();
+                } else {
+                    saveSei();
+                    while (sys.uart0DebugByte > 0);
+                    uart_putch(c, f);
+                }
+            }
         }
-        SYS_UDR = c;
+
         return (int)c;
     }
 
-
-    uint8_t uart_available (void) {
-        return sys.uart.wpos_u8 >= sys.uart.rpos_u8
-                ? sys.uart.wpos_u8 - sys.uart.rpos_u8
-                : ((int16_t)sys.uart.wpos_u8) + GLOBAL_UC2_SYS_UART0_RECBUFSIZE - sys.uart.rpos_u8;
-    }
-
-
-    //----------------------------------------------------------------------------
-
-    int16_t uart_getBufferByte (uint8_t pos) {
-        int16_t value;
-        sysCLI();
-
-        if (pos >= uart_available()) {
-            value = -1;
-        } else {
-            uint8_t bufpos = sys.uart.rpos_u8 + pos;
-            if (bufpos >= GLOBAL_UC2_SYS_UART0_RECBUFSIZE)
-                bufpos -= GLOBAL_UC2_SYS_UART0_RECBUFSIZE;
-            value = sys.uart.rbuffer_u8[bufpos];
-        }
-
-        sysSEI();
-        return value;
-    }
-
-
-    void uart_flush (void) {
-        sysCLI();
-        while (SYS_UART_BYTE_RECEIVED)
-            sys.uart.rbuffer_u8[0] = SYS_UDR;
-
-        sys.uart.rpos_u8 = 0;
-        sys.uart.wpos_u8 = 0;
-        sys.uart.errcnt_u8 = 0;
-        sysSEI();
-    }
-
-
+    
     //****************************************************************************
     // Event Handling
     //****************************************************************************
 
     Sys_Event setEvent (Sys_Event event) {
-        sysCLI();
+        saveCli();
         uint8_t eventIsPending = ((sys.eventFlag & event) != 0);
         sys.eventFlag |= event;
-        sysSEI();
+        saveSei();
         return eventIsPending;
     }
 
 
     Sys_Event clearEvent (Sys_Event event) {
-        sysCLI();
+        saveCli();
         uint8_t eventIsPending = ((sys.eventFlag & event) != 0);
         sys.eventFlag &= ~event;
-        sysSEI();
+        saveSei();
         return eventIsPending;
     }
 
@@ -248,6 +300,14 @@ namespace uc2_sys {
         }
     }
 
+    void setPortA (uint8_t index) {
+        PORTA |= (1 << index);
+    }
+
+    void clrPortA (uint8_t index) {
+        PORTA &= ~(1 << index);
+    }
+
     void toggleLedGreen () {
         PORTC ^= (1 << PC5);
     }
@@ -260,8 +320,131 @@ namespace uc2_sys {
         PORTC ^= (1 << PC3);
     }
 
+    void togglePortA (uint8_t index) {
+        PORTA ^= (1 << index);
+    }
 
+    //----------------------------------------------------------------------------
+
+    void setUart0Ubrr0 (uint16_t ubrr0) {
+        UBRR0 = ubrr0;
+    }
+
+    void setUart0Ucsr0b (uint8_t ucsr0b) {
+        UCSR0B = ucsr0b;
+    }
+
+    void setUart0Ucsr0c (uint8_t ucsr0c) {
+        UCSR0C = ucsr0c;
+    }
+
+    void setUart0Ocr1a (uint16_t ocr1a) {
+        OCR1A = ocr1a;
+    }
+
+    void setUart0Tccr1b (uint8_t tccr1b) {
+        TCCR1B = tccr1b;
+    }
+
+    void setUart1Ubrr1 (uint16_t ubrr1) {
+        UBRR1 = ubrr1;
+    }
+
+    void setUart1Ucsr1b (uint8_t ucsr1b) {
+        UCSR1B = ucsr1b;
+    }
+
+    void setUart1Ucsr1c (uint8_t ucsr1c) {
+        UCSR1C = ucsr1c;
+    }
+
+    void setUart1Ocr2a (uint8_t ocr2a) {
+        OCR2A = ocr2a;
+    }
+
+    void setUart1Tccr2b (uint8_t tccr2b) {
+        TCCR2B = tccr2b;
+    }
+
+
+    uint16_t getUart0Ubrr0 () {
+        return UBRR0;
+    }
+
+    uint8_t getUart0Ucsr0b () {
+        return UCSR0B;
+    }
+
+    uint8_t getUart0Ucsr0c () {
+        return UCSR0C;
+    }
+
+    uint16_t getUart0Ocr1a () {
+        return OCR1A;
+    }
+
+    uint8_t getUart0Tccr1b () {
+        return TCCR1B;
+    }
+
+    uint16_t getUart1Ubrr1 () {
+        return UBRR1;
+    }
+
+    uint8_t getUart1Ucsr1b () {
+        return UCSR1B;
+    }
+
+    uint8_t getUart1Ucsr1c () {
+        return UCSR1C;
+    }
+
+    uint8_t getUart1Ocr2a  () {
+        return OCR2A;
+    }
+
+    uint8_t getUart1Tccr2b () {
+        return TCCR2B;
+    }
     
+    //----------------------------------------------------------------------------
+    
+    void sendViaUart0 (uint8_t buf[], uint8_t size) {
+        if (buf == NULL || size < 1) {
+            uc2_app::uart0ReadyToSent(1);
+        
+        } else if (sys.uart0Size > 0) {
+            sys.uart0Size = 0;
+            uc2_app::uart0ReadyToSent(2);
+        
+        }
+
+        sys.uart0Buf = buf;
+        sys.uart0Size = size - 1;
+        UCSR0B = (1 << TXCIE0) | (1 << TXEN0); // no |= otherwise echo received !!
+        PORTD |= (1 << PD4); // B2: MODBUS-DE = 1
+        PORTD |= (1 << PD5); // B2: MODBUS-nRE = 1
+        UDR0 = *sys.uart0Buf++;
+    }
+
+
+    void sendViaUart1 (uint8_t buf[], uint8_t size) {
+        if (buf == NULL || size < 1) {
+            uc2_app::uart1ReadyToSent(1);
+        }
+        if (sys.uart1Size > 0) {
+            sys.uart1Size = 0;
+            uc2_app::uart1ReadyToSent(2);
+        }
+        sys.uart1Buf = buf;
+        sys.uart1Size = size - 1;
+        UCSR1B = (1 << TXCIE1) | (1 << TXEN1); // no |= otherwise echo received !!
+        PORTD |= (1 << PD6); // B3: MODBUS-DE = 1
+        PORTD |= (1 << PD7); // B3: MODBUS-nRE = 1
+        UDR1 = *sys.uart1Buf++;
+    }
+
+
 
 }   
 
@@ -270,46 +453,67 @@ namespace uc2_sys {
 // ------------------------------------
 
 ISR (USART0_RX_vect) {
-    static uint8_t lastChar;
     uint8_t c = UDR0;
-
-    if (c == 'R' && lastChar == '@') {
-        wdt_enable(WDTO_15MS);
-        wdt_reset();
-        while (1) {}
-    }
-    lastChar = c;
-
-    // app_handleUart0Byte(c);
+    TCNT1 = 0;
+    OCR1A  = uc2_sys::sys.ocr1aInit;
+    TCCR1B = uc2_sys::sys.tccr1bInit;
+    uc2_app::handleUart0Byte(c);
 }
+
+ISR (USART0_TX_vect) {
+    if (uc2_sys::sys.uart0DebugByte > 0) {
+        UDR0 = uc2_sys::sys.uart0Mode == uc2_sys::DEBUG ? uc2_sys::sys.uart0DebugByte : 0x80 | uc2_sys::sys.uart0DebugByte;
+        uc2_sys::sys.uart0DebugByte = 0;
+    
+    } else if (uc2_sys::sys.uart0Size > 0) {
+        UDR0 = *uc2_sys::sys.uart0Buf++;
+        uc2_sys::sys.uart0Size--;
+    
+    } else {
+        PORTD &= ~(1 << PD4); // B2: MODBUS-DE = 0
+        PORTD &= ~(1 << PD5); // B2: MODBUS-nRE = 0
+        UCSR0B |= (1 << RXCIE0) | (1 << RXEN0);
+        UCSR0B &= ~((1 << TXCIE0) | (1 << TXEN0));
+        uc2_app::uart0ReadyToSent(0);
+    }
+}
+
+ISR (TIMER1_COMPA_vect) {
+    TCCR1B = 0;  // disable timer 1
+    TCNT1 = 0;
+    uc2_app::handleUart0Byte(-1);
+}
+
+// ------------------------------------
 
 ISR (USART1_RX_vect) {
-    volatile uint8_t data = UDR1;
-    uint8_t status = 0;
-    uint16_t tcnt1 = TCNT1;
-    if (TCCR1B & (1 << CS11)) {
-    if (tcnt1 > uc2_sys::sys.modbus[0].dT1_35) {
-        status |= (1 << SYS_MODBUS_STATUS_NEWFRAME);
-    }
-    } else {
-        status |= (1 << SYS_MODBUS_STATUS_NEWFRAME);
-    }
-    TCNT1 = 0;
-    TCCR1B = (1 << CS11);  // restart timer
-
-    // UPE1 = 2  DOR1 = 3  FE1 = 4
-    uint8_t errors = UCSR1A & ( (1 << FE1) | (1 << DOR1) | (1 << UPE1) );
-    if (errors) {
-        uc2_sys::sys.modbus[0].errorCnt = uc2_sys::inc16BitCnt(uc2_sys::sys.modbus[0].errorCnt);
-    } else {
-        uc2_sys::sys.modbus[0].receivedByteCnt = uc2_sys::inc16BitCnt(uc2_sys::sys.modbus[0].receivedByteCnt);
-    }
-    // sei();
-
-    if (errors != 0) { status |= ((errors << 3) | (1 << SYS_MODBUS_STATUS_ERR_FRAME)); }
-    if (tcnt1 > uc2_sys::sys.modbus[0].dT1_35) status |= (1 << SYS_MODBUS_STATUS_NEWFRAME);
-    // app_handleUart1Byte(data, status);
+    uint8_t c = UDR1;
+    TCNT2 = 0;
+    OCR2A  = uc2_sys::sys.ocr2aInit;
+    TCCR2B = uc2_sys::sys.tccr2bInit;
+    uc2_app::handleUart1Byte(c);
 }
+
+ISR (USART1_TX_vect) {
+    if (uc2_sys::sys.uart1Size > 0) {
+        UDR1 = *uc2_sys::sys.uart1Buf++;
+        uc2_sys::sys.uart1Size--;
+    } else {
+        PORTD &= ~(1 << PD6); // B3: MODBUS-DE = 0
+        PORTD &= ~(1 << PD7); // B3: MODBUS-nRE = 0
+        UCSR1B |= (1 << RXCIE1) | (1 << RXEN1);
+        UCSR1B &= ~((1 << TXCIE1) | (1 << TXEN1));
+        uc2_app::uart1ReadyToSent(0);
+    }
+}
+
+ISR (TIMER2_COMPA_vect) {
+    TCCR2B = 0;  // disable timer 2
+    TCNT2 = 0;
+    uc2_app::handleUart1Byte(-1);
+}
+
+// ------------------------------------
 
 // Timer 0 Output/Compare Interrupt
 // called every 100us
@@ -340,11 +544,26 @@ ISR (TIMER0_COMPA_vect) {
     }
 }
 
-ISR (TIMER1_COMPA_vect) {
-    TCCR1B = 0;  // disable timer 1
-    // app_handleUart1Timeout();
-}
 
 ISR (SPI_STC_vect) {
-    SPDR0 = uc2_app::handleSpiByte(SPDR0); 
+    if (uc2_sys::sys.spi.mode == uc2_sys::SPIMODE_MODBUS) {
+        SPDR0 = uc2_app::handleSpiByte(SPDR0); 
+
+    } else if (uc2_sys::sys.spi.mode == uc2_sys::SPIMODE_STDOUT) {
+        uc2_app::handleSpiByte(SPDR0);
+        SPDR0 = uc2_sys::sys.spi.toSendFromStdout;
+        uc2_sys::sys.spi.toSendFromStdout = 0;
+
+    } else {
+        uint8_t b = uc2_app::handleSpiByte(SPDR0);
+        if (b == 0) {
+            SPDR0 = uc2_sys::sys.spi.toSendFromStdout | 0x80;
+            uc2_sys::sys.spi.toSendFromStdout = 0;
+
+        } else {
+            SPDR0 = b;
+
+        }
+
+    }
 }

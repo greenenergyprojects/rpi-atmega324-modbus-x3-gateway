@@ -10,6 +10,8 @@ Mechanical Drawings from Layer NP to PHT(PLATING Through Hole) (email request fr
 
 | Reference | Description |
 | --------- | ----------- |
+|           | missing pull up resistor on UC2-RxD1 net |
+| J18, J20  | exchange text "B2" and "B3" on PCB
 | D1, D10   | increase footprint  |
 |           | add LED for 5V supply |
 | D18       | add connector GND, D18-1, D18-2 (also for external supply)

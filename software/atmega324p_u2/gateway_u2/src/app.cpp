@@ -24,14 +24,20 @@ namespace uc2_app {
         app.modbus.addressesUart1[0] = dec2Hex(UC2_B3_MODBUS_DEVICE_ADDRESS >> 4);
         app.modbus.addressesUart1[1] = dec2Hex(UC2_B3_MODBUS_DEVICE_ADDRESS & 0x0f);
         // app.modbus.addresses[4] = 'A'; app.modbus.addresses[5] = '0';
-
-
+        
+        uc2_sys::initSpi(uc2_sys::SPIMODE_MODBUS);
+        uc2_sys::initUart0(uc2_sys::STDOUT, 115200, 35);
+        // uc2_sys::initUart0(uc2_sys::ModbusRTU, 9600, 35);
+        uc2_sys::initUart1(9600, 35);
     }
 
     
-    void incErrCnt8 (uint8_t *pCnt) {
+    void incErrCnt8 (uint8_t id, uint8_t *pCnt) {
         if (*pCnt < 0xff) {
             (*pCnt)++;
+        }
+        if (app.debug.errorIdsIndex < sizeof(app.debug.errorIds)) {
+            app.debug.errorIds[app.debug.errorIdsIndex++] = id;
         }
     }
 
@@ -508,7 +514,16 @@ namespace uc2_app {
         setState(p, SendingResponse);
     }
 
+    void clearDebugBuffer () {
+        app.debug.index = 0;
+    }
 
+    void pushDebugByte(uint8_t b) {
+        if (app.debug.index < sizeof (app.debug.buffer)) {
+            app.debug.buffer[app.debug.index++] = b;
+        }
+    }
+        
     void main (void) {
         if (app.spi.sender != NULL && app.spi.senderIndex >= app.spi.sender->size) {
             app.spi.sender->size = 0;
@@ -529,7 +544,7 @@ namespace uc2_app {
                 size = modbusRtuToAscii(p->buffer, size + 2, sizeof app.modbus.local.buffer.buffer, 0);
             }
             if (size <= 0) {
-                incErrCnt8(&p->errCnt);                
+                incErrCnt8(1, &p->errCnt);                
             }
             p->size = size;
             setState(p, ResponseReadyForSpi);
@@ -539,10 +554,9 @@ namespace uc2_app {
             p->size = modbusAsciToRtu(p->buffer, sizeof app.modbus.uart0.buffer.buffer);
             uint8_t size = modbusRTUToMei(p);    
             if (size < 4) {
-                incErrCnt8(&p->errCnt);
+                incErrCnt8(2, &p->errCnt);
                 p->size = 0;
                 setState(p, Idle);
-                uc2_sys::clrPortA(0);
 
             } else {
                 // for (uint8_t i = 0; i < size; i++) {
@@ -558,10 +572,9 @@ namespace uc2_app {
             p->size = modbusAsciToRtu(p->buffer, sizeof app.modbus.uart1.buffer.buffer);
             uint8_t size = modbusRTUToMei(p);    
             if (size < 4) {
-                incErrCnt8(&p->errCnt);
+                incErrCnt8(3, &p->errCnt);
                 p->size = 0;
                 setState(p, Idle);
-                uc2_sys::clrPortA(0);
 
             } else {
                 // for (uint8_t i = 0; i < size; i++) {
@@ -583,7 +596,7 @@ namespace uc2_app {
             uint8_t size = modbusMei2ModbusRtu(p, sizeof app.modbus.uart0.buffer.buffer);
             size = modbusRtuToAscii(p->buffer, size, sizeof app.modbus.uart0.buffer.buffer, 1);
             if (size == 0) {
-                incErrCnt8(&p->errCnt);
+                incErrCnt8(4, &p->errCnt);
                 p->size = 0;
                 setState(p, Idle);
             } else {
@@ -602,11 +615,10 @@ namespace uc2_app {
             //     printf("%02x ", app.modbus.uart1.buffer.buffer[i]);
             // }
             // printf(" -> ");
-
             uint8_t size = modbusMei2ModbusRtu(p, sizeof app.modbus.uart1.buffer.buffer);
             size = modbusRtuToAscii(p->buffer, size, sizeof app.modbus.uart1.buffer.buffer, 1);
             if (size == 0) {
-                incErrCnt8(&p->errCnt);
+                incErrCnt8(5, &p->errCnt);
                 p->size = 0;
                 setState(p, Idle);
             } else {
@@ -624,6 +636,40 @@ namespace uc2_app {
         sendViaSpi( (struct ModbusBuffer *)&app.modbus.uart0.buffer );
         sendViaSpi( (struct ModbusBuffer *)&app.modbus.uart1.buffer );
 
+        if (uc2_sys::clearEvent(APP_EVENT_PRINTSTATUS)) {
+            printf("\n\n\rStatus:\n\r");
+            printf("  app.errCnt: %02x\n\r", app.errCnt); app.errCnt = 0;
+            printf("  app.modbus.errCnt: %02x\n\r", app.modbus.errCnt); app.modbus.errCnt = 0;
+            for (uint8_t i = 0; i < 3; i++) {
+                struct ModbusBuffer *p;
+                switch (i) {
+                    case 0: printf("  modbus.local: "); p = (struct ModbusBuffer *) &app.modbus.local.buffer; break;
+                    case 1: printf("  modbus.uart0: "); p = (struct ModbusBuffer *) &app.modbus.uart0.buffer; break;
+                    case 2: printf("  modbus.uart1: "); p = (struct ModbusBuffer *) &app.modbus.uart1.buffer; break;
+                }
+                printf("errCnt=%02x ", p->errCnt); p->errCnt = 0;
+                printf("state=%02x ", p->state);
+                printf("size=%02x ", p->size);
+                printf("\n\r");
+            }
+            printf("  error Ids: ");
+            for (uint8_t i = 0; i < app.debug.errorIdsIndex; i++) {
+                printf("%d ", app.debug.errorIds[i]);
+            }
+            app.debug.errorIdsIndex = 0;
+            printf("\n\r");
+        }
+
+        // if (uc2_sys::clearEvent(APP_EVENT_DEBUG)) {
+        //     app.debug.cnt++;
+        //     printf("\n\n\%3d: Modbus:\n\r", app.debug.cnt);
+        //     printf("  %d bytes sent via SPI\n\r", app.debug.index);
+        //     for (uint8_t i = 0; i < app.debug.index; i++)  {
+        //         printf(" %02x", app.debug.buffer[i]);
+        //     }
+        //     printf("\n\r");
+        // }
+
     }
 
     //--------------------------------------------------------
@@ -632,6 +678,24 @@ namespace uc2_app {
     void task_2ms (void) {}
 
     void task_4ms (void) {
+        static uint8_t timer = 0;
+        timer++;
+        uint16_t errCnt = app.errCnt +
+            app.modbus.errCnt + app.modbus.local.buffer.errCnt + app.modbus.uart0.buffer.errCnt +  app.modbus.uart1.buffer.errCnt;
+        if (errCnt == 0) {
+            uc2_sys::setLedRed(0);
+        } else if (errCnt ==  1) {
+            uc2_sys::setLedRed(timer >= 0xe0);
+        } else if (errCnt < 4) {
+            uc2_sys::setLedRed(timer >= 0xc0);
+        } else if (errCnt < 8) {
+            uc2_sys::setLedRed(timer >= 0x80);
+        } else if (errCnt < 16) {
+            uc2_sys::setLedRed(timer >= 0x40);
+        } else {
+            uc2_sys::setLedRed(1);
+        }
+
         if (app.spi.timerLed > 0) {
             app.spi.timerLed--;
             uc2_sys::setLedYellow(app.spi.timerLed > 0x10);
@@ -652,6 +716,7 @@ namespace uc2_app {
 
         if (timer == 0) {
             uc2_sys::setLedGreen(1);
+            uc2_sys::setEvent(APP_EVENT_PRINTSTATUS);
         } 
         if (timer == 1 ) {
             uc2_sys::setLedGreen(0);
@@ -662,7 +727,7 @@ namespace uc2_app {
     void uart0ReadyToSent (uint8_t err) {
         struct ModbusBuffer *p = (struct ModbusBuffer *)&app.modbus.uart0.buffer;
         if (err) {
-            incErrCnt8(&p->errCnt); 
+            incErrCnt8(6, &p->errCnt); 
             p->size = 0;
             setState(p, Idle);
         } else {
@@ -674,7 +739,7 @@ namespace uc2_app {
     void uart1ReadyToSent (uint8_t err) {
         struct ModbusBuffer *p = (struct ModbusBuffer *)&app.modbus.uart1.buffer;
         if (err) {
-            incErrCnt8(&p->errCnt); 
+            incErrCnt8(7, &p->errCnt); 
             p->size = 0;
             setState(p, Idle);
         } else {
@@ -686,7 +751,7 @@ namespace uc2_app {
     
     int8_t addByteToModbusBuffer (uint8_t b, struct ModbusBuffer *pmb, uint8_t maxSize) {
         if (pmb->size >= maxSize) {
-            incErrCnt8(&pmb->errCnt);
+            incErrCnt8(8, &pmb->errCnt);
             return -1;
         }
         uint8_t index = pmb->size;
@@ -707,7 +772,7 @@ namespace uc2_app {
         if (b == ':') {
             // start of Modbus-ASCII frame
             if (pm->rIndex > 0) {
-                incErrCnt8(&pm->errCnt);
+                incErrCnt8(9, &pm->errCnt);
             }
             pm->rIndex = 1;
 
@@ -734,7 +799,7 @@ namespace uc2_app {
                 if (pmb != NULL) {
                     if (pm->rIndex == 3) {
                         if (pmb->state != Idle) {
-                            incErrCnt8(&pm->errCnt);
+                            incErrCnt8(10, &pm->errCnt);
                         }
                         setState(pmb, RequestInProgress);
                         pmb->size = 0;
@@ -760,7 +825,7 @@ namespace uc2_app {
 
         } else {
             // Error: invalid byte value
-            incErrCnt8(&pm->errCnt);
+            incErrCnt8(11, &pm->errCnt);
             pm->rIndex = 0;
         }
     }
@@ -774,10 +839,11 @@ namespace uc2_app {
         struct ModbusBuffer *p = (struct ModbusBuffer *)&app.modbus.uart0.buffer; 
         if (p->state != WaitForResponse) {
             // printf("U2 Error: handleUart0Byte %02x\n\r", b);
-            incErrCnt8(&p->errCnt);
+            incErrCnt8(12, &p->errCnt);
+            uc2_sys::togglePortA(2);
         } else if (b >= 0 && b <= 255){
             if (p->size >= sizeof app.modbus.uart0.buffer.buffer) {
-                incErrCnt8(&p->errCnt);
+                incErrCnt8(13, &p->errCnt);
             } else {
                 p->buffer[p->size++] = (uint8_t)b;
             }
@@ -791,10 +857,10 @@ namespace uc2_app {
         struct ModbusBuffer *p = (struct ModbusBuffer *)&app.modbus.uart1.buffer; 
         if (p->state != WaitForResponse) {
             // printf("U2 Error: handleUart1Byte %02x\n\r", b);
-            incErrCnt8(&p->errCnt);
+            incErrCnt8(14, &p->errCnt);
         } else if (b >= 0 && b <= 255){
             if (p->size >= sizeof app.modbus.uart1.buffer.buffer) {
-                incErrCnt8(&p->errCnt);
+                incErrCnt8(15, &p->errCnt);
             } else {
                 p->buffer[p->size++] = (uint8_t)b;
             }
@@ -815,6 +881,7 @@ namespace uc2_app {
 
         if (b != 0) {
             if (b < 0x80) {
+                uc2_sys::togglePortA(0);
                 handleModbusByte(b);
             } else {
                 handleDebugByte(b & 0x7f);
@@ -826,8 +893,16 @@ namespace uc2_app {
         if (rv < 0x80) {
             struct ModbusBuffer *p = app.spi.sender;
             if (p != NULL) {
+                if (app.spi.senderIndex == 0) {
+                    uc2_app::clearDebugBuffer();
+                }
                 if (app.spi.senderIndex < p->size) {
                     rv = p->buffer[app.spi.senderIndex++];
+                    uc2_app::pushDebugByte(rv);
+                    uc2_sys::togglePortA(1);
+                    if (app.spi.senderIndex == p->size) {
+                        uc2_sys::setEvent(APP_EVENT_DEBUG);
+                    }
                 } else {
                     rv = 0;
                 }
@@ -839,6 +914,7 @@ namespace uc2_app {
         if (rv > 0 && app.spi.cntSent < 0xff) {
            app.spi.cntSent++;
         }
+
         if (app.spi.timerLed == 0) {
             if (app.spi.cntSent > 0) {
                 app.spi.cntSent = 0;

@@ -14,18 +14,18 @@
 #define APP_VERSION_MINOR 1
 
 #define UC2_APP_MODBUS_DEVICE_ADDRESS 0x81
-#define UC2_B2_MODBUS_DEVICE_ADDRESS  2
-#define UC2_B3_MODBUS_DEVICE_ADDRESS  3
+#define UC2_B2_MODBUS_DEVICE_ADDRESS  3
+#define UC2_B3_MODBUS_DEVICE_ADDRESS  1
 
 
-#define APP_EVENT_0   0x01
+#define APP_EVENT_PRINTSTATUS   0x01
 #define APP_EVENT_1   0x02
 #define APP_EVENT_2   0x04
 #define APP_EVENT_3   0x08
 #define APP_EVENT_4   0x10
 #define APP_EVENT_5   0x20
 #define APP_EVENT_6   0x40
-#define APP_EVENT_7   0x80
+#define APP_EVENT_DEBUG 0x80
 
 
 // functions
@@ -121,10 +121,19 @@ namespace uc2_app {
         uint8_t toSend;
     };
 
+    struct Debug {
+        uint8_t cnt;
+        uint8_t index;
+        uint8_t buffer[256];
+        uint8_t errorIdsIndex;
+        uint8_t errorIds[16];
+    };
+
     struct App {
         uint8_t errCnt;
         struct Modbus modbus;
         struct Spi spi;
+        struct Debug debug;
     };
 
     extern struct App app;
@@ -146,6 +155,8 @@ namespace uc2_app {
     void handleUart0Byte (int16_t b);
     void handleUart1Byte (int16_t b);
     uint8_t handleSpiByte (uint8_t b);
+    void clearDebugBuffer ();
+    void pushDebugByte (uint8_t b);
 
 }
 

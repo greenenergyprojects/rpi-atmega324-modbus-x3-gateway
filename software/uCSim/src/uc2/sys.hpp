@@ -17,10 +17,13 @@ namespace uc2_sys {
 
     typedef uint8_t Sys_Event;
 
+    enum Uart0Mode { OFF = 0, ModbusRTU = 1, STDOUT = 2, DEBUG = 4, MIXED = 8 };
+
     struct Sys {
         uint8_t flags;
         uint8_t taskErr_u8;
         Sys_Event  eventFlag;
+        enum Uart0Mode uart0Mode;
     };
 
     struct SysCpu {
@@ -79,7 +82,8 @@ namespace uc2_sys {
     // functions
 
     void init ();
-    void initUart1Config(uint16_t baudrate, uint8_t t35x10);
+    void initUart0(uint16_t baudrate, uint8_t t35x10);
+    void initUart1(uint16_t baudrate, uint8_t t35x10);
     void main ();
 
     void saveSei ();
@@ -124,12 +128,11 @@ namespace uc2_sys {
     void  sendViaUart0 (uint8_t buf[], uint8_t size);
     void  sendViaUart1 (uint8_t buf[], uint8_t size);
 
-    void  uart0_isr (uint8_t receivedByte);
-    void  uart1_isr (uint8_t receivedByte);
-    void  uart0_timeout ();
-    void  uart1_timeout ();
-    void  timer0_isr ();
-
+    void    uart0_isr (uint8_t receivedByte);
+    void    uart1_isr (uint8_t receivedByte);
+    void    uart0_timeout ();
+    void    uart1_timeout ();
+    void    timer0_isr ();
     uint8_t spi_slave_isr (uint8_t b);
 }
 
