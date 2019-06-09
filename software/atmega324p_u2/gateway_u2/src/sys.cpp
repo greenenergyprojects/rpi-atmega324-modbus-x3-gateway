@@ -57,13 +57,13 @@ namespace uc2_sys {
 
         // Timer 1 for Modbus-RTU timing measurments on B2 (UART0)
         TCCR1A = 0;
-        TCCR1B = (1 << CS11);  // f=12MHz/8
+        TCCR1B = 0; // Timer for Modbus B2 off
         OCR1A  = 2734; // 35 * 12000000L / 8 / 19200; // 2734; 
         TIMSK1 = (1 << OCIE1A);
 
         // Timer 2 for Modbus-RTU timing measurments on B3 (UART1)
         TCCR2A = 0;
-        TCCR2B = (1 << CS22) | (1 << CS20);  // f=12MHz/128
+        TCCR2B = 0; // Timer for Modbus B3 off
         OCR2A  = 171; // 35 * 12000000L / 128 / 19200; // 171; 
         TIMSK2 = (1 << OCIE2A);
 

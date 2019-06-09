@@ -33,6 +33,9 @@ namespace uc2_app {
 
     
     void incErrCnt8 (uint8_t id, uint8_t *pCnt) {
+        if (app.errCnt < 0xffff) {
+            app.errCnt++;
+        }
         if (*pCnt < 0xff) {
             (*pCnt)++;
         }
@@ -245,6 +248,9 @@ namespace uc2_app {
         }
         buf[2] = quantity * 2;
         uint8_t i;
+        cli();
+        struct SysTime t = app.sysTime;
+        sei();
 
         for (i = 3; quantity > 0; quantity--, addr++, i++) {
             switch (addr) {
@@ -254,82 +260,136 @@ namespace uc2_app {
                     break;
                 }
 
-                case 1: {
-                    buf[i++] = uc2_sys::sys.taskErr_u8;
-                    buf[i] = app.errCnt;
+                // case 1: {
+                //     buf[i++] = (time >> 56) & 0xff;
+                //     buf[i]   = (time >> 48) & 0xff;
+                //     break;
+                // }
+
+                // case 2: {
+                //     buf[i++] = (time >> 40) & 0xff;
+                //     buf[i]   = (time >> 32) & 0xff;
+                //     break;
+                // }
+
+                // case 3: {
+                //     buf[i++] = (time >> 24) & 0xff;
+                //     buf[i]   = (time >> 16) & 0xff;
+                //     break;
+                // }
+
+                // case 4: {
+                //     buf[i++] = (time >> 8) & 0xff;
+                //     buf[i]   = (time >> 0) & 0xff;
+                //     break;
+                // }
+
+                case 6: {
+                    cli();
+                    uint16_t cnt = app.errCnt;
+                    sei();
+                    buf[i++] = cnt >> 8;
+                    buf[i] = cnt & 0xff;
                     break;
                 }
 
-                case 2: {
+                case 7: {
                     buf[i++] = 0;
                     buf[i] = app.modbus.errCnt;
                     break;
                 }
                 
-                case 3: {
+                case 8: {
                     buf[i++] = 0;
                     buf[i] = app.modbus.local.buffer.errCnt;
                     break;
                 }
 
-                case 4: {
+                case 9: {
+                    buf[i++] = (app.modbus.uart0.buffer.frameCnt >> 8) & 0xff;
+                    buf[i] = app.modbus.uart0.buffer.frameCnt & 0xff;
+                    break;
+                }
+                
+                case 10: {
+                    buf[i++] = 0;
+                    buf[i] = app.modbus.uart0.buffer.errCnt;
+                    break;
+                }
+
+                case 11: {
+                    buf[i++] = (app.modbus.uart0.buffer.frameCnt >> 8) & 0xff;
+                    buf[i] = app.modbus.uart0.buffer.frameCnt & 0xff;
+                    break;
+                }
+
+                case 12: {
                     buf[i++] = 0;
                     buf[i] = app.modbus.uart1.buffer.errCnt;
                     break;
                 }
 
-                case 8: {
+                case 13: {
+                    buf[i++] = (app.modbus.uart1.buffer.frameCnt >> 8) & 0xff;
+                    buf[i] = app.modbus.uart1.buffer.frameCnt & 0xff;
+                    break;
+                }
+
+                // 16 to 127 reseved for debug
+
+
+                case 128: {
                     buf[i++] = uc2_sys::getUart0Ucsr0c();
                     buf[i] = uc2_sys::getUart0Ubrr0() & 0xff;;
                     break;
                 }
 
-                case 9: {
+                case 129: {
                     uint16_t ocr1a = uc2_sys::getUart0Ocr1a();
                     buf[i++] = ocr1a >> 8;
                     buf[i] = ocr1a & 0xff;
                     break;                     
                 }
 
-                case 10: {
+                case 130: {
                     buf[i++] = 0;
                     buf[i] = uc2_sys::getUart0Tccr1b();
                     break;                     
                 }
 
-                case 11: {
+                case 131: {
                     buf[i++] = uc2_sys::getUart1Ucsr1c();
                     buf[i] = uc2_sys::getUart1Ubrr1() & 0xff;
                     break;
                 }
 
-                case 12: {
+                case 132: {
                     buf[i++] = 0;
                     buf[i] = uc2_sys::getUart1Ocr2a();
                     break;                     
                 }
 
-                case 13: {
+                case 133: {
                     buf[i++] = 0;
                     buf[i] = uc2_sys::getUart1Tccr2b();
                     break;                     
                 }
 
 
-                case 18: {
+                case 256: {
                     buf[i++] = app.modbus.addressesLocal[0];
                     buf[i] = app.modbus.addressesLocal[1];
                     break;
                 }
 
-                case 19: {
+                case 257: {
                     uint8_t index = (addr - 19) * 2;
                     buf[i++] = app.modbus.addressesUart0[index];
                     buf[i] = app.modbus.addressesUart0[index + 1];
                     break;
                 }
 
-                case 20: {
+                case 258: {
                     uint8_t index = (addr - 20) * 2;
                     buf[i++] = app.modbus.addressesUart1[index];
                     buf[i] = app.modbus.addressesUart1[index + 1];
@@ -337,11 +397,22 @@ namespace uc2_app {
                 }
 
                 default: {
-                    if (addr > 20) {
+                    if (addr > 258) {
                         buf[1] |= 0x80;
                         buf[2] = 0x02; // Exception code: address out of range
                         return 3;
-                    } else {
+    
+                    } else if (addr >= 16 && addr < 128) {
+                        while (addr < 128 && quantity > 0) {
+                            cli();
+                            uint8_t index = addr - 16;
+                            uint8_t valid = index < sizeof(app.debug.errorIds);
+                            buf[i++] = valid ? app.debug.errorIds[index] : 0;
+                            buf[i++] = valid ? app.debug.errorIds[index + 1] : 0;
+                            quantity--, addr++;
+                            sei();
+                        }
+                    } else {                        
                         buf[i++] = 0;
                         buf[i] = 0;
                     }
@@ -349,6 +420,7 @@ namespace uc2_app {
             }
             rv += 2;
         }
+
         return rv;
     }
 
@@ -363,6 +435,7 @@ namespace uc2_app {
 
         switch (addr) {
             case 0: {
+                cli();
                 uc2_sys::sys.taskErr_u8 = 0;
                 app.errCnt = 0;
                 app.modbus.errCnt = 0;
@@ -371,12 +444,14 @@ namespace uc2_app {
                 if (valueHigh == 0x34 && valueLow == 0x12) {
                     app.modbus.unlocked = 1;
                 }
+                sei();
                 break;
             }
 
             case 1: {
-                uc2_sys::sys.taskErr_u8 = 0;
+                cli();
                 app.errCnt = 0;
+                sei();
                 break;
             }
 
@@ -567,7 +642,7 @@ namespace uc2_app {
                 setState(p, SendingRequest);
             }
         
-        }  else if (app.modbus.uart1.buffer.state == RequestReady) {
+        } else if (app.modbus.uart1.buffer.state == RequestReady) {
             struct ModbusBuffer *p = (struct ModbusBuffer *)&app.modbus.uart1.buffer;
             p->size = modbusAsciToRtu(p->buffer, sizeof app.modbus.uart1.buffer.buffer);
             uint8_t size = modbusRTUToMei(p);    
@@ -581,6 +656,7 @@ namespace uc2_app {
                 //     printf("%02x ", app.modbus.uart1.buffer.buffer[i]);
                 // }
                 // printf(" -> ");
+
                 uc2_sys::sendViaUart1(p->buffer, size);
                 setState(p, SendingRequest);
             }
@@ -638,7 +714,9 @@ namespace uc2_app {
 
         if (uc2_sys::clearEvent(APP_EVENT_PRINTSTATUS)) {
             printf("\n\n\rStatus:\n\r");
-            printf("  app.errCnt: %02x\n\r", app.errCnt); app.errCnt = 0;
+            printf("  sysTime: %ddays %dhrs %dmin %dsecs %dms\n\r", 
+                app.sysTime.day, app.sysTime.hour, app.sysTime.min, app.sysTime.sec, app.sysTime.ms );
+            printf("  app.errCnt: %04x\n\r", app.errCnt);
             printf("  app.modbus.errCnt: %02x\n\r", app.modbus.errCnt); app.modbus.errCnt = 0;
             for (uint8_t i = 0; i < 3; i++) {
                 struct ModbusBuffer *p;
@@ -648,6 +726,7 @@ namespace uc2_app {
                     case 2: printf("  modbus.uart1: "); p = (struct ModbusBuffer *) &app.modbus.uart1.buffer; break;
                 }
                 printf("errCnt=%02x ", p->errCnt); p->errCnt = 0;
+                printf("frameCnt=%02x ", p->frameCnt);
                 printf("state=%02x ", p->state);
                 printf("size=%02x ", p->size);
                 printf("\n\r");
@@ -674,26 +753,44 @@ namespace uc2_app {
 
     //--------------------------------------------------------
 
-    void task_1ms (void) {}
+    void task_1ms (void) {
+        cli();
+        struct SysTime *p = &app.sysTime;
+        if (p->ms < 999) {
+            p->ms++;
+        } else if (p->sec < 59) {
+            p->ms = 0;
+            p->sec++;
+        } else if (p->min < 59) {
+            p->ms = 0;
+            p->sec = 0;
+            p->min++;
+        } else if (p->hour < 23) {
+            p->ms = 0;
+            p->sec = 0;
+            p->min = 0;
+            p->hour++;
+        } else {
+            p->ms = 0;
+            p->sec = 0;
+            p->min = 0;
+            p->hour = 0;
+            p->day++;
+        }
+
+        sei();
+    }
+
+
     void task_2ms (void) {}
 
     void task_4ms (void) {
         static uint8_t timer = 0;
         timer++;
-        uint16_t errCnt = app.errCnt +
-            app.modbus.errCnt + app.modbus.local.buffer.errCnt + app.modbus.uart0.buffer.errCnt +  app.modbus.uart1.buffer.errCnt;
-        if (errCnt == 0) {
+        if (app.debug.errorIdsIndex == 0) {
             uc2_sys::setLedRed(0);
-        } else if (errCnt ==  1) {
-            uc2_sys::setLedRed(timer >= 0xe0);
-        } else if (errCnt < 4) {
-            uc2_sys::setLedRed(timer >= 0xc0);
-        } else if (errCnt < 8) {
-            uc2_sys::setLedRed(timer >= 0x80);
-        } else if (errCnt < 16) {
-            uc2_sys::setLedRed(timer >= 0x40);
         } else {
-            uc2_sys::setLedRed(1);
+            uc2_sys::setLedRed(timer >= 0xe0);
         }
 
         if (app.spi.timerLed > 0) {
@@ -814,6 +911,7 @@ namespace uc2_app {
             if (b == '\n') {
                 pm->rIndex = 0;
                 if (pmb != NULL) {
+                    uc2_sys::togglePortA(0);
                     setState(pmb, RequestReady);
                     // frame handling is done by main loop
                 }
@@ -839,14 +937,19 @@ namespace uc2_app {
         struct ModbusBuffer *p = (struct ModbusBuffer *)&app.modbus.uart0.buffer; 
         if (p->state != WaitForResponse) {
             // printf("U2 Error: handleUart0Byte %02x\n\r", b);
-            incErrCnt8(12, &p->errCnt);
-            uc2_sys::togglePortA(2);
+            if (b >= 0) {
+                incErrCnt8(12, &p->errCnt);
+            } else {
+                incErrCnt8(13, &p->errCnt);
+            }
+            
         } else if (b >= 0 && b <= 255){
             if (p->size >= sizeof app.modbus.uart0.buffer.buffer) {
-                incErrCnt8(13, &p->errCnt);
+                incErrCnt8(14, &p->errCnt);
             } else {
                 p->buffer[p->size++] = (uint8_t)b;
             }
+
         } else {
             setState(p, ResponseFromUartReady);
         }
@@ -857,10 +960,14 @@ namespace uc2_app {
         struct ModbusBuffer *p = (struct ModbusBuffer *)&app.modbus.uart1.buffer; 
         if (p->state != WaitForResponse) {
             // printf("U2 Error: handleUart1Byte %02x\n\r", b);
-            incErrCnt8(14, &p->errCnt);
+            if (b >= 0) {
+                incErrCnt8(15, &p->errCnt);
+            } else {
+                incErrCnt8(16, &p->errCnt);
+            }
         } else if (b >= 0 && b <= 255){
             if (p->size >= sizeof app.modbus.uart1.buffer.buffer) {
-                incErrCnt8(15, &p->errCnt);
+                incErrCnt8(17, &p->errCnt);
             } else {
                 p->buffer[p->size++] = (uint8_t)b;
             }
@@ -881,7 +988,7 @@ namespace uc2_app {
 
         if (b != 0) {
             if (b < 0x80) {
-                uc2_sys::togglePortA(0);
+                uc2_sys::togglePortA(1);
                 handleModbusByte(b);
             } else {
                 handleDebugByte(b & 0x7f);
@@ -899,8 +1006,10 @@ namespace uc2_app {
                 if (app.spi.senderIndex < p->size) {
                     rv = p->buffer[app.spi.senderIndex++];
                     uc2_app::pushDebugByte(rv);
-                    uc2_sys::togglePortA(1);
                     if (app.spi.senderIndex == p->size) {
+                        if (p->frameCnt < 0xff) {
+                            p->frameCnt++;
+                        }
                         uc2_sys::setEvent(APP_EVENT_DEBUG);
                     }
                 } else {

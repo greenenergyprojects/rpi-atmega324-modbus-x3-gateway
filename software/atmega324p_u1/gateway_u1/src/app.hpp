@@ -14,19 +14,22 @@
 #define UC1_APP_MODBUS_DEVICE_ADDRESS 128
 #define UC1_B1_MODBUS_DEVICE_ADDRESS  10
 
-#define UC1_APP_EVENT_0   0x01
-#define UC1_APP_EVENT_1   0x02
-#define UC1_APP_EVENT_2   0x04
-#define UC1_APP_EVENT_3   0x08
-#define UC1_APP_EVENT_4   0x10
-#define UC1_APP_EVENT_5   0x20
-#define UC1_APP_EVENT_6   0x40
-#define UC1_APP_EVENT_7   0x80
+
 
 
 
 // functions
 namespace uc1_app {
+
+    #define APP_EVENT_PRINTSTATUS   0x01
+    #define APP_EVENT_1   0x02
+    #define APP_EVENT_2   0x04
+    #define APP_EVENT_3   0x08
+    #define APP_EVENT_4   0x10
+    #define APP_EVENT_5   0x20
+    #define APP_EVENT_6   0x40
+    #define APP_EVENT_7   0x80
+
 
     enum Uart0State { DISABLED = 0, CHECK_UART0 = 1, CHECK_UART1 = 2, CHECK_UART23 = 3, SEND_UART0 = 5, SEND_UART1 = 6, SEND_UART23 = 7 };
     enum ModbusBufferState { 
@@ -111,12 +114,20 @@ namespace uc1_app {
         struct ModbusSpi   spi;
     };
 
+    struct Debug {
+        uint8_t cnt;
+        uint8_t index;
+        uint8_t buffer[256];
+        uint8_t errorIdsIndex;
+        uint8_t errorIds[16];
+    };
 
     struct App {
         uint8_t         errCnt;
         struct Spi      spi;
         struct Modbus   modbus;
         enum Uart0State uart0State;
+        struct Debug debug;
     };
  
     extern struct App app;

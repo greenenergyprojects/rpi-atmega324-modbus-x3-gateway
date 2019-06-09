@@ -32,11 +32,18 @@ namespace uc1_app {
         uc1_sys::initUart1(9600, 35);
     }
 
-    void incErrCnt8 (uint8_t *pCnt) {
+    void incErrCnt8 (uint8_t id, uint8_t *pCnt) {
+        if (app.errCnt < 0xffff) {
+            app.errCnt++;
+        }
         if (*pCnt < 0xff) {
             (*pCnt)++;
         }
+        if (app.debug.errorIdsIndex < sizeof(app.debug.errorIds)) {
+            app.debug.errorIds[app.debug.errorIdsIndex++] = id;
+        }
     }
+
 
     void setState (struct ModbusBuffer *p, ModbusBufferState newState) {
         // ("U1: U2: modbus state = %d\n", newState);
@@ -462,7 +469,7 @@ namespace uc1_app {
                 setState(p, ResponseReady);
                 uc1_sys::sendViaUart0(0, app.modbus.local.buffer.buffer, size);
             } else {
-                incErrCnt8(&p->errCnt);
+                incErrCnt8(0x11, &p->errCnt);
                 p->size = 0;
                 setState(p, Idle);
             }
@@ -473,7 +480,7 @@ namespace uc1_app {
             p->size = modbusAsciToRtu(p->buffer, sizeof app.modbus.uart1.buffer.buffer);
             uint8_t size = modbusRTUToMei(p);    
             if (size < 4) {
-                incErrCnt8(&p->errCnt);
+                incErrCnt8(0x21, &p->errCnt);
                 p->size = 0;
                 setState(p, Idle);
                 uc1_sys::clrPortA(0);
@@ -498,7 +505,7 @@ namespace uc1_app {
             uint8_t size = modbusMei2ModbusRtu(p, sizeof app.modbus.uart1.buffer.buffer);
             size = modbusRtuToAscii(p->buffer, size, sizeof app.modbus.uart1.buffer.buffer, 1);
             if (size == 0) {
-                incErrCnt8(&p->errCnt);
+                incErrCnt8(0x31, &p->errCnt);
                 p->size = 0;
                 setState(p, Idle);
             } else {
@@ -533,7 +540,7 @@ namespace uc1_app {
         } else if (app.modbus.spi.buffer.state == ResponseReady) {
             struct ModbusBuffer *p = (struct ModbusBuffer *)&app.modbus.spi.buffer;
             if (p->size == 0) {
-                incErrCnt8(&p->errCnt);
+                incErrCnt8(0x41, &p->errCnt);
                 p->size = 0;
                 setState(p, Idle);
             } else {
@@ -544,6 +551,17 @@ namespace uc1_app {
                 uc1_sys::sendViaUart0(2, p->buffer, p->size);
             }
         }
+
+        if (uc1_sys::clearEvent(APP_EVENT_PRINTSTATUS)) {
+            printf("\n\n\rStatus:\n\r");
+            printf("  error Ids: ");
+            for (uint8_t i = 0; i < app.debug.errorIdsIndex; i++) {
+                printf("%02x ", app.debug.errorIds[i]);
+            }
+            app.debug.errorIdsIndex = 0;
+            printf("\n\r");
+        }
+
     }
 
 
@@ -557,22 +575,10 @@ namespace uc1_app {
     void task_4ms () {
         static uint8_t timer = 0;
         timer++;
-        uint16_t errCnt = app.errCnt +
-            app.modbus.errCnt + app.modbus.local.buffer.errCnt + app.modbus.uart1.buffer.errCnt;
-        if (timer < 16 || errCnt == 0) {
+        if (app.debug.errorIdsIndex == 0) {
             uc1_sys::setLedRed(0);
-            return;
-        }
-        if (errCnt ==  1) {
-            uc1_sys::setLedRed(timer >= 0xe0);
-        } else if (errCnt < 4) {
-            uc1_sys::setLedRed(timer >= 0xc0);
-        } else if (errCnt < 8) {
-            uc1_sys::setLedRed(timer >= 0x80);
-        } else if (errCnt < 16) {
-            uc1_sys::setLedRed(timer >= 0x40);
         } else {
-            uc1_sys::setLedRed(1);
+            uc1_sys::setLedRed(timer >= 0xe0);
         }
 
         if (app.spi.timerLed > 0) {
@@ -593,6 +599,7 @@ namespace uc1_app {
         static uint8_t timer = 0;
         timer = timer >= 8 ? 0 : timer + 1;
         if (timer == 0) {
+            uc1_sys::setEvent(APP_EVENT_PRINTSTATUS);
             uc1_sys::setLedGreen(1);
             // strcpy((char *)uc1_app::app.modbus.uart1.buffer.buffer, ":010300000004B8\r\n");
             // app.modbus.uart1.buffer.size = 17;
@@ -666,7 +673,7 @@ namespace uc1_app {
 
         if (p != NULL) {
             if (err) {
-                incErrCnt8(&p->errCnt); 
+                incErrCnt8(0x51, &p->errCnt); 
             }
             p->size = 0;
             setState(p, Idle);
@@ -677,7 +684,7 @@ namespace uc1_app {
     void uart1ReadyToSent (uint8_t err) {
         struct ModbusBuffer *p = (struct ModbusBuffer *)&app.modbus.uart1.buffer;
         if (err) {
-            incErrCnt8(&p->errCnt); 
+            incErrCnt8(0x61, &p->errCnt); 
             p->size = 0;
             setState(p, Idle);
         } else {
@@ -689,7 +696,7 @@ namespace uc1_app {
 
     int8_t addByteToModbusBuffer (uint8_t b, struct ModbusBuffer *pmb, uint8_t maxSize) {
         if (pmb->size >= maxSize) {
-            incErrCnt8(&pmb->errCnt);
+            incErrCnt8(0x71, &pmb->errCnt);
             return -1;
         }
         uint8_t index = pmb->size;
@@ -710,7 +717,7 @@ namespace uc1_app {
         if (b == ':') {
             // start of Modbus-ASCII frame
             if (pm->rIndex > 0) {
-                incErrCnt8(&pm->errCnt);
+                incErrCnt8(0x81, &pm->errCnt);
             }
             pm->rIndex = 1;
 
@@ -737,7 +744,7 @@ namespace uc1_app {
                 if (pmb != NULL) {
                     if (pm->rIndex == 3) {
                         if (pmb->state != Idle) {
-                            incErrCnt8(&pm->errCnt);
+                            incErrCnt8(0x82, &pm->errCnt);
                         }
                         setState(pmb, RequestInProgress);
                         pmb->size = 0;
@@ -763,7 +770,7 @@ namespace uc1_app {
 
         } else {
             // Error: invalid byte value
-            incErrCnt8(&pm->errCnt);
+            incErrCnt8(0x83, &pm->errCnt);
             pm->rIndex = 0;
         }
     }
@@ -789,10 +796,10 @@ namespace uc1_app {
         struct ModbusBuffer *p = (struct ModbusBuffer *)&app.modbus.uart1.buffer; 
         if (p->state != WaitForResponse) {
             // printf("Error: handleUart1Byte %02x\n\r", b);
-            incErrCnt8(&p->errCnt);
+            incErrCnt8(0x91, &p->errCnt);
         } else if (b >= 0 && b <= 255){
             if (p->size >= sizeof app.modbus.uart1.buffer.buffer) {
-                incErrCnt8(&p->errCnt);
+                incErrCnt8(0x92, &p->errCnt);
             } else {
                 p->buffer[p->size++] = (uint8_t)b;
             }
@@ -806,13 +813,13 @@ namespace uc1_app {
             struct ModbusBuffer *p = (struct ModbusBuffer *)&app.modbus.spi.buffer;
             if (b == ':') {
                 if (p->size > 0) {
-                    incErrCnt8(&p->errCnt);
+                    incErrCnt8(0xa1, &p->errCnt);
                 }
                 p->buffer[0] = b;
                 p->size = 1;
             } else {
                 if (p->size >=sizeof(app.modbus.spi.buffer.buffer)) {
-                    incErrCnt8(&p->errCnt);
+                    incErrCnt8(0xa2, &p->errCnt);
                     p->buffer[p->size - 1] = b;
                 } else {
                     p->buffer[p->size++] = b;

@@ -121,18 +121,19 @@ namespace uc1_sys {
 
 
     void saveSei () {
-        if (sys.flags & SYS_FLAG_SREG_I) {
-            sei();
-        }
+        // if (sys.flags & SYS_FLAG_SREG_I) {
+        //     sei();
+        // }
+        sei();
     }
 
 
     void saveCli (void) {
-        if (SREG & 0x80) {
-            sys.flags |= SYS_FLAG_SREG_I;
-        } else {
-            sys.flags &= ~SYS_FLAG_SREG_I;
-        }
+        // if (SREG & 0x80) {
+        //     sys.flags |= SYS_FLAG_SREG_I;
+        // } else {
+        //     sys.flags &= ~SYS_FLAG_SREG_I;
+        // }
         cli();
     }
 

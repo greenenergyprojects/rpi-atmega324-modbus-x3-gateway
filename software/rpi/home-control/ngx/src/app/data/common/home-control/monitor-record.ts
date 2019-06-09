@@ -381,7 +381,14 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
         const nibe = this._nibe1155;
         if (!nibe || !nibe.values) { return null; }
         const x = nibe.getCompressorInPowerAsNumber(maxAgeSeconds);
-        if (x === null) { return null; }
+
+        if (x === null || Number.isNaN(x)) {
+            if (nibe.controller.currentMode === 'off') {
+                return 0;
+            } else {
+                return null;
+            }
+        }
         return x;
     }
 

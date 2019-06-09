@@ -53,6 +53,7 @@ namespace uc2_app {
 
     struct ModbusBuffer {
         uint8_t errCnt;
+        uint8_t frameCnt;
         enum ModbusBufferState state;
         uint8_t size;
         struct ModbusMeiRequest mei;
@@ -61,6 +62,7 @@ namespace uc2_app {
 
     struct ModbusBufferLocal {
         uint8_t errCnt;
+        uint8_t frameCnt;        
         enum ModbusBufferState state;
         uint8_t size;
         struct ModbusMeiRequest mei;
@@ -69,6 +71,7 @@ namespace uc2_app {
 
     struct ModbusBufferUart0 {
         uint8_t errCnt;
+        uint8_t frameCnt;        
         enum ModbusBufferState state;
         uint8_t size;
         struct ModbusMeiRequest mei;
@@ -77,6 +80,7 @@ namespace uc2_app {
     
     struct ModbusBufferUart1 {
         uint8_t errCnt;
+        uint8_t frameCnt;        
         enum ModbusBufferState state;
         uint8_t size;
         struct ModbusMeiRequest mei;
@@ -121,6 +125,14 @@ namespace uc2_app {
         uint8_t toSend;
     };
 
+    struct SysTime {
+        uint16_t ms;
+        uint8_t sec;
+        uint8_t min;
+        uint8_t hour;
+        uint8_t day;
+    };
+
     struct Debug {
         uint8_t cnt;
         uint8_t index;
@@ -130,7 +142,8 @@ namespace uc2_app {
     };
 
     struct App {
-        uint8_t errCnt;
+        struct SysTime sysTime;
+        uint16_t errCnt;
         struct Modbus modbus;
         struct Spi spi;
         struct Debug debug;
