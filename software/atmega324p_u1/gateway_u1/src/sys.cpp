@@ -82,7 +82,7 @@ namespace uc1_sys {
         DDRB  |= (1 << PB7) | (1 << PB5) | (1 << PB4);  // SCLK, MOSI, nSS
         PORTB |= (1 << PB4);
         // SPSR0 |= (1 << SPI2X0);
-        SPCR0  = (1 << SPE0) | (1 << MSTR0) | (1 << SPIE0) | (1 << SPR10);
+        SPCR0  = (1 << SPE0) | (1 << MSTR0) | (1 << SPIE0) | (1 << SPR00); //  | (1 << CPHA0) | (1 << CPOL0);
         PORTB &= ~(1 << PB4);
         SPDR0 = 0x00;
         
@@ -154,22 +154,22 @@ namespace uc1_sys {
             return EOF;
         
         } else {
-           saveCli();
-           if ( (UCSR0B & (1 << TXCIE0)) == 0) {
-                UCSR0B |= (1 << TXCIE0) | (1 << TXEN0);
-                UDR0 = sys.uart0Mode == DEBUG ? c : 0x80 | c;
-                saveSei();
+        //    saveCli();
+        //    if ( (UCSR0B & (1 << TXCIE0)) == 0) {
+        //         UCSR0B |= (1 << TXCIE0) | (1 << TXEN0);
+        //         UDR0 = sys.uart0Mode == DEBUG ? c : 0x80 | c;
+        //         saveSei();
 
-           } else {
-                if (sys.uart0DebugByte == 0) {
-                    sys.uart0DebugByte = c;
-                    saveSei();
-                } else {
-                    saveSei();
-                    while (sys.uart0DebugByte > 0);
-                    uart_putch(c, f);
-                }
-           }
+        //    } else {
+        //         if (sys.uart0DebugByte == 0) {
+        //             sys.uart0DebugByte = c;
+        //             saveSei();
+        //         } else {
+        //             saveSei();
+        //             while (sys.uart0DebugByte > 0);
+        //             uart_putch(c, f);
+        //         }
+        //    }
         }
 
         return (int)c;
@@ -367,8 +367,6 @@ ISR (USART0_RX_vect) {
     static uint8_t lastChar;
     uint8_t c = UDR0;
 
-    PORTA ^= (1 << PA2);
-
     if (c == 'R' && lastChar == '@') {
         wdt_enable(WDTO_15MS);
         wdt_reset();
@@ -394,9 +392,7 @@ ISR (USART0_TX_vect) {
         uc1_sys::sys.uart0Size--;
 
     } else {
-        if (uc1_sys::sys.uart0Typ == 0 || uc1_sys::sys.uart0Typ == 1) {
-            uc1_app::uart0ReadyToSent(uc1_sys::sys.uart0Typ, 0);
-        }
+        uc1_app::uart0ReadyToSent(uc1_sys::sys.uart0Typ, 0);
         uc1_sys::sys.uart0Typ = 0xff;
         UCSR0B &= ~((1 << TXCIE0) | (1 << TXEN0));
     }
@@ -414,7 +410,6 @@ ISR (USART1_RX_vect) {
 }
 
 ISR (USART1_TX_vect) {
-    uc1_sys::togglePortA(0);
     if (uc1_sys::sys.uart1Size > 0) {
         UDR1 = *uc1_sys::sys.uart1Buf++;
         uc1_sys::sys.uart1Size--;
@@ -467,8 +462,15 @@ ISR (TIMER0_COMPA_vect) {
 
 
 ISR (SPI_STC_vect) {
-    PORTB |= (1 << PB4); 
-    uint8_t toSend = uc1_app::handleSpiByte(SPDR0);
-    PORTB &= ~(1 << PB4);
-    SPDR0 = toSend;
+    static uint8_t b = 0;
+    uint8_t cs = (PORTB & (1 << PB4));
+    if (cs) {
+        PORTB &= ~(1 << PB4);    
+        SPDR0 = b;
+    } else {
+        PORTB |= (1 << PB4); 
+        b = SPDR0;
+        b = uc1_app::handleSpiByte(b);
+        SPDR0 = 0;
+    }
 }

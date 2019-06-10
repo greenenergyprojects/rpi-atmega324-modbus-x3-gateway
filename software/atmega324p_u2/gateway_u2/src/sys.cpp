@@ -80,7 +80,8 @@ namespace uc2_sys {
 
         // SPI Slave
         DDRB  |= (1 << PB6);  // MISO
-        SPCR0  = (1 << SPE0) | (1 << SPIE0);
+        //SPCR0  = (1 << SPE0) | (1 << SPIE0);
+        SPCR0  = (1 << SPE0) | (1 << SPIE0); //  | (1 << CPOL0) | (1 << CPHA0);
 
         // connect libc functions printf(), gets()... to UART
         // fdevopen(sys_monitor_putch, sys_monitor_getch);
@@ -547,21 +548,28 @@ ISR (TIMER0_COMPA_vect) {
 
 ISR (SPI_STC_vect) {
     if (uc2_sys::sys.spi.mode == uc2_sys::SPIMODE_MODBUS) {
-        SPDR0 = uc2_app::handleSpiByte(SPDR0); 
+        uint8_t b = SPDR0;
+        SPDR0 = 0;
+        b = uc2_app::handleSpiByte(b);
+        SPDR0 = b;
 
     } else if (uc2_sys::sys.spi.mode == uc2_sys::SPIMODE_STDOUT) {
         uc2_app::handleSpiByte(SPDR0);
-        SPDR0 = uc2_sys::sys.spi.toSendFromStdout;
+        //SPDR0 = uc2_sys::sys.spi.toSendFromStdout;
         uc2_sys::sys.spi.toSendFromStdout = 0;
 
     } else {
         uint8_t b = uc2_app::handleSpiByte(SPDR0);
         if (b == 0) {
-            SPDR0 = uc2_sys::sys.spi.toSendFromStdout | 0x80;
-            uc2_sys::sys.spi.toSendFromStdout = 0;
+            b = uc2_sys::sys.spi.toSendFromStdout;
+            if (b > 0) {
+                b =  b | 0x80;
+                uc2_sys::sys.spi.toSendFromStdout = 0;
+            } 
+            //SPDR0 = b;
 
         } else {
-            SPDR0 = b;
+            //SPDR0 = b;
 
         }
 

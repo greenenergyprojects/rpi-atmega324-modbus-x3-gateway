@@ -739,15 +739,15 @@ namespace uc2_app {
             printf("\n\r");
         }
 
-        // if (uc2_sys::clearEvent(APP_EVENT_DEBUG)) {
-        //     app.debug.cnt++;
-        //     printf("\n\n\%3d: Modbus:\n\r", app.debug.cnt);
-        //     printf("  %d bytes sent via SPI\n\r", app.debug.index);
-        //     for (uint8_t i = 0; i < app.debug.index; i++)  {
-        //         printf(" %02x", app.debug.buffer[i]);
-        //     }
-        //     printf("\n\r");
-        // }
+        if (uc2_sys::clearEvent(APP_EVENT_DEBUG)) {
+            app.debug.cnt++;
+            printf("\n\n\%3d: Modbus:\n\r", app.debug.cnt);
+            printf("  %d bytes sent via SPI\n\r", app.debug.index);
+            for (uint8_t i = 0; i < app.debug.index; i++)  {
+                printf(" %02x", app.debug.buffer[i]);
+            }
+            printf("\n\r");
+        }
 
     }
 
@@ -777,7 +777,6 @@ namespace uc2_app {
             p->hour = 0;
             p->day++;
         }
-
         sei();
     }
 
@@ -911,7 +910,6 @@ namespace uc2_app {
             if (b == '\n') {
                 pm->rIndex = 0;
                 if (pmb != NULL) {
-                    uc2_sys::togglePortA(0);
                     setState(pmb, RequestReady);
                     // frame handling is done by main loop
                 }
@@ -988,14 +986,14 @@ namespace uc2_app {
 
         if (b != 0) {
             if (b < 0x80) {
-                uc2_sys::togglePortA(1);
                 handleModbusByte(b);
             } else {
                 handleDebugByte(b & 0x7f);
             }
         }
 
-        uint8_t rv = app.spi.toSend;
+        uint8_t rv = 0;
+        // rv = app.spi.toSend;
         app.spi.toSend = 0;
         if (rv < 0x80) {
             struct ModbusBuffer *p = app.spi.sender;

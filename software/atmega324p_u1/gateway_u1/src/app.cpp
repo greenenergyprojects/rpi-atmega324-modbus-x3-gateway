@@ -32,12 +32,15 @@ namespace uc1_app {
         uc1_sys::initUart1(9600, 35);
     }
 
+    // pCnt == NULL -> add id to errorIds
     void incErrCnt8 (uint8_t id, uint8_t *pCnt) {
-        if (app.errCnt < 0xffff) {
-            app.errCnt++;
-        }
-        if (*pCnt < 0xff) {
-            (*pCnt)++;
+        if (pCnt != NULL) {
+            if (app.errCnt < 0xffff) {
+                app.errCnt++;
+            }
+            if (*pCnt < 0xff) {
+                (*pCnt)++;
+            }
         }
         if (app.debug.errorIdsIndex < sizeof(app.debug.errorIds)) {
             app.debug.errorIds[app.debug.errorIdsIndex++] = id;
@@ -475,7 +478,6 @@ namespace uc1_app {
             }
 
         } else if (app.modbus.uart1.buffer.state == RequestReady) {
-            uc1_sys::setPortA(0);
             struct ModbusBuffer *p = (struct ModbusBuffer *)&app.modbus.uart1.buffer;
             p->size = modbusAsciToRtu(p->buffer, sizeof app.modbus.uart1.buffer.buffer);
             uint8_t size = modbusRTUToMei(p);    
@@ -483,7 +485,6 @@ namespace uc1_app {
                 incErrCnt8(0x21, &p->errCnt);
                 p->size = 0;
                 setState(p, Idle);
-                uc1_sys::clrPortA(0);
 
             } else {
                 // for (uint8_t i = 0; i < size; i++) {
@@ -514,6 +515,7 @@ namespace uc1_app {
                 // }
                 // printf("\r\n");
                 uc1_sys::sendViaUart0(1, p->buffer, size);
+                setState(p, SendingRequest);
             }
             
         } else if (app.modbus.uart1.buffer.state == RequestForTest) {
@@ -544,23 +546,56 @@ namespace uc1_app {
                 p->size = 0;
                 setState(p, Idle);
             } else {
-                // for (uint8_t i = 0; i < size; i++) {
-                //     printf("%c", app.modbus.uart1.buffer.buffer[i]);
+                // printf("SPI Response Ready: ");
+                // for (uint8_t i = 0; i < p->size; i++) {
+                //     printf(" %02x", p->buffer[i]);
                 // }
-                // printf("\r\n");
+                // printf("\n\r");
                 uc1_sys::sendViaUart0(2, p->buffer, p->size);
+                setState(p, SendingRequest);                
             }
         }
 
         if (uc1_sys::clearEvent(APP_EVENT_PRINTSTATUS)) {
-            printf("\n\n\rStatus:\n\r");
-            printf("  error Ids: ");
-            for (uint8_t i = 0; i < app.debug.errorIdsIndex; i++) {
-                printf("%02x ", app.debug.errorIds[i]);
-            }
-            app.debug.errorIdsIndex = 0;
-            printf("\n\r");
+        //     printf("\n\n\rStatus:\n\r");
+        //     printf("  sysTime: %ddays %dhrs %dmin %dsecs %dms\n\r", 
+        //         app.sysTime.day, app.sysTime.hour, app.sysTime.min, app.sysTime.sec, app.sysTime.ms );
+        //     printf("  app.errCnt: %04x\n\r", app.errCnt);
+        //     printf("  app.modbus.errCnt: %02x\n\r", app.modbus.errCnt); app.modbus.errCnt = 0;
+        //     for (uint8_t i = 0; i < 3; i++) {
+        //         struct ModbusBuffer *p;
+        //         switch (i) {
+        //             case 0: printf("  modbus.local: "); p = (struct ModbusBuffer *) &app.modbus.local.buffer; break;
+        //             case 1: printf("  modbus.uart1: "); p = (struct ModbusBuffer *) &app.modbus.uart1.buffer; break;
+        //             case 2: printf("  modbus.spi: "); p = (struct ModbusBuffer *) &app.modbus.spi.buffer; break;
+        //         }
+        //         printf("errCnt=%02x ", p->errCnt); p->errCnt = 0;
+        //         printf("frameCnt=%02x ", p->frameCnt);
+        //         printf("state=%02x ", p->state);
+        //         printf("size=%02x ", p->size);
+        //         printf("\n\r");
+        //     }
+            // if (app.debug.errorIdsIndex > 0) {
+            //     printf("  error Ids: ");
+            //     for (uint8_t i = 0; i < app.debug.errorIdsIndex; i++) {
+            //         printf("%02x ", app.debug.errorIds[i]);
+            //     }
+            //     app.debug.errorIdsIndex = 0;
+            //     printf("\n\r");
+            // }
         }
+
+        // if (uc1_sys::clearEvent(APP_EVENT_DEBUG)) {
+        //     if (app.debug.index > 0) {
+        //         printf("SPI (%d):", app.debug.index);
+        //         for (uint8_t i = 0; i < app.debug.index; i++) {
+        //             printf(" %02x", app.debug.buffer[i]);
+        //         }
+        //         printf("\n\r");
+        //         app.debug.index = 0;
+        //     }
+        // }
+
 
     }
 
@@ -568,6 +603,30 @@ namespace uc1_app {
     // --------------------------------------------------------
 
     void task_1ms () {
+        cli();
+        struct SysTime *p = &app.sysTime;
+        if (p->ms < 999) {
+            p->ms++;
+        } else if (p->sec < 59) {
+            p->ms = 0;
+            p->sec++;
+        } else if (p->min < 59) {
+            p->ms = 0;
+            p->sec = 0;
+            p->min++;
+        } else if (p->hour < 23) {
+            p->ms = 0;
+            p->sec = 0;
+            p->min = 0;
+            p->hour++;
+        } else {
+            p->ms = 0;
+            p->sec = 0;
+            p->min = 0;
+            p->hour = 0;
+            p->day++;
+        }
+        sei();
     }
 
     void task_2ms () {}
@@ -674,6 +733,7 @@ namespace uc1_app {
         if (p != NULL) {
             if (err) {
                 incErrCnt8(0x51, &p->errCnt); 
+                incErrCnt8(err, NULL); 
             }
             p->size = 0;
             setState(p, Idle);
@@ -810,6 +870,7 @@ namespace uc1_app {
 
     uint8_t handleSpiByte (uint8_t b) {
         if (b > 0) {
+            
             struct ModbusBuffer *p = (struct ModbusBuffer *)&app.modbus.spi.buffer;
             if (b == ':') {
                 if (p->size > 0) {
@@ -818,13 +879,16 @@ namespace uc1_app {
                 p->buffer[0] = b;
                 p->size = 1;
             } else {
-                if (p->size >=sizeof(app.modbus.spi.buffer.buffer)) {
+                if (p->size >= sizeof(app.modbus.spi.buffer.buffer)) {
                     incErrCnt8(0xa2, &p->errCnt);
                     p->buffer[p->size - 1] = b;
                 } else {
                     p->buffer[p->size++] = b;
                 }
                 if (b == '\n') {
+                    if (p->frameCnt < 0xff) {
+                        p->frameCnt++;
+                    }
                     setState(p, ResponseReady);
                 }
             }
@@ -842,6 +906,16 @@ namespace uc1_app {
                 app.spi.timerLed = 0x12;
             }
         }
+
+        if (app.debug.index < sizeof(app.debug.buffer) ) {
+            if (rv > 0) {
+                app.debug.buffer[app.debug.index++] = rv;
+            }
+            if (rv == '\n') {
+                uc1_sys::setEvent(APP_EVENT_DEBUG);
+            }
+        }
+
         return rv;
     }
 

@@ -28,7 +28,7 @@ namespace uc1_app {
     #define APP_EVENT_4   0x10
     #define APP_EVENT_5   0x20
     #define APP_EVENT_6   0x40
-    #define APP_EVENT_7   0x80
+    #define APP_EVENT_DEBUG   0x80
 
 
     enum Uart0State { DISABLED = 0, CHECK_UART0 = 1, CHECK_UART1 = 2, CHECK_UART23 = 3, SEND_UART0 = 5, SEND_UART1 = 6, SEND_UART23 = 7 };
@@ -58,6 +58,7 @@ namespace uc1_app {
 
     struct ModbusBuffer {
         uint8_t errCnt;
+        uint8_t frameCnt;
         enum ModbusBufferState state;
         uint8_t size;
         struct ModbusMeiRequest mei;
@@ -66,6 +67,7 @@ namespace uc1_app {
 
     struct ModbusBufferLocal {
         uint8_t errCnt;
+        uint8_t frameCnt;
         enum ModbusBufferState state;
         uint8_t size;
         struct ModbusMeiRequest mei;
@@ -74,6 +76,7 @@ namespace uc1_app {
     
     struct ModbusBufferUart1 {
         uint8_t errCnt;
+        uint8_t frameCnt;
         enum ModbusBufferState state;
         uint8_t size;
         struct ModbusMeiRequest mei;
@@ -82,6 +85,7 @@ namespace uc1_app {
 
     struct ModbusBufferSpi {
         uint8_t errCnt;
+        uint8_t frameCnt;
         enum ModbusBufferState state;
         uint8_t size;
         uint8_t meiType;
@@ -122,7 +126,16 @@ namespace uc1_app {
         uint8_t errorIds[16];
     };
 
+    struct SysTime {
+        uint16_t ms;
+        uint8_t sec;
+        uint8_t min;
+        uint8_t hour;
+        uint8_t day;
+    };
+
     struct App {
+        struct SysTime sysTime;
         uint8_t         errCnt;
         struct Spi      spi;
         struct Modbus   modbus;
