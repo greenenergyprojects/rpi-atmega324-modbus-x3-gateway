@@ -256,4 +256,6 @@ WantedBy=multi-user.target
    systemctl restart <project>.service
    systemctl stop <project>.service
    systemctl disable <project>.service
+   journalctl -u <project>.service --rotate
+   journalctl -u <project>.service --vaccuum-time 1s
 ```

@@ -379,7 +379,7 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
 
     public getHeatpumpPowerAsNumber (maxAgeSeconds = 20): number | null {
         const nibe = this._nibe1155;
-        if (!nibe || !nibe.values) { return null; }
+        if (!nibe || !nibe.values || !nibe.controller) { return null; }
         const x = nibe.getCompressorInPowerAsNumber(maxAgeSeconds);
 
         if (x === null || Number.isNaN(x)) {
