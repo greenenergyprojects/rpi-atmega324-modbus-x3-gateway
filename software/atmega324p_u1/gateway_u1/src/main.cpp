@@ -34,7 +34,7 @@ int main () {
     printf("%s %s %s %s", MAIN_WELCOME, MAIN_DATE, MAIN_TIME, MAIN_HELP);
     printf("\r\n");
     
-    uc1_sys::setUart0Mode(uc1_sys::ModbusASCII);
+    // uc1_sys::setUart0Mode(uc1_sys::ModbusASCII);
     // uc1_sys::setUart0Mode(uc1_sys::MIXED);
     // uc1_sys::setUart0Mode(uc1_sys::DEBUG);
 
