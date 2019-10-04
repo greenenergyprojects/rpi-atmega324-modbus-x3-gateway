@@ -154,18 +154,17 @@ export class OverviewComponent implements OnInit, OnDestroy {
             if (x1 === null) {
                 // console.log('getGridActivePower', x1);
                 v1 = { value: '?' };
-                v2 = { value: '?' };
             } else {
                 v1 = { value: Math.round(x1) + 'W', classes: { bgred: x1 > 0, bggreen: x1 < 0} };
-                v2 = { value: x1 > 0 ? 'Bezug' : 'Lieferung' };
+                // v1.value = x1 > 0 ? 'beziehe ' : 'liefere ' + v1.value;
             }
             if (x2 === null) {
                 // console.log('getGridApparentPowerAsNumber', x2);
-                v3 = { value: '?' };
+                v2 = { value: '?' };
             } else {
-                v3 = { value: Math.round(x2) + 'var', classes: { bgred: x2 > 0, bggreen: x2 < 0} };
+                v2 = { value: Math.round(x2) + 'VA', classes: { bgred: x2 > 0, bggreen: x2 < 0} };
             }
-            pv.values.push({ key: 'Netz', values: [ v1, v2, v3 ]});
+            pv.values.push({ key: 'Netz', values: [ v1, v2 ]});
 
             x1 = v.getGridActivePhaseVoltageAsNumber(1);
             v1 = x1 == null ? { value: '?' } : { value: Math.round(x1) + 'V' };
@@ -198,6 +197,15 @@ export class OverviewComponent implements OnInit, OnDestroy {
             }
             pv.values.push({ key: 'P-L1/L2/L3', values: [ v1, v2, v3 ]});
 
+            x1 = v.getGridApparentPhasePowerAsNumber(1);
+            v1 = x1 == null ? { value: '?' } : { value: Math.round(x1) + 'VA' };
+            x2 = v.getGridApparentPhasePowerAsNumber(2);
+            v2 = x2 == null ? { value: '?' } : { value: Math.round(x2) + 'VA' };
+            x3 = v.getGridApparentPhasePowerAsNumber(3);
+            v3 = x3 == null ? { value: '?' } : { value: Math.round(x3) + 'VA' };
+            pv.values.push({ key: 'S-L1/L2/L3', values: [ v1, v2, v3 ]});
+
+
             x2 = v.getEInDailyAsNumber();
             if (x2 === null) {
                 // console.log('getEInDaily', x2);
@@ -215,6 +223,49 @@ export class OverviewComponent implements OnInit, OnDestroy {
             pv.values.push({ key: 'E-in / E-out', values: [ v2, v3 ]});
 
             this.show.push(pv);
+        }
+
+        {
+            const boiler: IDataBlock = {
+                values: []
+            };
+            const b = v.boiler;
+
+            x1 = b ? b.getActivePowerAsNumber(20) : null;
+            if (x1 === null) {
+                console.log('getActivePowerAsNumber', b);
+                v1 = { value: '?' };
+            } else {
+                v1 = { value: Math.round(x1) + 'W' };
+            }
+            x2 = b ? b.getEnergyDailyAsNumber(20) : null;
+            if (x2 === null) {
+                console.log('getEnergyDailyAsNumber', b);
+                v2 = { value: '?' };
+            } else {
+                v2 = { value: Math.round(x2 / 10) / 100 + 'kWh' };
+            }
+            const s1 = b ? b.getModeAsString(20) : null;
+            if (s1 === null) {
+                v3 = { value: '?' };
+            } else {
+                v3 = { value: s1 };
+            }
+
+
+            boiler.values.push({ key: 'Boiler', values: [ v1, v2, v3 ]});
+
+            // if (m === null) {
+            //     console.log('boiler.monitorRecord', b);
+            //     v1 = { value: '?' };
+            //     v2 = { value: '?' };
+            // } else {
+            //     v1 = { value: Math.round(m.activePower.value) + m.activePower.unit };
+            //     v2 = { value: m.mode };
+            // }
+
+
+            this.show.push(boiler);
         }
 
         {
@@ -347,48 +398,7 @@ export class OverviewComponent implements OnInit, OnDestroy {
         }
 
 
-        {
-            const boiler: IDataBlock = {
-                values: []
-            };
-            const b = v.boiler;
-
-            x1 = b ? b.getActivePowerAsNumber(20) : null;
-            if (x1 === null) {
-                console.log('getActivePowerAsNumber', b);
-                v1 = { value: '?' };
-            } else {
-                v1 = { value: Math.round(x1) + 'W' };
-            }
-            x2 = b ? b.getEnergyDailyAsNumber(20) : null;
-            if (x2 === null) {
-                console.log('getEnergyDailyAsNumber', b);
-                v2 = { value: '?' };
-            } else {
-                v2 = { value: Math.round(x2 / 10) / 100 + 'kWh' };
-            }
-            const s1 = b ? b.getModeAsString(20) : null;
-            if (s1 === null) {
-                v3 = { value: '?' };
-            } else {
-                v3 = { value: s1 };
-            }
-
-
-            boiler.values.push({ key: 'Boiler', values: [ v1, v2, v3 ]});
-
-            // if (m === null) {
-            //     console.log('boiler.monitorRecord', b);
-            //     v1 = { value: '?' };
-            //     v2 = { value: '?' };
-            // } else {
-            //     v1 = { value: Math.round(m.activePower.value) + m.activePower.unit };
-            //     v2 = { value: m.mode };
-            // }
-
-
-            this.show.push(boiler);
-        }
+        
 
 
     }

@@ -149,6 +149,14 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
         return this._gridmeter.activePxPower[phase - 1]; // >0 ==> get power from grid, <0 -> feed power to grid
     }
 
+    public getGridApparentPhasePowerAsNumber (phase: 1 | 2 | 3, maxAgeSeconds = 20): number | null {
+        if (!this.gridmeter) { return null; }
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = this._gridmeter.createdAt;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        return this._gridmeter.apparentPxPower[phase - 1];
+    }
+
     public getPvEastWestActivePowerAsNumber (maxAgeSeconds = 20): number | null {
         if (!this._extPvMeter) { return null; }
         const x = <EnergyMeter>this._extPvMeter['pveastwest'];
