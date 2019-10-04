@@ -2,9 +2,11 @@
     <div style="margin: 0.5em" *ngFor="let block of show">
         <span *ngFor="let data of block.values">
             <b> {{data.key}}</b> 
-            <span *ngFor="let v of data.values, let i = index" style="margin-left: 0.2em" [ngClass]="v.classes">
+            <span *ngFor="let v of data.values, let i = index" style="margin-left: 0.2em">
                 <span *ngIf="i > 0" style="margin-right: 0.2em">/</span>
-                {{v.value}}
+                <span [ngClass]="v.classes">
+                    {{v.value}}
+                </span>
             </span>
             <br/>
         </span>

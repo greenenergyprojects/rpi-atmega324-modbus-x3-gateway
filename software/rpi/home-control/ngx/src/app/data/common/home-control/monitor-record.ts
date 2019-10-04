@@ -116,12 +116,37 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
 
     // *****************************************************
 
+    public getGridActivePhaseVoltageAsNumber (phase: 1 | 2 | 3, maxAgeSeconds = 20): number | null {
+        if (!this.gridmeter) { return null; }
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = this._gridmeter.createdAt;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        return this._gridmeter.voltagePxToN[phase - 1];
+    }
+
+
     public getGridActivePowerAsNumber (maxAgeSeconds = 20): number | null {
         if (!this.gridmeter) { return null; }
         const tMin = Date.now() - maxAgeSeconds * 1000;
         const ts = this._gridmeter.createdAt;
         if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
         return this._gridmeter.activePower; // >0 ==> get power from grid, <0 -> feed power to grid
+    }
+
+    public getGridApparentPowerAsNumber (maxAgeSeconds = 20): number | null {
+        if (!this.gridmeter) { return null; }
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = this._gridmeter.createdAt;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        return this._gridmeter.apparentPower; // >0 ==> get power from grid, <0 -> feed power to grid
+    }
+
+    public getGridActivePhasePowerAsNumber (phase: 1 | 2 | 3, maxAgeSeconds = 20): number | null {
+        if (!this.gridmeter) { return null; }
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = this._gridmeter.createdAt;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        return this._gridmeter.activePxPower[phase - 1]; // >0 ==> get power from grid, <0 -> feed power to grid
     }
 
     public getPvEastWestActivePowerAsNumber (maxAgeSeconds = 20): number | null {

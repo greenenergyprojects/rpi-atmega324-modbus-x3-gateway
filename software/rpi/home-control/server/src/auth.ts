@@ -258,12 +258,14 @@ export class Auth {
 
 interface ITokenRequest {
     userid: string;
-    type: 'remote' | 'access';
+    type: 'login' | 'remote' | 'access';
+    service?: string;
+    url?: string [];
 }
 
 interface ITokenContent {
     userid: string;
-    type: 'remote' | 'request';
+    type: 'login' | 'remote' | 'request';
     iat: number;
     exp: number;
 }

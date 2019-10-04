@@ -20,10 +20,10 @@ export class ServerService {
     constructor (private httpClient: HttpClient, private _authService: AuthService, private _componentFactoryResolver: ComponentFactoryResolver) {
         // ng serve      --> development mode, server running on same host
         // npm run build --prod --> production mode, server can run on any host and supports loading ngx app
-        this._serverUri = isDevMode() ? 'http://localhost:8080' : '';
-        this._authServerUri = isDevMode() ? 'http://localhost:8080' : '';
-        // this._serverUri = isDevMode() ? 'http://192.168.1.201:8081' : '';
-        // this._authServerUri = isDevMode() ? 'http://192.168.1.201:8081' : '';
+        // this._serverUri = isDevMode() ? 'http://localhost:8080' : '';
+        // this._authServerUri = isDevMode() ? 'http://localhost:8080' : '';
+        this._serverUri = isDevMode() ? 'http://192.168.1.201:8081' : '';
+        this._authServerUri = isDevMode() ? 'http://192.168.1.201:8081' : '';
         this._authUri = this._authServerUri + '/auth';
     }
 

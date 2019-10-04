@@ -51,7 +51,7 @@ export class OverviewComponent implements OnInit, OnDestroy {
 
             x1 = v.getLoadActivePowerAsNumber();
             if (x1 === null || x2 === null) {
-                console.log('getLoadActivePower', x1);
+                // console.log('getLoadActivePower', x1);
                 v1 = { value: '?' };
             } else {
                 v1 = { value: Math.round(x1) + 'W' };
@@ -60,14 +60,14 @@ export class OverviewComponent implements OnInit, OnDestroy {
 
             x1 = v.getPvActivePowerAsNumber();
             if (x1 === null) {
-                console.log('getPvSouthActivePower', x1);
+                // console.log('getPvSouthActivePower', x1);
                 v1 = { value: '?' };
             } else {
                 v1 = { value: Math.round(x1) + 'W' };
             }
             x2 = v.getPvEnergyDailyAsNumber();
             if (x2 === null) {
-                console.log('getPvSouthEnergyDaily', x2);
+                // console.log('getPvSouthEnergyDaily', x2);
                 v2 = { value: '?' };
             } else {
                 v2 = { value: Math.round(x2 / 10) / 100 + 'kWh' };
@@ -76,14 +76,14 @@ export class OverviewComponent implements OnInit, OnDestroy {
 
             x1 = v.getPvSouthActivePowerAsNumber();
             if (x1 === null) {
-                console.log('getPvSouthActivePower', x1);
+                // console.log('getPvSouthActivePower', x1);
                 v1 = { value: '?' };
             } else {
                 v1 = { value: Math.round(x1) + 'W' };
             }
             x2 = v.getPvSouthEnergyDailyAsNumber();
             if (x2 === null) {
-                console.log('getPvSouthEnergyDaily', x2);
+                // console.log('getPvSouthEnergyDaily', x2);
                 v2 = { value: '?' };
             } else {
                 v2 = { value: Math.round(x2 / 10) / 100 + 'kWh' };
@@ -92,14 +92,14 @@ export class OverviewComponent implements OnInit, OnDestroy {
 
             x1 = v.getPvEastWestActivePowerAsNumber();
             if (x1 === null) {
-                console.log('getPvEastWestActivePower', x1);
+                // console.log('getPvEastWestActivePower', x1);
                 v1 = { value: '?' };
             } else {
                 v1 = { value: Math.round(x1) + 'W' };
             }
             x2 = v.getPvEastWestEnergyDailyAsNumber();
             if (x2 === null) {
-                console.log('getPvEastWestEnergyDaily', x2);
+                // console.log('getPvEastWestEnergyDaily', x2);
                 v2 = { value: '?' };
             } else {
                 v2 = { value: Math.round(x2 / 10) / 100 + 'kWh' };
@@ -108,7 +108,7 @@ export class OverviewComponent implements OnInit, OnDestroy {
 
             x1 = v.getBatteryPowerAsNumber();
             if (x1 === null) {
-                console.log('getBatteryPower', new Date(), v.froniussymo);
+                // console.log('getBatteryPower', new Date(), v.froniussymo);
                 // const now = new Date();
                 // debugger;
                 // x1 = v.getBatteryPowerAsNumber(25, now);
@@ -124,14 +124,14 @@ export class OverviewComponent implements OnInit, OnDestroy {
 
             x1 = v.getBatteryEnergyInPercentAsNumber();
             if (x1 === null) {
-                console.log('getBatteryEnergyInPercent', x1);
+                // console.log('getBatteryEnergyInPercent', x1);
                 v1 = { value: '?' };
             } else {
                 v1 = { value: x1 + '%' };
             }
             x2 = v.getBatteryNominalEnergyAsNumber();
             if (x2 === null) {
-                console.log('getBatteryNominalEnergy', x2);
+                // console.log('getBatteryNominalEnergy', x2);
                 v2 = { value: '?' };
             } else {
                 v2 = { value: x2 / 1000 + 'kWh' };
@@ -141,27 +141,73 @@ export class OverviewComponent implements OnInit, OnDestroy {
             // if (s === 'CALIBRATING's)
             pv.values.push({ key: 'Bat-E', values: [ v1, v2, v3 ]});
 
+            this.show.push(pv);
+        }
+
+        {
+            const pv: IDataBlock = {
+                values: []
+            };
+
             x1 = v.getGridActivePowerAsNumber();
+            x2 = v.getGridApparentPowerAsNumber();
             if (x1 === null) {
-                console.log('getGridActivePower', x1);
+                // console.log('getGridActivePower', x1);
                 v1 = { value: '?' };
                 v2 = { value: '?' };
             } else {
                 v1 = { value: Math.round(x1) + 'W', classes: { bgred: x1 > 0, bggreen: x1 < 0} };
                 v2 = { value: x1 > 0 ? 'Bezug' : 'Lieferung' };
             }
-            pv.values.push({ key: 'Netz', values: [ v1, v2 ]});
+            if (x2 === null) {
+                // console.log('getGridApparentPowerAsNumber', x2);
+                v3 = { value: '?' };
+            } else {
+                v3 = { value: Math.round(x2) + 'var', classes: { bgred: x2 > 0, bggreen: x2 < 0} };
+            }
+            pv.values.push({ key: 'Netz', values: [ v1, v2, v3 ]});
+
+            x1 = v.getGridActivePhaseVoltageAsNumber(1);
+            v1 = x1 == null ? { value: '?' } : { value: Math.round(x1) + 'V' };
+            x2 = v.getGridActivePhaseVoltageAsNumber(2);
+            v2 = x2 == null ? { value: '?' } : { value: Math.round(x2) + 'V' };
+            x3 = v.getGridActivePhaseVoltageAsNumber(3);
+            v3 = x3 == null ? { value: '?' } : { value: Math.round(x3) + 'V' };
+            pv.values.push({ key: 'V-L1/L2/L3', values: [ v1, v2, v3 ]});
+
+            x1 = v.getGridActivePhasePowerAsNumber(1);
+            if (x1 === null) {
+                // console.log('getGridActivePhasePowerAsNumber(1)', x1);
+                v1 = { value: '?' };
+            } else {
+                v1 = { value: Math.round(x1) + 'W', classes: { bgred: x1 > 0, bggreen: x1 < 0} };
+            }
+            x2 = v.getGridActivePhasePowerAsNumber(2);
+            if (x2 === null) {
+                // console.log('getGridActivePhasePowerAsNumber(1)', x1);
+                v2 = { value: '?' };
+            } else {
+                v2 = { value: Math.round(x2) + 'W', classes: { bgred: x2 > 0, bggreen: x2 < 0} };
+            }
+            x3 = v.getGridActivePhasePowerAsNumber(3);
+            if (x3 === null) {
+                // console.log('getGridActivePhasePowerAsNumber(1)', x1);
+                v3 = { value: '?' };
+            } else {
+                v3 = { value: Math.round(x3) + 'W', classes: { bgred: x3 > 0, bggreen: x3 < 0} };
+            }
+            pv.values.push({ key: 'P-L1/L2/L3', values: [ v1, v2, v3 ]});
 
             x2 = v.getEInDailyAsNumber();
             if (x2 === null) {
-                console.log('getEInDaily', x2);
+                // console.log('getEInDaily', x2);
                 v2 = { value: '?' };
             } else {
                 v2 = { value: (Math.round(x2 / 10) / 100) + 'kWh' };
             }
             x3 = v.getEOutDailyAsNumber();
             if (x3 === null) {
-                console.log('getEOutDaily', x3);
+                // console.log('getEOutDaily', x3);
                 v3 = { value: '?' };
             } else {
                 v3 = { value: (Math.round(x3 / 10) / 100) + 'kWh' };
@@ -179,7 +225,7 @@ export class OverviewComponent implements OnInit, OnDestroy {
 
             x1 = n ? n.getOutdoorTempAsNumber() : null;
             if (x1 === null) {
-                console.log('getOutdoorTempAsNumber', x1);
+                // console.log('getOutdoorTempAsNumber', x1);
                 v1 = { value: '?' };
             } else {
                 v1 = { value: (Math.round(x1 * 10) / 10) + '°C' };
@@ -194,7 +240,7 @@ export class OverviewComponent implements OnInit, OnDestroy {
 
                 x1 = n ? n.getFSetpointAsNumber() : null;
                 if (x1 === null) {
-                    console.log('nibe1155.controller.fSetpoint', n.controller);
+                    // console.log('nibe1155.controller.fSetpoint', n.controller);
                     v1 = { value: '?' };
                 } else {
                     v1 = { value: (Math.round(x1 * 10) / 10) + 'Hz' };
@@ -203,14 +249,14 @@ export class OverviewComponent implements OnInit, OnDestroy {
 
                 x1 = n ? n.getCompressorFrequencyAsNumber() : null;
                 if (x1 === null) {
-                    console.log('getCompressorFrequencyAsNumber', x1);
+                    // console.log('getCompressorFrequencyAsNumber', x1);
                     v1 = { value: '?' };
                 } else {
                     v1 = { value: (Math.round(x1 * 10) / 10) + 'Hz' };
                 }
                 x2 = n ? n.getCompressorInPowerAsNumber() : null;
                 if (x2 === null) {
-                    console.log('getCompressorInPowerAsNumber', x2);
+                    // console.log('getCompressorInPowerAsNumber', x2);
                     v2 = { value: '?' };
                 } else {
                     v2 = { value: (Math.round(x2 * 10) / 10) + 'W' };
@@ -220,14 +266,14 @@ export class OverviewComponent implements OnInit, OnDestroy {
 
                 x1 = n ? n.getSupplyS1TempAsNumber() : null;
                 if (x1 === null) {
-                    console.log('getSupplyS1TempAsNumber', x1);
+                    // console.log('getSupplyS1TempAsNumber', x1);
                     v1 = { value: '?' };
                 } else {
                     v1 = { value: Math.round(x1 * 10) / 10 + '°C' };
                 }
                 x2 = n ? n.getSupplyS1ReturnTempAsNumber() : null;
                 if (x2 === null) {
-                    console.log('getSupplyS1ReturnTempAsNumber', x2);
+                    // console.log('getSupplyS1ReturnTempAsNumber', x2);
                     v2 = { value: '?' };
                 } else {
                     v2 = { value: (Math.round(x2 * 10) / 10) + '°C' };
@@ -240,20 +286,20 @@ export class OverviewComponent implements OnInit, OnDestroy {
             x3 = n ? n.getBrinePumpSpeedAsNumber() : null;
             if (x3 > 0) {
             if (x1 === null) {
-                    console.log('getBrineInTempAsNumber', x1);
+                    // console.log('getBrineInTempAsNumber', x1);
                     v1 = { value: '?' };
                 } else {
                     v1 = { value: (Math.round(x1 * 10) / 10) + '°C' };
                 }
 
                 if (x2 === null) {
-                    console.log('getBrineOutTempAsNumber', x2);
+                    // console.log('getBrineOutTempAsNumber', x2);
                     v2 = { value: '?' };
                 } else {
                     v2 = { value: (Math.round(x2 * 10) / 10) + '°C' };
                 }
                 if (x3 === null) {
-                    console.log('getBrinePumpSpeedAsNumber', x3);
+                    // console.log('getBrinePumpSpeedAsNumber', x3);
                     v3 = { value: '?' };
                 } else {
                     v3 = { value: Math.round(x3) + '%' };
@@ -263,14 +309,14 @@ export class OverviewComponent implements OnInit, OnDestroy {
 
             x1 = n ? n.getSupplyTempAsNumber() : null;
             if (x1 === null) {
-                console.log('getSupplyTempAsNumber', x1);
+                // console.log('getSupplyTempAsNumber', x1);
                 v1 = { value: '?' };
             } else {
                 v1 = { value: Math.round(x1 * 10) / 10 + '°C' };
             }
             x2 = n ? n.getSupplyPumpSpeedAsNumber() : null;
             if (x2 === null) {
-                console.log('getSupplyPumpSpeedAsNumber', x2);
+                // console.log('getSupplyPumpSpeedAsNumber', x2);
                 v2 = { value: '?' };
             } else {
                 v2 = { value: Math.round(x2 * 10) / 10 + '%' };
@@ -279,16 +325,18 @@ export class OverviewComponent implements OnInit, OnDestroy {
 
             x1 = n ? n.getEnergyCompAndElHeaterAsNumber() : null;
             if (x1 === null) {
-                console.log('getEnergyCompAndElHeaterAsNumber', x1);
+                // console.log('getEnergyCompAndElHeaterAsNumber', x1);
                 v1 = { value: '?' };
             } else {
+                // console.log('getEnergyCompAndElHeaterAsNumber', x1);
                 v1 = { value: Math.round(x1 * 10000) / 10 + 'kWh' };
             }
             x2 = v.getHeatpumpEnergyDailyAsNumber();
             if (x2 === null) {
-                console.log('getHeatpumpEnergyDailyAsNumber', x2);
+                // console.log('getHeatpumpEnergyDailyAsNumber', x2);
                 v2 = { value: '?' };
             } else {
+                // console.log('getHeatpumpEnergyDailyAsNumber', x2);
                 v2 = { value: (Math.round(x2 / 10) / 100) + 'kWh' };
             }
 

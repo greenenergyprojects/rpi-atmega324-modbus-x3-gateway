@@ -656,7 +656,7 @@ namespace uc1_app {
 
     void task_128ms () {
         static uint8_t timer = 0;
-        timer = timer >= 128 ? 0 : timer + 1;
+        timer = timer >= 10 ? 0 : timer + 1;
         if (timer == 0) {
             uc1_sys::setEvent(APP_EVENT_PRINTSTATUS);
             uc1_sys::setLedGreen(1);
