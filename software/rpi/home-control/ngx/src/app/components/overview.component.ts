@@ -4,6 +4,7 @@ import { Subscription } from 'rxjs';
 import { MonitorRecord } from '../data/common/home-control/monitor-record';
 import { ControllerMode } from '../data/common/hot-water-controller/controller-mode';
 import { HeatpumpControllerMode } from '../data/common/nibe1155/nibe1155-controller';
+import { sprintf } from 'sprintf-js';
 
 @Component({
     selector: 'app-overview',
@@ -40,9 +41,11 @@ export class OverviewComponent implements OnInit, OnDestroy {
         let x1: number;
         let x2: number;
         let x3: number;
+        let x4: number;
         let v1: IValue;
         let v2: IValue;
         let v3: IValue;
+        let v4: IValue;
 
         {
             const pv: IDataBlock = {
@@ -150,21 +153,52 @@ export class OverviewComponent implements OnInit, OnDestroy {
             };
 
             x1 = v.getGridActivePowerAsNumber();
-            x2 = v.getGridApparentPowerAsNumber();
-            if (x1 === null) {
+            x2 = v.getGridPassivePowerAsNumber();
+            x3 = v.getGridPowerFactorAsNumber();
+            x4 = v.getGridFrequencyAsNumber();
+            if (typeof x1 !== 'number') {
                 // console.log('getGridActivePower', x1);
                 v1 = { value: '?' };
             } else {
                 v1 = { value: Math.round(x1) + 'W', classes: { bgred: x1 > 0, bggreen: x1 < 0} };
                 // v1.value = x1 > 0 ? 'beziehe ' : 'liefere ' + v1.value;
             }
-            if (x2 === null) {
-                // console.log('getGridApparentPowerAsNumber', x2);
+            if (typeof x2 !== 'number') {
+                // console.log('getGridActivePower', x1);
                 v2 = { value: '?' };
             } else {
-                v2 = { value: Math.round(x2) + 'VA', classes: { bgred: x2 > 0, bggreen: x2 < 0} };
+                v2 = { value: Math.round(x2) + 'var', classes: { bgred: x2 > 0, bggreen: x2 < 0} };
+                // v1.value = x1 > 0 ? 'beziehe ' : 'liefere ' + v1.value;
             }
-            pv.values.push({ key: 'Netz', values: [ v1, v2 ]});
+            if (typeof x3 !== 'number') {
+                // console.log('getGridApparentPowerAsNumber', x2);
+                v3 = { value: '?' };
+            } else {
+                v3 = { value: sprintf('%0.2f', x3 >= 0 ? x3 : -x3) };
+            }
+            if (typeof x4 !== 'number') {
+                // console.log('getGridFrequencyAsNumber', xx);
+                v4 = { value: '?' };
+            } else {
+                v4 = { value: sprintf('%0.02fHz', x4) };
+            }
+            pv.values.push({ key: 'Netz', values: [ v1, v2, v3, v4 ]});
+
+            x2 = v.getEInDailyAsNumber();
+            if (x2 === null) {
+                // console.log('getEInDaily', x2);
+                v2 = { value: '?' };
+            } else {
+                v2 = { value: sprintf('%0.02fkWh', x2 / 1000) };
+            }
+            x3 = v.getEOutDailyAsNumber();
+            if (x3 === null) {
+                // console.log('getEOutDaily', x3);
+                v3 = { value: '?' };
+            } else {
+                v3 = { value: sprintf('%0.02fkWh', x3 / 1000) };
+            }
+            pv.values.push({ key: 'E-in / E-out', values: [ v2, v3 ]});
 
             x1 = v.getGridActivePhaseVoltageAsNumber(1);
             v1 = x1 == null ? { value: '?' } : { value: Math.round(x1) + 'V' };
@@ -172,7 +206,7 @@ export class OverviewComponent implements OnInit, OnDestroy {
             v2 = x2 == null ? { value: '?' } : { value: Math.round(x2) + 'V' };
             x3 = v.getGridActivePhaseVoltageAsNumber(3);
             v3 = x3 == null ? { value: '?' } : { value: Math.round(x3) + 'V' };
-            pv.values.push({ key: 'V-L1/L2/L3', values: [ v1, v2, v3 ]});
+            pv.values.push({ key: 'V-LX', values: [ v1, v2, v3 ]});
 
             x1 = v.getGridActivePhasePowerAsNumber(1);
             if (x1 === null) {
@@ -195,32 +229,15 @@ export class OverviewComponent implements OnInit, OnDestroy {
             } else {
                 v3 = { value: Math.round(x3) + 'W', classes: { bgred: x3 > 0, bggreen: x3 < 0} };
             }
-            pv.values.push({ key: 'P-L1/L2/L3', values: [ v1, v2, v3 ]});
+            pv.values.push({ key: 'P-LX', values: [ v1, v2, v3 ]});
 
-            x1 = v.getGridApparentPhasePowerAsNumber(1);
-            v1 = x1 == null ? { value: '?' } : { value: Math.round(x1) + 'VA' };
-            x2 = v.getGridApparentPhasePowerAsNumber(2);
-            v2 = x2 == null ? { value: '?' } : { value: Math.round(x2) + 'VA' };
-            x3 = v.getGridApparentPhasePowerAsNumber(3);
-            v3 = x3 == null ? { value: '?' } : { value: Math.round(x3) + 'VA' };
-            pv.values.push({ key: 'S-L1/L2/L3', values: [ v1, v2, v3 ]});
-
-
-            x2 = v.getEInDailyAsNumber();
-            if (x2 === null) {
-                // console.log('getEInDaily', x2);
-                v2 = { value: '?' };
-            } else {
-                v2 = { value: (Math.round(x2 / 10) / 100) + 'kWh' };
-            }
-            x3 = v.getEOutDailyAsNumber();
-            if (x3 === null) {
-                // console.log('getEOutDaily', x3);
-                v3 = { value: '?' };
-            } else {
-                v3 = { value: (Math.round(x3 / 10) / 100) + 'kWh' };
-            }
-            pv.values.push({ key: 'E-in / E-out', values: [ v2, v3 ]});
+            x1 = v.getGridPassivePhasePowerAsNumber(1);
+            v1 = x1 == null ? { value: '?' } : { value: Math.round(x1 * 100) / 100 + 'var' };
+            x2 = v.getGridPassivePhasePowerAsNumber(2);
+            v2 = x2 == null ? { value: '?' } : { value: Math.round(x2 * 100) / 100 + 'var' };
+            x3 = v.getGridPassivePhasePowerAsNumber(3);
+            v3 = x3 == null ? { value: '?' } : { value: Math.round(x3 * 100) / 100 + 'var' };
+            pv.values.push({ key: 'Q-LX', values: [ v1, v2, v3 ]});
 
             this.show.push(pv);
         }
@@ -281,7 +298,14 @@ export class OverviewComponent implements OnInit, OnDestroy {
             } else {
                 v1 = { value: (Math.round(x1 * 10) / 10) + '°C' };
             }
-            nibe.values.push({ key: 't-Außen', values: [ v1 ] });
+            x2 = n ? n.getSupplyTempAsNumber() : null;
+            if (typeof x2 !== 'number') {
+                // console.log('getSupplyTempAsNumber', x1);
+                v2 = { value: '?' };
+            } else {
+                v2 = { value: sprintf('%0.01f°C', x2) };
+            }
+            nibe.values.push({ key: 't-Außen/Puffer', values: [ v1, v2 ] });
 
             const mode = n.controller ? n.controller.currentMode : null;
             if (mode === HeatpumpControllerMode.off) {
@@ -312,8 +336,14 @@ export class OverviewComponent implements OnInit, OnDestroy {
                 } else {
                     v2 = { value: (Math.round(x2 * 10) / 10) + 'W' };
                 }
-
-                nibe.values.push({ key: 'Kompressor', values: [ v1, v2 ]});
+                x3 = n ? n.getCondensorOutTempAsNumber() : null;
+                if (typeof x3 !== 'number') {
+                    // console.log('getCondensorOutTempAsNumber', x3);
+                    v3 = { value: '?' };
+                } else {
+                    v3 = { value: sprintf('%0.01f°C', x3) };
+                }
+                nibe.values.push({ key: 'Kompressor', values: [ v1, v2, v3 ]});
 
                 x1 = n ? n.getSupplyS1TempAsNumber() : null;
                 if (x1 === null) {
@@ -329,7 +359,14 @@ export class OverviewComponent implements OnInit, OnDestroy {
                 } else {
                     v2 = { value: (Math.round(x2 * 10) / 10) + '°C' };
                 }
-                nibe.values.push({ key: 'Vor/Rücklauf', values: [ v1, v2 ]});
+                x3 = n ? n.getSupplyPumpSpeedAsNumber() : null;
+                if (typeof x3 !== 'number') {
+                   // console.log('getSupplyPumpSpeedAsNumber', x2);
+                   v3 = { value: '?' };
+                } else {
+                   v3 = { value: sprintf('%.01f%%', x3) };
+                }
+                nibe.values.push({ key: 'Vor/Rücklauf', values: [ v1, v2, v3 ]});
             }
 
             x1 = n ? n.getBrineInTempAsNumber() : null;
@@ -358,22 +395,6 @@ export class OverviewComponent implements OnInit, OnDestroy {
                 nibe.values.push({ key: 'Sole', values: [ v1, v2, v3 ]});
             }
 
-            x1 = n ? n.getSupplyTempAsNumber() : null;
-            if (x1 === null) {
-                // console.log('getSupplyTempAsNumber', x1);
-                v1 = { value: '?' };
-            } else {
-                v1 = { value: Math.round(x1 * 10) / 10 + '°C' };
-            }
-            x2 = n ? n.getSupplyPumpSpeedAsNumber() : null;
-            if (x2 === null) {
-                // console.log('getSupplyPumpSpeedAsNumber', x2);
-                v2 = { value: '?' };
-            } else {
-                v2 = { value: Math.round(x2 * 10) / 10 + '%' };
-            }
-            nibe.values.push({ key: 'Puffer', values: [ v1, v2 ]});
-
             x1 = n ? n.getEnergyCompAndElHeaterAsNumber() : null;
             if (x1 === null) {
                 // console.log('getEnergyCompAndElHeaterAsNumber', x1);
@@ -396,9 +417,6 @@ export class OverviewComponent implements OnInit, OnDestroy {
             this.show.push(nibe);
 
         }
-
-
-        
 
 
     }

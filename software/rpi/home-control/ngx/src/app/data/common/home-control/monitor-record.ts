@@ -157,6 +157,62 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
         return this._gridmeter.apparentPxPower[phase - 1];
     }
 
+    public getGridPassivePowerAsNumber (maxAgeSeconds = 20): number | null {
+        if (!this.gridmeter) { return null; }
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = this._gridmeter.createdAt;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        const rv = this._gridmeter.passivePower;
+        // Fronius Q > 0  übererregt, Q wird geliefert (put)
+        // Fronius Q < 0  untererregt, Q wird bezogen /get)
+        // return value: >0 -> get power from net, <0 -> put power to net
+        return typeof rv === 'number' ? -rv : null;
+    }
+
+    public getGridPassivePhasePowerAsNumber (phase: 1 | 2 | 3, maxAgeSeconds = 20): number | null {
+        if (!this.gridmeter) { return null; }
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = this._gridmeter.createdAt;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        const rv = this._gridmeter.passivePxPower[phase - 1];
+        // Fronius Q > 0  übererregt, Q wird geliefert (put)
+        // Fronius Q < 0  untererregt, Q wird bezogen /get)
+        // return value: >0 -> get power from net, <0 -> put power to net
+        return typeof rv === 'number' ? -rv : null;
+    }
+
+    public getGridPowerFactorAsNumber (maxAgeSeconds = 20): number | null {
+        if (!this.gridmeter) { return null; }
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = this._gridmeter.createdAt;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        const rv = this._gridmeter.powerFactor;
+        // rv < 0 -> induktiv (untererregt, Q bezogen)
+        // rv > 0 -> kapazititv (uebererregt, Q geliefert)
+        // return rv >= 0 ? 1 - rv / 100 : -1 - rv / 100;
+        return rv / 100;
+    }
+
+    public getGridPhasePowerFactorAsNumber (phase: 1 | 2 | 3, maxAgeSeconds = 20): number | null {
+        if (!this.gridmeter) { return null; }
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = this._gridmeter.createdAt;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        const rv = this._gridmeter.powerFactorPx[phase - 1];
+        // rv < 0 -> induktiv (untererregt, Q bezogen)
+        // rv > 0 -> kapazititv (uebererregt, Q geliefert)
+        // return rv >= 0 ? 1 - rv / 100 : -1 - rv / 100;
+        return rv;
+    }
+
+    public getGridFrequencyAsNumber (maxAgeSeconds = 20): number | null {
+        if (!this.gridmeter) { return null; }
+        const tMin = Date.now() - maxAgeSeconds * 1000;
+        const ts = this._gridmeter.createdAt;
+        if (!(ts instanceof Date)  || ts.getTime() < tMin) { return null; }
+        return this._gridmeter.frequency;
+    }
+
     public getPvEastWestActivePowerAsNumber (maxAgeSeconds = 20): number | null {
         if (!this._extPvMeter) { return null; }
         const x = <EnergyMeter>this._extPvMeter['pveastwest'];

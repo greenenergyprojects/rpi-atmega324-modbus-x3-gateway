@@ -365,7 +365,7 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
         return v instanceof Nibe1155Value ? v : null;
     }
 
-    public getOutdoorTempAsNumber (maxAgeSeconds = 30 * 60): number | null {
+    public getOutdoorTempAsNumber (maxAgeSeconds = 90 * 60): number | null {
         return this.getValueAsNumber(this.getOutdoorTemp(), maxAgeSeconds);
     }
 

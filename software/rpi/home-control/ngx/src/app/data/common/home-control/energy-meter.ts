@@ -14,7 +14,12 @@ export interface IEnergyMeter {
     activePxPower?:       number [];
     apparentPower:        number;
     apparentPxPower?:     number [];
-    energyTotal:          number;
+    passivePower?:        number;
+    passivePxPower?:      number [];
+    powerFactor?:         number;
+    powerFactorPx?:       number [];
+    frequency?:           number;
+    energyTotal?:         number;
     energyTotalExported?: number;
     energyTotalImported?: number;
     energyPartitial?:     number [];
@@ -33,6 +38,11 @@ export class EnergyMeter extends DataRecord<IEnergyMeter> implements IEnergyMete
     private _activePxPower:       number [];
     private _apparentPower:       number;
     private _apparentPxPower:     number [];
+    private _passivePower:        number;
+    private _passivePxPower:      number [];
+    private _powerFactor:         number;
+    private _powerFactorPx:       number [];
+    private _frequency:           number;
     private _energyTotal:         number;
     private _energyTotalExported: number;
     private _energyTotalImported: number;
@@ -45,6 +55,12 @@ export class EnergyMeter extends DataRecord<IEnergyMeter> implements IEnergyMete
             if (missing) {
                 throw new Error('missing attribute ' + missing);
             }
+            const attNumbers = [
+                'activePower', 'apparentPower', 'passivePower', 'powerFactor', 'frequency', 'energyTotal', 'energyTotalExported', 'energyTotalImported'
+            ];
+            const attNumberArray = [
+                'voltagePxToN', 'voltagePxToPx', 'activePxPower', 'passivePxPower', 'powerFactorPx', 'apparentPxPower', 'energyPartitial'
+            ];
             let attCnt = 0;
             for (const a of Object.getOwnPropertyNames(data)) {
                 if ( [ 'createdAt' ].indexOf(a) >= 0 ) {
@@ -53,9 +69,9 @@ export class EnergyMeter extends DataRecord<IEnergyMeter> implements IEnergyMete
                     (<any>this)['_' + a] = DataRecord.parseString(data, { attribute: a, validate: true } );
                 } else if ( [ 'numberOfPhases' ].indexOf(a) >= 0 ) {
                     (<any>this)['_' + a] = DataRecord.parseNumber(data, { attribute: a, validate: true, min: 0 } );
-                } else if ( [ 'activePower', 'apparentPower', 'energyTotal', 'energyTotalExported', 'energyTotalImported'  ].indexOf(a) >= 0 ) {
+                } else if ( attNumbers.indexOf(a) >= 0 ) {
                     (<any>this)['_' + a] = DataRecord.parseNumber(data, { attribute: a } );
-                } else if ( [ 'voltagePxToN', 'voltagePxToPx', , 'activePxPower', , 'apparentPxPower', , 'energyPartitial' ].indexOf(a) >= 0 ) {
+                } else if ( attNumberArray.indexOf(a) >= 0 ) {
                     (<any>this)['_' + a] = DataRecord.parseNumberArray(data, { attribute: a, validate: true } );
                 } else {
                     throw new Error('attribute ' + a + ' not found in data:IEnergyMeter');
@@ -76,7 +92,13 @@ export class EnergyMeter extends DataRecord<IEnergyMeter> implements IEnergyMete
             if (!this._voltagePxToPx)   { this._voltagePxToPx = Array(this._numberOfPhases).fill(null); }
             if (!this._activePxPower)   { this._activePxPower = Array(this._numberOfPhases).fill(null); }
             if (!this._apparentPxPower) { this._apparentPxPower = Array(this._numberOfPhases).fill(null); }
+            if (!this._passivePxPower)  { this._passivePxPower = Array(this._numberOfPhases).fill(null); }
+            if (!this._powerFactorPx)   { this._powerFactorPx = Array(this._numberOfPhases).fill(null); }
             if (!this._energyPartitial) { this._energyPartitial = []; }
+
+            if (this._passivePower === undefined) { this._passivePower = null; }
+            if (this._powerFactor === undefined) { this._powerFactor = null; }
+            if (this._frequency === undefined) { this._frequency = null; }
             if (this._energyTotalExported === undefined) { this._energyTotalExported = null; }
             if (this._energyTotalImported === undefined) { this._energyTotalImported = null; }
 
@@ -98,17 +120,22 @@ export class EnergyMeter extends DataRecord<IEnergyMeter> implements IEnergyMete
             apparentPower: this._apparentPower,
             energyTotal:   this._energyTotal
         };
-        if (this._manufacturer)                 { rv.manufacturer = this._manufacturer; }
-        if (this._type)                         { rv.type = this._type; }
-        if (this._serial)                       { rv.serial = this._serial; }
-        if (this._numberOfPhases > 0)           { rv.numberOfPhases = this._numberOfPhases; }
-        if (this._voltagePxToN.length > 0)      { rv.voltagePxToN = [].concat(this._voltagePxToN); }
-        if (this._voltagePxToPx.length > 0)     { rv.voltagePxToPx = [].concat(this._voltagePxToN); }
-        if (this._activePxPower.length > 0)     { rv.activePxPower = [].concat(this._activePxPower); }
-        if (this._apparentPxPower.length > 0)   { rv.apparentPxPower = [].concat(this._apparentPxPower); }
-        if (this._energyPartitial.length > 0)   { rv.energyPartitial = [].concat(this._energyPartitial); }
-        if (this._energyTotalExported !== null) { rv.energyTotalExported = this._energyTotalExported; }
-        if (this._energyTotalImported !== null) { rv.energyTotalImported = this._energyTotalImported; }
+        if (this._manufacturer)                            { rv.manufacturer = this._manufacturer; }
+        if (this._type)                                    { rv.type = this._type; }
+        if (this._serial)                                  { rv.serial = this._serial; }
+        if (this._numberOfPhases > 0)                      { rv.numberOfPhases = this._numberOfPhases; }
+        if (this._voltagePxToN.length > 0)                 { rv.voltagePxToN = [].concat(this._voltagePxToN); }
+        if (this._voltagePxToPx.length > 0)                { rv.voltagePxToPx = [].concat(this._voltagePxToN); }
+        if (this._activePxPower.length > 0)                { rv.activePxPower = [].concat(this._activePxPower); }
+        if (this._apparentPxPower.length > 0)              { rv.apparentPxPower = [].concat(this._apparentPxPower); }
+        if (typeof this._passivePower === 'number')        { rv.passivePower = this._passivePower; }
+        if (this._passivePxPower.length > 0)               { rv.passivePxPower = [].concat(this._passivePxPower); }
+        if (typeof this._powerFactor === 'number')         { rv.powerFactor = this._powerFactor; }
+        if (this._powerFactorPx.length > 0)                { rv.powerFactorPx = [].concat(this._powerFactorPx); }
+        if (typeof this._frequency === 'number')           { rv.frequency = this._frequency; }
+        if (this._energyPartitial.length > 0)              { rv.energyPartitial = [].concat(this._energyPartitial); }
+        if (typeof this._energyTotalExported === 'number') { rv.energyTotalExported = this._energyTotalExported; }
+        if (typeof this._energyTotalImported === 'number') { rv.energyTotalImported = this._energyTotalImported; }
 
         return rv;
     }
@@ -155,6 +182,26 @@ export class EnergyMeter extends DataRecord<IEnergyMeter> implements IEnergyMete
 
     public get apparentPxPower (): number [] {
         return this._apparentPxPower;
+    }
+
+    public get passivePower (): number {
+        return this._passivePower;
+    }
+
+    public get passivePxPower (): number [] {
+        return this._passivePxPower;
+    }
+
+    public get powerFactor (): number {
+        return this._powerFactor;
+    }
+
+    public get powerFactorPx (): number [] {
+        return this._powerFactorPx;
+    }
+
+    public get frequency (): number {
+        return this._frequency;
     }
 
     public get energyTotal (): number {

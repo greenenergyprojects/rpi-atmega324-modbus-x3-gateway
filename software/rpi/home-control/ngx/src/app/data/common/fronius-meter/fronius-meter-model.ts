@@ -65,6 +65,10 @@ export class FroniusMeterModel extends FroniusSymoModel<IFroniusMeterModel, Fron
     public toEnergyMeter (serialNumber: string, preserveDate = true): EnergyMeter {
         let rv: IEnergyMeter;
         try {
+            const x = this._registerValues.regBlocks[0].toObject();
+            // CommonLogger.info('toEnergyMeter() pf    regBlocks[0].values[33] = %s', x.values[33] );
+            // CommonLogger.info('toEnergyMeter() pf_sf regBlocks[0].values[37] = %s', x.values[37] );
+            // CommonLogger.info('toEnergyMeter() pf = %o', this.pf);
             rv = {
                 createdAt:            preserveDate ? this._registerValues.regBlocks[0].at : this._registerValues.regBlocks[0].at.getTime(),
                 manufacturer:        'Fronius',
@@ -77,6 +81,11 @@ export class FroniusMeterModel extends FroniusSymoModel<IFroniusMeterModel, Fron
                 activePxPower:       [ this.wpha.value, this.wphb.value, this.wphc.value ],
                 apparentPower:       this.va.value,
                 apparentPxPower:     [ this.vapha.value, this.vaphb.value, this.vaphc.value ],
+                passivePower:        this.var.value,
+                passivePxPower:      [ this.varpha.value, this.varphb.value, this.varphc.value ],
+                powerFactor:         this.pf.value,
+                powerFactorPx:       [ this.pfpha.value, this.pfphb.value, this.pfphc.value ],
+                frequency:           this.hz.value,
                 energyTotal:         this.totwhimp.value - this.totwhexp.value,
                 energyTotalExported: this.totwhexp.value,
                 energyTotalImported: this.totwhimp.value,
@@ -96,6 +105,11 @@ export class FroniusMeterModel extends FroniusSymoModel<IFroniusMeterModel, Fron
                 activePxPower:       [ null, null, null ],
                 apparentPower:       null,
                 apparentPxPower:     [ null, null, null ],
+                passivePower:        null,
+                passivePxPower:      [ null, null, null ],
+                powerFactor:         null,
+                powerFactorPx:       [ null, null, null ],
+                frequency:           null,
                 energyTotal:         null,
                 energyTotalExported: null,
                 energyTotalImported: null,
