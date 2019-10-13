@@ -383,7 +383,7 @@ class StatisticsRecordFactory extends StatisticsRecord {
             //     }
             // }
 
-            switch (h.id) {
+            switch (h.id) { 
                 case 'p-grid':          this.handleValue(v, this._valueCount, r.getGridActivePowerAsNumber()); break;
                 case 'p-load':          this.handleValue(v, this._valueCount, r.getLoadActivePowerAsNumber()); break;
                 case 'p-storage':       this.handleValue(v, this._valueCount, r.getBatteryPowerAsNumber()); break;
@@ -405,6 +405,8 @@ class StatisticsRecordFactory extends StatisticsRecord {
                 case 'boiler-p':        this.handleValue(v, this._valueCount, r.getBoilerActivePowerAsNumber()); break;
                 case 'boiler-e-daily':  this.handleValue(v, this._valueCount, r.getBoilerEnergyDailyAsNumber()); break;
                 case 'boiler-e':        this.handleValue(v, this._valueCount, r.getBoilerEnergyTotalAsNumber()); break;
+                case 'e-bat-out-daily': this.handleValue(v, this._valueCount, r.getBatteryEnergyOutDailyAsNumber()); break;
+                case 'e-bat-in-daily':  this.handleValue(v, this._valueCount, r.getBatteryEnergyInDailyAsNumber()); break;
                 default: debug.warn('unsupported id %s', h.id); break;
             }
         }

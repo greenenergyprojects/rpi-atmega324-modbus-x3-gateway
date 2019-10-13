@@ -338,6 +338,18 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
         return pBatt;
     }
 
+    public getBatteryEnergyOutDailyAsNumber (maxAgeSeconds = 20, now?: Date): number | null {
+        if (!this._calculated) { return null; }
+        if (typeof this._calculated.batOutDaily !== 'number') { return null; }
+        return this._calculated.batOutDaily;
+    }
+
+    public getBatteryEnergyInDailyAsNumber (maxAgeSeconds = 20, now?: Date): number | null {
+        if (!this._calculated) { return null; }
+        if (typeof this._calculated.batInDaily !== 'number') { return null; }
+        return this._calculated.batInDaily;
+    }
+
     public getBatteryNominalEnergyAsNumber (maxAgeSeconds = 7000): number | null {
         if (!this._froniussymo) { return null; }
         const np = this._froniussymo.nameplate;

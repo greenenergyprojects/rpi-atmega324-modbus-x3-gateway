@@ -386,7 +386,8 @@ export class Nibe1155MonitorRecord extends DataRecord<INibe1155MonitorRecord> im
     }
 
     public getEnergyCompAndElHeaterAsNumber (maxAgeSeconds = 3600): number | null {
-        return this.getValueAsNumber(this.getEnergyCompAndElHeater(), maxAgeSeconds);
+        const rv = this.getValueAsNumber(this.getEnergyCompAndElHeater(), maxAgeSeconds);
+        return typeof rv === 'number' ? rv * 1000 : rv;
     }
 
     // outdoorTempAverage: [40067]

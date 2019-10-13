@@ -12,6 +12,7 @@ import { ISyncButtonConfig } from './components/sync-button.component';
     styleUrls: ['./app.component.css']
 })
 export class AppComponent implements OnInit {
+    VERSION = '1.7.3';
     title = 'Home Control';
     cnt = 1;
     showContent = false;
