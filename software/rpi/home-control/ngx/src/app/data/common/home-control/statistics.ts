@@ -17,6 +17,8 @@ export interface IStatisticDefinition {
     ePvDaily:          IStatisticItemDefinition;
     ePvSDaily:         IStatisticItemDefinition;
     ePvEWDaily:        IStatisticItemDefinition;
+    eBatOutDaily:      IStatisticItemDefinition;
+    eBatInDaily:       IStatisticItemDefinition;
     capBatPercent:     IStatisticItemDefinition;
     tOutdoor:          IStatisticItemDefinition;
     tHeatSupply:       IStatisticItemDefinition;
@@ -283,6 +285,20 @@ export class Statistics {
             shortLabel: 'pv-ew-e-daily',
             label: { en: 'active daily energy from photovoltaik east/west', de: 'Tages-Wirkenergie von Photovoltaik Ost/West' },
             format: { format: '%.01f', unit: 'kWh', func: (v) => Math.round(v / 100) / 10 },
+            type: Statistics.defaultEnergyType
+        },
+        eBatOutDaily: {
+            id: 'eBatOutDaily',
+            shortLabel: 'bat-out-e-daily',
+            label: { en: 'active daily energy from battery', de: 'Tages-Wirkenergie von Batterie' },
+            format: { format: '%.02f', unit: 'kWh', func: (v) => Math.round(v / 100) / 10 },
+            type: Statistics.defaultEnergyType
+        },
+        eBatInDaily: {
+            id: 'eBatInDaily',
+            shortLabel: 'bat-in-e-daily',
+            label: { en: 'active daily energy to battery', de: 'Tages-Wirkenergie zur Batterie' },
+            format: { format: '%.02f', unit: 'kWh', func: (v) => Math.round(v / 100) / 10 },
             type: Statistics.defaultEnergyType
         },
         capBatPercent: {

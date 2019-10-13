@@ -73,8 +73,15 @@ export class StatisticsWorker {
         // });
 
         if (!config.disabled) {
-            for (const cfg of config.data) {
-                this._data.push(new StatisticsData(cfg));
+            let cfg: IStatisticsDataConfig;
+            try {
+                // this._data.push(new StatisticsData(config.data[0]));
+                this._data.push(new StatisticsData(config.data[1]));
+                for (cfg of config.data) {
+                    this._data.push(new StatisticsData(cfg));
+                }
+            } catch (err) {
+                debug.warn('config error in statistics data for file %s\n%e', cfg.file, err);
             }
         }
     }

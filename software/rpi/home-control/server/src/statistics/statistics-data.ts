@@ -47,6 +47,9 @@ export class StatisticsData {
         if (!config.disabled) {
             for (const id of config.ids) {
                 const def = Statistics.defById[id];
+                if (id.startsWith('eBat')) {
+                    debugger;
+                }
                 this._datas[id] = new StatisticsDataCollection(id, config.range, def);
             }
         }

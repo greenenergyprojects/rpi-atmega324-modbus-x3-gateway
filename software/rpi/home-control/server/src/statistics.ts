@@ -39,6 +39,8 @@ export class Statistics {
         { id: 'e-pv-daily', unit: 'Wh', label: 'E(tag)-PV/Wh', hideMin: true, hideAvg: true },
         { id: 'e-pv-s-daily', unit: 'Wh', label: 'E(tag)-PV_Süd/Wh', hideMin: true, hideAvg: true },
         { id: 'e-pv-ew-daily', unit: 'Wh', label: 'E(tag)-PV_Ost_West/Wh', hideMin: true, hideAvg: true },
+        { id: 'e-bat-out-daily', unit: 'Wh', label: 'E(tag)-Bat-out/Wh', hideMin: true, hideAvg: true },
+        { id: 'e-bat-in-daily', unit: 'Wh', label: 'E(tag)-Bat-in/Wh', hideMin: true, hideAvg: true },
         { id: 'e-out', unit: 'Wh', label: 'E-out/Wh', hideMin: true, hideAvg: true },
         { id: 'e-in', unit: 'Wh', label: 'E-in/Wh', hideMin: true, hideAvg: true },
         { id: 'e-pv-s', unit: 'Wh', label: 'E-PV_Süd/Wh', hideMin: true, hideAvg: true },
@@ -383,7 +385,7 @@ class StatisticsRecordFactory extends StatisticsRecord {
             //     }
             // }
 
-            switch (h.id) { 
+            switch (h.id) {
                 case 'p-grid':          this.handleValue(v, this._valueCount, r.getGridActivePowerAsNumber()); break;
                 case 'p-load':          this.handleValue(v, this._valueCount, r.getLoadActivePowerAsNumber()); break;
                 case 'p-storage':       this.handleValue(v, this._valueCount, r.getBatteryPowerAsNumber()); break;
@@ -407,7 +409,7 @@ class StatisticsRecordFactory extends StatisticsRecord {
                 case 'boiler-e':        this.handleValue(v, this._valueCount, r.getBoilerEnergyTotalAsNumber()); break;
                 case 'e-bat-out-daily': this.handleValue(v, this._valueCount, r.getBatteryEnergyOutDailyAsNumber()); break;
                 case 'e-bat-in-daily':  this.handleValue(v, this._valueCount, r.getBatteryEnergyInDailyAsNumber()); break;
-                default: debug.warn('unsupported id %s', h.id); break;
+                default: debug.warn('unsupported id %s (1)', h.id); break;
             }
         }
         this._valueCount++;
@@ -554,6 +556,10 @@ class StatisticsRecordFactory extends StatisticsRecord {
                             s += this.formatLineFragment(h, 0, v);
                             break;
                         }
+                        case 'e-bat-out-daily': case 'e-bat-in-daily': {
+                            s += this.formatLineFragment(h, 0, v);
+                            break;
+                        }
                         case 'boiler-p': {
                             s += this.formatLineFragment(h, 0, v);
                             break;
@@ -566,7 +572,7 @@ class StatisticsRecordFactory extends StatisticsRecord {
                             s += this.formatLineFragment(h, 0, v);
                             break;
                         }
-                        default: debug.warn('unsupported id %s', h.id); break;
+                        default: debug.warn('unsupported id %s (2)', h.id); break;
                     }
                 }
             }

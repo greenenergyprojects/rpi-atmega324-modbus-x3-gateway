@@ -315,6 +315,8 @@ export class StatisticsDataCollection {
             case 'ePvDaily':          rv = Math.round(mr.getPvEnergyDailyAsNumber() * 100) / 100; break;
             case 'ePvSDaily':         rv = Math.round(mr.getPvSouthEnergyDailyAsNumber() * 100) / 100; break;
             case 'ePvEWDaily':        rv = Math.round(mr.getPvEastWestEnergyDailyAsNumber() * 100) / 100; break;
+            case 'eBatOutDaily':      rv = Math.round(mr.getBatteryEnergyOutDailyAsNumber() * 100) / 100; break;
+            case 'eBatInDaily':       rv = Math.round(mr.getBatteryEnergyInDailyAsNumber() * 100) / 100; break;
             case 'capBatPercent':     rv = Math.round(mr.getBatteryEnergyInPercentAsNumber() * 100) / 100; break;
             case 'tOutdoor':          rv = Math.round(mr.getOutdoorTempAsNumber() * 100) / 100; break;
             case 'tHeatSupply':       rv = Math.round(mr.getHeatpumpSupplyS1TempAsNumber() * 100) / 100; break;
