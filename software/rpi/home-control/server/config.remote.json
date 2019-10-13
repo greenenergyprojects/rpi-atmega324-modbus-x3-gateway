@@ -138,7 +138,7 @@
                 "eOut", "eIn", "eOutDaily", "eInDaily", "eBoilerDaily", "eHeatPumpDaily", "ePvDaily", "ePvSDaily", "ePvEWDaily",
                 "capBatPercent",
                 "tOutdoor", "tHeatSupply", "tHeatBuffer", "tHeatSupplyReturn", "tHeatBrineIn", "tHeatBrineOut", "fHeatCompressor",
-                "e-bat-out-daily", "e-bat-in-daily"
+                "eBatOutDaily", "eBatInDaily"
             ],
             "range": "minute",
             "file": {
@@ -155,8 +155,8 @@
                     { "id": "ePvDaily", "title": "E-PV-Tag/kWh", "typ": "max", "factor": 0.001, "format": "%.02f" },
                     { "id": "ePvSDaily", "title": "E-PV-S-Tag/kWh", "typ": "max", "factor": 0.001, "format": "%.02f" },
                     { "id": "ePvEWDaily", "title": "E-PV-EW-Tag/kWh", "typ": "max", "factor": 0.001, "format": "%.02f" },
-                    { "id": "e-bat-out-daily", "title": "E-BAT-Lieferung-Tag/kWh", "typ": "max", "factor": 0.001, "format": "%.02f" },
-                    { "id": "e-bat-in-daily", "title": "E-BAT-Bezug-Tag/kWh", "typ": "max", "factor": 0.001, "format": "%.02f" },
+                    { "id": "eBatOutDaily", "title": "E-BAT-Entladung-Tag/kWh", "typ": "max", "factor": 0.001, "format": "%.02f" },
+                    { "id": "eBatInDaily", "title": "E-BAT-Ladung-Tag/kWh", "typ": "max", "factor": 0.001, "format": "%.02f" },
                     { "id": "capBatPercent", "title": "Bat/%", "typ": "twa", "format": "%.1f" },
                     { "id": "pGrid", "title": "P-Netz/W", "typ": "twa", "format": "%.0f" },
                     { "id": "pBat", "title": "P-Bat/W", "typ": "twa", "format": "%.0f" },
