@@ -47,9 +47,6 @@ export class StatisticsData {
         if (!config.disabled) {
             for (const id of config.ids) {
                 const def = Statistics.defById[id];
-                if (id.startsWith('eBat')) {
-                    debugger;
-                }
                 this._datas[id] = new StatisticsDataCollection(id, config.range, def);
             }
         }
@@ -63,7 +60,7 @@ export class StatisticsData {
                 const coll = this._datas[<StatisticAttribute>id];
                 if (coll.isCollectionFinished(mr.createdAt)) {
                     const o = coll.toObject();
-                    debug.finer('refresh: %o', o);
+                    debug.finer('refresh -> coll finished: %o', o);
                     finishedCollections[coll.id] = coll.clone();
                     // if (coll.id === 'pGrid') {
                     //      debug.info('%O', coll);

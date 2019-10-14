@@ -75,8 +75,6 @@ export class StatisticsWorker {
         if (!config.disabled) {
             let cfg: IStatisticsDataConfig;
             try {
-                // this._data.push(new StatisticsData(config.data[0]));
-                this._data.push(new StatisticsData(config.data[1]));
                 for (cfg of config.data) {
                     this._data.push(new StatisticsData(cfg));
                 }

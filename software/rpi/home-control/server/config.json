@@ -99,6 +99,7 @@
             }
         },
         "data": [{
+            "disabled": true,
             "ids":   [ 
                 "pPv", "pPvS", "pPvEW", "pBat", "pGrid", "pBoiler", "pHeatPump", "pLoad",
                 "eOut", "eIn", "eOutDaily", "eInDaily", "eBoilerDaily", "eHeatPumpDaily", "ePvDaily", "ePvSDaily", "ePvEWDaily", 

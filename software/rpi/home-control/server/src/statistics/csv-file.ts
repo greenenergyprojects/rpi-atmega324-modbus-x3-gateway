@@ -23,8 +23,9 @@ export class CsvFile {
     public async addLine (name: string, header: string, line: string) {
         let s = '';
         let stats: fs.Stats;
+        let saveHeader = false;
         try {
-            const x = await this.readFile(name);
+            const x = await this.readLastHeaderAndLineFromFile(name);
             if (x && x.lastLine) {
                 const pos = x.lastLine.indexOf(',');
                 const f1 = x.lastLine.slice(0, pos);
@@ -34,20 +35,27 @@ export class CsvFile {
             }
             stats = fs.statSync(this._path);
             if (!stats || stats.mtimeMs !== this._lastModifiedMs || stats.size !== this._lastSize) {
-                if (x.headers.length === 0 || x.headers[x.headers.length - 1] !== header) {
-                    s = header + '\n';
+                if (!x || !x.lastHeader || x.lastHeader !== header) {
+                    saveHeader = true;
                 }
             } else if (header !== this._lastHeader) {
-                s = header + '\n';
+                saveHeader = true;
             }
         } catch (err) {
-            s = header + '\n';
+            saveHeader = true;
         }
 
         if (this._lastLineNumber >= 0) {
             this._lastLineNumber++;
         } else {
             this._lastLineNumber = 0;
+        }
+
+        if (saveHeader) {
+            s = header + '\n';
+            debug.fine('%s: save header + line (%d)', this._path, this._lastLineNumber);
+        } else {
+            debug.fine('%s: save line (%d)', this._path, this._lastLineNumber);
         }
 
         s = s + '"' + this._lastLineNumber + '",' + line + '\n';
@@ -63,9 +71,9 @@ export class CsvFile {
     }
 
 
-    private async readFile (name: string): Promise<{ headers: string [], lastLine: string}> {
-        return new Promise<{ headers: string [], lastLine: string}>( (resolve, reject) => {
-            const headers: string [] = [];
+    private async readLastHeaderAndLineFromFile (name: string): Promise<{ lastHeader: string, lastLine: string}> {
+        return new Promise<{ lastHeader: string, lastLine: string}>( (resolve, reject) => {
+            let lastHeader = '';
             let lastLine = '';
             const rs = fs.createReadStream(this._path, { encoding: 'utf8' });
             let s = '';
@@ -80,11 +88,11 @@ export class CsvFile {
                     index++;
                     const pos2 = line.indexOf(',');
                     if (pos2 < 0) {
-                        headers.push(line);
+                        lastHeader = line;
                     } else {
                         const c0 = line.slice(0, pos2);
                         if (!c0.match(/^"[0-9]+"$/)) {
-                            headers.push(line);
+                            lastHeader = line;
                         } else {
                             lastLine = line;
                         }
@@ -95,7 +103,7 @@ export class CsvFile {
                 rs.close();
             });
             rs.on('close', () => {
-                resolve({ headers: headers, lastLine: lastLine });
+                resolve({ lastHeader: lastHeader, lastLine: lastLine });
             });
             rs.on('error', (err) => {
                 reject(err);
