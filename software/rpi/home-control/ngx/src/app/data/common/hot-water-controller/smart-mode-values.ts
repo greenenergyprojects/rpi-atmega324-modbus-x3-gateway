@@ -6,6 +6,8 @@ export interface ISmartModeValues {
     eBatPercent: number | null;
     pBatWatt: number | null;
     pGridWatt: number | null;
+    pPvSouthWatt: number | null;
+    pPvEastWestWatt: number | null;
 }
 
 export class SmartModeValues extends DataRecord<ISmartModeValues> implements ISmartModeValues {
@@ -14,15 +16,17 @@ export class SmartModeValues extends DataRecord<ISmartModeValues> implements ISm
     private _eBatPercent: number | null;
     private _pBatWatt: number;
     private _pGridWatt: number;
+    private _pPvSouthWatt: number;
+    private _pPvEastWestWatt: number;
 
     constructor (data: ISmartModeValues) {
         super(data);
         try {
             const missing = DataRecord.getMissingAttributes( data, [
-                'createdAt', 'eBatPercent', 'pBatWatt', 'pGridWatt'
+                'createdAt', 'eBatPercent', 'pBatWatt', 'pGridWatt', 'pPvSouthWatt', 'pPvEastWestWatt'
             ]);
             if (missing) {
-                throw new Error('missing attribute ' + missing);
+                    throw new Error('missing attribute ' + missing);
             }
             let attCnt = 0;
             for (const a of Object.getOwnPropertyNames(data)) {
@@ -31,7 +35,7 @@ export class SmartModeValues extends DataRecord<ISmartModeValues> implements ISm
                 } else if ( [ 'eBatPercent' ].indexOf(a) >= 0 ) {
                     (<any>this)['_' + a] =
                         DataRecord.parseNumber(data, { attribute: a, validate: true, min: 0, max: 100, allowString: true, allowNull: true } );
-                } else if ( [ 'pGridWatt', 'pBatWatt' ].indexOf(a) >= 0 ) {
+                } else if ( [ 'pGridWatt', 'pBatWatt', 'pPvSouthWatt', 'pPvEastWestWatt' ].indexOf(a) >= 0 ) {
                     (<any>this)['_' + a] = DataRecord.parseNumber(data, { attribute: a, validate: true, allowString: true, allowNull: true } );
                 } else {
                     throw new Error('attribute ' + a + ' not found in data:ISmartModeParameter');
@@ -49,10 +53,12 @@ export class SmartModeValues extends DataRecord<ISmartModeValues> implements ISm
 
     public toObject (convertDate = false): ISmartModeValues {
         const rv: ISmartModeValues = {
-            createdAt:      convertDate ? this._createdAt.getTime() : this._createdAt,
-            eBatPercent:    this._eBatPercent,
-            pBatWatt:       this._pBatWatt,
-            pGridWatt:      this._pGridWatt
+            createdAt:       convertDate ? this._createdAt.getTime() : this._createdAt,
+            eBatPercent:     this._eBatPercent,
+            pBatWatt:        this._pBatWatt,
+            pGridWatt:       this._pGridWatt,
+            pPvSouthWatt:    this._pPvSouthWatt,
+            pPvEastWestWatt: this._pPvEastWestWatt
         };
         return rv;
     }
@@ -71,6 +77,14 @@ export class SmartModeValues extends DataRecord<ISmartModeValues> implements ISm
 
     public get pGridWatt (): number {
         return this._pGridWatt;
+    }
+
+    public get pPvSouthWatt (): number {
+        return this._pPvSouthWatt;
+    }
+
+    public get pPvEastWestWatt (): number {
+        return this._pPvEastWestWatt;
     }
 
 }

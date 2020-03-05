@@ -1,6 +1,40 @@
-EESchema Schematic File Version 4
+EESchema Schematic File Version 2
+LIBS:rpi-atmega324-modbus-x3-gateway-rescue
+LIBS:power
+LIBS:device
+LIBS:switches
+LIBS:relays
+LIBS:motors
+LIBS:transistors
+LIBS:conn
+LIBS:linear
+LIBS:regul
+LIBS:74xx
+LIBS:cmos4000
+LIBS:adc-dac
+LIBS:memory
+LIBS:xilinx
+LIBS:microcontrollers
+LIBS:dsp
+LIBS:microchip
+LIBS:analog_switches
+LIBS:motorola
+LIBS:texas
+LIBS:intel
+LIBS:audio
+LIBS:interface
+LIBS:digital-audio
+LIBS:philips
+LIBS:display
+LIBS:cypress
+LIBS:siliconi
+LIBS:opto
+LIBS:atmel
+LIBS:contrib
+LIBS:valves
+LIBS:import2
 LIBS:rpi-atmega324-modbus-x3-gateway-cache
-EELAYER 26 0
+EELAYER 25 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -15,7 +49,7 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L rpi-atmega324-modbus-x3-gateway-rescue:Raspberry_Pi_2+ J1
+L Raspberry_Pi_2+ J1
 U 1 1 5B8BF88A
 P 3300 3100
 F 0 "J1" H 4000 3550 50  0000 C CNN
@@ -52,7 +86,7 @@ F6 "MISO" O L 7850 3400 60
 F7 "USB-5V" O L 7850 2900 60 
 $EndSheet
 $Comp
-L rpi-atmega324-modbus-x3-gateway-rescue:+3.3V #PWR01
+L +3.3V #PWR01
 U 1 1 5B8BF7CC
 P 3000 2300
 F 0 "#PWR01" H 3000 2150 50  0001 C CNN
@@ -63,7 +97,7 @@ F 3 "" H 3000 2300 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L rpi-atmega324-modbus-x3-gateway-rescue:+5V #PWR02
+L +5V #PWR02
 U 1 1 5B8BF7FE
 P 4600 1500
 F 0 "#PWR02" H 4600 1350 50  0001 C CNN
@@ -74,7 +108,7 @@ F 3 "" H 4600 1500 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L rpi-atmega324-modbus-x3-gateway-rescue:GND #PWR03
+L GND #PWR03
 U 1 1 5B8BF820
 P 2900 6500
 F 0 "#PWR03" H 2900 6250 50  0001 C CNN
@@ -85,7 +119,7 @@ F 3 "" H 2900 6500 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	3000 2300 3000 2500
+	3000 2300 3000 2600
 NoConn ~ 2400 3000
 NoConn ~ 2400 3100
 NoConn ~ 2400 3200
@@ -115,7 +149,7 @@ NoConn ~ 2400 5400
 NoConn ~ 2400 5500
 NoConn ~ 2400 5600
 Wire Wire Line
-	2900 6300 3000 6300
+	2900 6300 3600 6300
 Wire Wire Line
 	3600 6300 3600 6200
 Connection ~ 2900 6300
@@ -148,9 +182,9 @@ Wire Wire Line
 Connection ~ 5000 2400
 Connection ~ 4600 2400
 Wire Wire Line
-	3500 2400 3500 2500
+	3500 2400 3500 2600
 $Comp
-L rpi-atmega324-modbus-x3-gateway-rescue:PWR_FLAG #FLG04
+L PWR_FLAG #FLG04
 U 1 1 5B8F6C0B
 P 5250 2300
 F 0 "#FLG04" H 5250 2375 50  0001 C CNN
@@ -164,9 +198,9 @@ Wire Wire Line
 	5250 2400 5250 2300
 Connection ~ 5250 2400
 Wire Wire Line
-	3500 2400 4600 2400
+	3500 2400 7100 2400
 $Comp
-L rpi-atmega324-modbus-x3-gateway-rescue:HLK-PM01 U8
+L HLK-PM01 U8
 U 1 1 5B8FBF97
 P 3900 1800
 F 0 "U8" H 3150 2050 50  0000 L BNN
@@ -177,11 +211,11 @@ F 3 "" H 3450 1500 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	2150 1700 2650 1700
+	2150 1700 3000 1700
 Wire Wire Line
-	2150 1800 2900 1800
+	2150 1800 3000 1800
 $Comp
-L rpi-atmega324-modbus-x3-gateway-rescue:GND #PWR05
+L GND #PWR05
 U 1 1 5B8FD6FE
 P 4000 1900
 F 0 "#PWR05" H 4000 1650 50  0001 C CNN
@@ -192,7 +226,7 @@ F 3 "" H 4000 1900 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L rpi-atmega324-modbus-x3-gateway-rescue:D_Schottky D18
+L D_Schottky D18
 U 1 1 5B8FDA4D
 P 4350 1700
 F 0 "D18" H 4350 1800 50  0000 C CNN
@@ -207,10 +241,10 @@ Wire Wire Line
 Wire Wire Line
 	4500 1700 4600 1700
 Wire Wire Line
-	4600 1500 4600 1700
+	4600 1500 4600 2400
 Connection ~ 4600 1700
 $Comp
-L rpi-atmega324-modbus-x3-gateway-rescue:PWR_FLAG #FLG06
+L PWR_FLAG #FLG06
 U 1 1 5B8FED55
 P 2900 1400
 F 0 "#FLG06" H 2900 1475 50  0001 C CNN
@@ -221,7 +255,7 @@ F 3 "" H 2900 1400 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L rpi-atmega324-modbus-x3-gateway-rescue:PWR_FLAG #FLG07
+L PWR_FLAG #FLG07
 U 1 1 5B8FEDC0
 P 2650 1200
 F 0 "#FLG07" H 2650 1275 50  0001 C CNN
@@ -242,12 +276,12 @@ Wire Wire Line
 Wire Wire Line
 	4000 1800 3900 1800
 Wire Wire Line
-	2900 6200 2900 6300
+	2900 6200 2900 6500
 Wire Wire Line
 	3000 6300 3000 6200
 Connection ~ 3000 6300
 $Comp
-L rpi-atmega324-modbus-x3-gateway-rescue:Screw_Terminal_01x03 J37
+L Screw_Terminal_01x03 J37
 U 1 1 5B9B43C3
 P 1950 1800
 F 0 "J37" H 1950 2000 50  0000 C CNN
@@ -258,7 +292,7 @@ F 3 "" H 1950 1800 50  0001 C CNN
 	-1   0    0    -1  
 $EndComp
 $Comp
-L rpi-atmega324-modbus-x3-gateway-rescue:R R44
+L R R44
 U 1 1 5B9B46B9
 P 2550 2150
 F 0 "R44" H 2700 2250 50  0000 C CNN
@@ -269,7 +303,7 @@ F 3 "" H 2550 2150 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L rpi-atmega324-modbus-x3-gateway-rescue:C C18
+L C C18
 U 1 1 5B9B4843
 P 2350 2150
 F 0 "C18" H 2200 2250 50  0000 L CNN
@@ -282,14 +316,14 @@ $EndComp
 Wire Wire Line
 	2350 2300 2350 2350
 Wire Wire Line
-	2350 2350 2450 2350
+	2350 2350 2550 2350
 Wire Wire Line
 	2550 2350 2550 2300
 Wire Wire Line
 	2450 2400 2450 2350
 Connection ~ 2450 2350
 Wire Wire Line
-	2150 1900 2350 1900
+	2150 1900 2550 1900
 Wire Wire Line
 	2550 1900 2550 2000
 Wire Wire Line
@@ -327,7 +361,7 @@ Connection ~ 3500 2500
 Wire Wire Line
 	3600 2600 3600 2500
 $Comp
-L rpi-atmega324-modbus-x3-gateway-rescue:GND #PWR08
+L GND #PWR08
 U 1 1 5B9EC2F9
 P 2450 2400
 F 0 "#PWR08" H 2450 2150 50  0001 C CNN
@@ -337,38 +371,4 @@ F 3 "" H 2450 2400 50  0001 C CNN
 	1    2450 2400
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	2900 6300 2900 6500
-Wire Wire Line
-	5000 2400 5250 2400
-Wire Wire Line
-	4600 2400 5000 2400
-Wire Wire Line
-	5250 2400 7100 2400
-Wire Wire Line
-	4600 1700 4600 2400
-Wire Wire Line
-	2650 1700 3000 1700
-Wire Wire Line
-	2900 1800 3000 1800
-Wire Wire Line
-	3000 6300 3100 6300
-Wire Wire Line
-	2450 2350 2550 2350
-Wire Wire Line
-	2350 1900 2550 1900
-Wire Wire Line
-	3100 6300 3200 6300
-Wire Wire Line
-	3200 6300 3300 6300
-Wire Wire Line
-	3300 6300 3400 6300
-Wire Wire Line
-	3400 6300 3500 6300
-Wire Wire Line
-	3500 6300 3600 6300
-Wire Wire Line
-	3000 2500 3000 2600
-Wire Wire Line
-	3500 2500 3500 2600
 $EndSCHEMATC
