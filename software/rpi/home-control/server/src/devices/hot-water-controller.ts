@@ -8,6 +8,7 @@ import { IMonitorRecord, MonitorRecord } from '../data/common/hot-water-controll
 import { ControllerParameter } from '../data/common/hot-water-controller/controller-parameter';
 import { IControllerStatus, ControllerStatus } from '../data/common/hot-water-controller/controller-status';
 import { Monitor } from '../monitor';
+import { ISmartModeValues, SmartModeValues } from '../data/common/hot-water-controller/smart-mode-values';
 
 
 interface IHotWaterControllerConfig {
@@ -114,19 +115,28 @@ export class HotWaterController {
 
         const options = Object.assign({}, this._options);
         const mr = Monitor.getInstance().getLatestMonitorRecord();
-        const eBat = mr && mr.getBatteryEnergyInPercentAsNumber();
-        const pBat = mr && mr.getBatteryPowerAsNumber();
-        const pGrid = mr && mr.getGridActivePowerAsNumber();
-        const pPvSouth = mr && mr.getPvSouthActivePowerAsNumber();
-        const pPvEastWest = mr && mr.getPvEastWestActivePowerAsNumber();
-        options.path = '/monitor?eBat=' + Math.round(eBat) + '&pBat=' + Math.round(pBat) + '&pGrid=' + Math.round(pGrid) +
-                       '&pPvSouth=' + Math.round(pPvSouth) + '&pPvEastWest=' + Math.round(pPvEastWest);
+        const x: ISmartModeValues = {
+            createdAt:       Date.now(),
+            eBatPercent:     mr && mr.getBatteryEnergyInPercentAsNumber(),
+            pBatWatt:        mr && mr.getBatteryPowerAsNumber(),
+            pGridWatt:       mr && mr.getGridActivePowerAsNumber(),
+            pPvSouthWatt:    mr && mr.getPvSouthActivePowerAsNumber(),
+            pPvEastWestWatt: mr && mr.getPvEastWestActivePowerAsNumber(),
+            pHeatSystemWatt: mr && mr.getHeatpumpPowerAsNumber(),
+            pOthersWatt:     0
+        };
+
+        options.path = '/monitor';
+        let firstQueryParam = true;
+        for (const att of Object.getOwnPropertyNames(x)) {
+            const v = (x as any)[att];
+            if (typeof v === 'number') {
+                options.path += (firstQueryParam ? '?' : '&');
+                options.path += att + '=' + Math.round(v);
+                firstQueryParam = false;
+            }
+        }
         debug.finer('--> path = %s', options.path);
-        // if (eBat !== null && pGrid !== null) {
-        //     options.path = '/monitor?eBat=' + Math.round(eBat) + '&pBat=' + Math.round(pBat) + '&pGrid=' + Math.round(pGrid);
-        // } else {
-        //     options.path = '/monitor';
-        // }
 
         this._getPendingSince = new Date();
         debug.finest('send request %s:%s', options.host, options.path);

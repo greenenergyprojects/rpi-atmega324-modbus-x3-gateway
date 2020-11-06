@@ -223,6 +223,7 @@ gulp.task('remoteStart', function (done) {
 
 gulp.task('cleanAll', gulp.parallel(['clean', 'remoteClean']));
 gulp.task('build', gulp.series(['transpile', 'copyFiles']));
+gulp.task('cleanAndBuild', gulp.series(['clean', 'build']));
 gulp.task('buildAndLaunchOnRemote', gulp.series(['build', 'remotePlatform', 'remoteStart' ]));
 gulp.task('buildAndCopyToRemote', gulp.series(['build', 'remotePlatform' ]));
 gulp.task('start', gulp.series(['build', 'remoteStart']));

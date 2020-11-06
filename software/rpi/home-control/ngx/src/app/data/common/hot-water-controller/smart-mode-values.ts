@@ -8,6 +8,8 @@ export interface ISmartModeValues {
     pGridWatt: number | null;
     pPvSouthWatt: number | null;
     pPvEastWestWatt: number | null;
+    pHeatSystemWatt: number | null;
+    pOthersWatt: number | null;
 }
 
 export class SmartModeValues extends DataRecord<ISmartModeValues> implements ISmartModeValues {
@@ -18,12 +20,15 @@ export class SmartModeValues extends DataRecord<ISmartModeValues> implements ISm
     private _pGridWatt: number;
     private _pPvSouthWatt: number;
     private _pPvEastWestWatt: number;
+    private _pHeatSystemWatt: number;
+    private _pOthersWatt: number;
 
     constructor (data: ISmartModeValues) {
         super(data);
         try {
             const missing = DataRecord.getMissingAttributes( data, [
-                'createdAt', 'eBatPercent', 'pBatWatt', 'pGridWatt', 'pPvSouthWatt', 'pPvEastWestWatt'
+                'createdAt', 'eBatPercent', 'pBatWatt', 'pGridWatt', 'pPvSouthWatt', 'pPvEastWestWatt',
+                'pHeatSystemWatt', 'pOthersWatt'
             ]);
             if (missing) {
                     throw new Error('missing attribute ' + missing);
@@ -35,7 +40,7 @@ export class SmartModeValues extends DataRecord<ISmartModeValues> implements ISm
                 } else if ( [ 'eBatPercent' ].indexOf(a) >= 0 ) {
                     (<any>this)['_' + a] =
                         DataRecord.parseNumber(data, { attribute: a, validate: true, min: 0, max: 100, allowString: true, allowNull: true } );
-                } else if ( [ 'pGridWatt', 'pBatWatt', 'pPvSouthWatt', 'pPvEastWestWatt' ].indexOf(a) >= 0 ) {
+                } else if ( [ 'pGridWatt', 'pBatWatt', 'pPvSouthWatt', 'pPvEastWestWatt', 'pHeatSystemWatt', 'pOthersWatt' ].indexOf(a) >= 0 ) {
                     (<any>this)['_' + a] = DataRecord.parseNumber(data, { attribute: a, validate: true, allowString: true, allowNull: true } );
                 } else {
                     throw new Error('attribute ' + a + ' not found in data:ISmartModeParameter');
@@ -58,7 +63,9 @@ export class SmartModeValues extends DataRecord<ISmartModeValues> implements ISm
             pBatWatt:        this._pBatWatt,
             pGridWatt:       this._pGridWatt,
             pPvSouthWatt:    this._pPvSouthWatt,
-            pPvEastWestWatt: this._pPvEastWestWatt
+            pPvEastWestWatt: this._pPvEastWestWatt,
+            pHeatSystemWatt: this._pHeatSystemWatt,
+            pOthersWatt:     this._pOthersWatt
         };
         return rv;
     }
@@ -86,6 +93,15 @@ export class SmartModeValues extends DataRecord<ISmartModeValues> implements ISm
     public get pPvEastWestWatt (): number {
         return this._pPvEastWestWatt;
     }
+
+    public get pHeatSystemWatt (): number {
+        return this._pHeatSystemWatt;
+    }
+
+    public get pOthersWatt (): number {
+        return this._pOthersWatt;
+    }
+
 
 }
 

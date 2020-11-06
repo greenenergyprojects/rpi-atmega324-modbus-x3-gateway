@@ -40,6 +40,7 @@ export class BoilerControllerComponent implements OnInit, OnDestroy {
     private _eBatMin: IInput;
     private _minWatts: IInput;
     private _maxWatts: IInput;
+    private _minBatWatts: IInput;
 
     private _lastMonitorRecord: BoilerMonitorRecord;
 
@@ -64,6 +65,7 @@ export class BoilerControllerComponent implements OnInit, OnDestroy {
                         this._inputPower.hidden = true;
                         this._minWatts.hidden = true;
                         this._maxWatts.hidden = true;
+                        this._minBatWatts.hidden = true;
                         break;
                     }
 
@@ -71,6 +73,7 @@ export class BoilerControllerComponent implements OnInit, OnDestroy {
                         this._eBatMin.hidden = true;
                         this._minWatts.hidden = true;
                         this._maxWatts.hidden = true;
+                        this._minBatWatts.hidden = true;
                         if (this._lastMonitorRecord) {
                             const p = this._lastMonitorRecord.getActivePowerAsNumber();
                             if (p > 0) {
@@ -88,6 +91,7 @@ export class BoilerControllerComponent implements OnInit, OnDestroy {
                         this._eBatMin.hidden = false;
                         this._minWatts.hidden = false;
                         this._maxWatts.hidden = false;
+                        this._minBatWatts.hidden = false;
                         if (this._lastMonitorRecord) {
                             this._inputPower.validator.value = 2000;
                         }
@@ -113,7 +117,7 @@ export class BoilerControllerComponent implements OnInit, OnDestroy {
             id: 'idEBatMin', type: 'number', key: 'E-Batt / %', name: 'ebatmin',
             min: 0, max: 100, hidden: true, validator: null, pattern: '[0-9]*', mode: ''
         };
-        this._eBatMin.validator = new ValidatorElement<number>(90, null, (e, n, v) => {
+        this._eBatMin.validator = new ValidatorElement<number>(80, null, (e, n, v) => {
             if (Number.isNaN(+v)) { return false; }
             if (+v < 0) { return false; }
             if (+v > 100) { return false; }
@@ -142,9 +146,19 @@ export class BoilerControllerComponent implements OnInit, OnDestroy {
             return true;
         });
 
+        this._minBatWatts = {
+            id: 'idpBatMin', type: 'number', key: 'PBat-Min / W', name: 'batminwatts',
+            min: 0, max: 6000, hidden: true, validator: null, pattern: '[0-9]*', mode: ''
+        };
+        this._minBatWatts.validator = new ValidatorElement<number>(200, null, (e, n, v) => {
+            if (Number.isNaN(+v)) { return false; }
+            if (+v < 0) { return false; }
+            if (+v > 6000) { return false; }
+            return true;
+        });
 
         this.inputs = [
-            this._inputPower, this._eBatMin, this._minWatts, this._maxWatts
+            this._inputPower, this._eBatMin, this._minWatts, this._maxWatts, this._minBatWatts
         ];
 
     }
@@ -172,9 +186,10 @@ export class BoilerControllerComponent implements OnInit, OnDestroy {
                 mode:             <ControllerMode>this.validatorMode.value,
                 desiredWatts:     this._inputPower.validator.value,
                 smart: {
-                    minEBatPercent: this._eBatMin.validator.value,
-                    minWatts:       this._minWatts.validator.value,
-                    maxWatts:       this._maxWatts.validator.value
+                    minEBatPercent:   this._eBatMin.validator.value,
+                    minWatts:         this._minWatts.validator.value,
+                    maxWatts:         this._maxWatts.validator.value,
+                    minPBatLoadWatts: this._minBatWatts.validator.value
                 }
             };
             if (pData.mode === ControllerMode.off) {

@@ -61,6 +61,24 @@
             "internalConsoleOptions": "openOnSessionStart"
         },
         {
+            "name": "Attach RPI (9229)",
+            "address": "pi-hc",
+            "remoteRoot": "/home/pi/rpi/home-control/",
+            "smartStep": true,
+            "stopOnEntry": false,
+            "type": "node",
+            "request": "attach",
+            // "cwd": "${workspaceRoot}/dist",
+            "outFiles": [ "${workspaceRoot}/server/dist/*.js" ],
+            // "trace": "all",
+            "trace": false,
+            "sourceMaps": true,
+            "port": 9229,
+            "restart": false,
+            "localRoot": "${workspaceRoot}/",
+            "internalConsoleOptions": "openOnSessionStart"
+        },
+        {
             "name": "Attach RPI/statistics (9230)",
             "address": "pi-hc",
             "remoteRoot": "/home/pi/rpi/home-control/server/",
