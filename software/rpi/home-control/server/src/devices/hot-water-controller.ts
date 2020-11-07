@@ -8,7 +8,7 @@ import { IMonitorRecord, MonitorRecord } from '../data/common/hot-water-controll
 import { ControllerParameter } from '../data/common/hot-water-controller/controller-parameter';
 import { IControllerStatus, ControllerStatus } from '../data/common/hot-water-controller/controller-status';
 import { Monitor } from '../monitor';
-import { ISmartModeValues, SmartModeValues } from '../data/common/hot-water-controller/smart-mode-values';
+import { BatStateType, ISmartModeValues, SmartModeValues } from '../data/common/hot-water-controller/smart-mode-values';
 
 
 interface IHotWaterControllerConfig {
@@ -123,7 +123,8 @@ export class HotWaterController {
             pPvSouthWatt:    mr && mr.getPvSouthActivePowerAsNumber(),
             pPvEastWestWatt: mr && mr.getPvEastWestActivePowerAsNumber(),
             pHeatSystemWatt: mr && mr.getHeatpumpPowerAsNumber(),
-            pOthersWatt:     0
+            pOthersWatt:     0,
+            batState:        (mr && mr.getBatteryStateAsString()) as BatStateType
         };
 
         options.path = '/monitor';
@@ -134,6 +135,11 @@ export class HotWaterController {
                 options.path += (firstQueryParam ? '?' : '&');
                 options.path += att + '=' + Math.round(v);
                 firstQueryParam = false;
+            } else if (typeof v === 'string') {
+                options.path += (firstQueryParam ? '?' : '&');
+                options.path += att + '=' + v;
+            } else {
+                debug.warn('invalid attribute %s, not sending in request', att);
             }
         }
         debug.finer('--> path = %s', options.path);

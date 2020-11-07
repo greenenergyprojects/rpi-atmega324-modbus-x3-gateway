@@ -35,7 +35,7 @@ export class MonitorRecord extends DataRecord<IMonitorRecord> implements IMonito
                         // Bug work arround
                         data.controller.smartModeValues.createdAt = Date.now();
                     }
-                    console.log('\n\n\n----------------->', data.controller);
+                    // console.log('\n\n\n----------------->', data.controller);
                     this._controller = new ControllerStatus(data.controller);
                 } else if ( [ 'energyDaily', '_energyTotal' ].indexOf(a) >= 0 ) {
                     const x: IValue = (<any>data)[a];

@@ -145,8 +145,9 @@ export abstract class DataRecord<T> {
         if (!options || !options.attribute) { throw new ParseStringError('missing options/attribute name'); }
         if (!data || !data[options.attribute]) { throw new ParseStringError('missing data/attribute name'); }
         if (!options.validate && (!data || data[options.attribute] === undefined || data[options.attribute] === null)) { return null; }
+
+        let rv: string;
         try {
-            let rv: string;
             const value = data[options.attribute];
             if (typeof value === 'string') {
                 if (!options.notEmpty && value === '') { throw new Error('empty strings not allowed'); }
@@ -154,10 +155,32 @@ export abstract class DataRecord<T> {
             } else {
                 throw new Error('value has invalid type (' + typeof value + ')');
             }
-            return rv;
         } catch (err) {
-            throw new ParseStringError(options.attribute + ' parse error', err);
+            throw new ParseStringError(options.attribute + ' parse value error', err);
         }
+
+        if (options.allowed) {
+            let valid = false;
+            if (Array.isArray(options.allowed.values)) {
+                for (const v of options.allowed.values) {
+                    if (v instanceof RegExp) {
+                        if (rv.match(v)) {
+                            valid = true;
+                        }
+                    } else if (rv === v) {
+                        valid = true;
+                    }
+                }
+            }
+            if (!valid) {
+                if (typeof options.allowed.default !== 'string') {
+                    throw new ParseStringError(options.attribute + ' parse value ' + rv + ' not matching allowed values');
+                }
+                rv = options.allowed.default;
+            }
+        }
+
+        return rv;
     }
 
     static parseStringArray (data: any, options: IParseStringArrayOptions): string [] {
@@ -268,6 +291,7 @@ export interface IParseStringOptions {
     attribute: string;
     validate?: boolean;
     notEmpty?: boolean;
+    allowed?: { values: (string | RegExp)[], default: string };
 }
 
 export interface IParseStringArrayOptions {
