@@ -16,19 +16,19 @@
         "remoteTokenTimeout": "23:59:59",
         "remoteTokenMinimumSeconds": 60
     },
-    "database-users": {
-        "users": [
-            { "userid": "test", "disabled": false, "passwordType": "raw", "password": "geheim" },
-            { "userid": "manfred", "isAdmin": true, "passwordType": "sha-256", "password": "ec53103cc64f4c2e1a97450d835e1e19c81b68cdd4ea8d48863ed232f73c916d" },
-            { "userid": "sabine", "passwordType": "sha-256", "password": "def5c2d284e33ab044b533c719523ef394b9f113250e88aabd97e7ddf6555c5d" }
-        ]
-    },
     "gateway": {
         "disabled": false,
         "user": { "userid": "test", "passwordType": "raw", "password": "geheim" },
          "master": { "host": "192.168.1.201", "port": 8081 },
          "timeoutMillis": 700,
          "pollingPeriodMillis": 2000
+    },
+    "database-users": {
+        "users": [
+            { "userid": "test", "disabled": true,  "passwordType": "raw", "password": "geheim" },
+            { "userid": "manfred", "isAdmin": true, "passwordType": "sha-256", "password": "ec53103cc64f4c2e1a97450d835e1e19c81b68cdd4ea8d48863ed232f73c916d" },
+            { "userid": "sabine", "passwordType": "sha-256", "password": "def5c2d284e33ab044b533c719523ef394b9f113250e88aabd97e7ddf6555c5d" }
+        ]
     },
     "froniusSymo": {
         "disabled": true,
@@ -52,7 +52,7 @@
         "type": "froniusmeter",
         "modbusAddress": 240,
         "pollingMillis": 1000,
-        "timeoutMillis": 5000
+        "timeoutMillis": 10000
     },
     "monitor": {
         "disabled": false,
@@ -62,13 +62,6 @@
         "logfile": { "type": "csv", "path": "/var/lib/home-control/home-control_%Y-%M-%D.csv" },
         "debugFile": { "path": "/var/lib/home-control/home-control-debug_%Y-%M-%D.csv" },
         "tempFile": { "path": "/var/lib/home-control/.monitor-temp", "backups": 3 }
-    },
-    "statistics-old": {
-        "disabled": true,
-        "timeslotSeconds": 60,
-        "tmpFile": "/var/lib/home-control/.tmpDatabase",
-        "dbtyp": "csvfile",
-        "csvfile": { "filename": "/var/lib/home-control/home-control-data_%Y-%M-%D.csv" }
     },
     "archive": {
         "disabled": false,
@@ -85,59 +78,20 @@
     "statistics": {
         "disabled": false,
         "cache": {
-            "disabled": false,
-            "init": true,
-            "backup": { "path": "/var/lib/home-control/statistics-cache.json", "periodSeconds": 10, "rotate": 2 },
-            "save": { 
-                "minute": { "path": "/var/lib/home-control/%YYYY/%YYYY-%MM/%YYYY-%MM-%DD/home-control-values-minute_%YYYY-%MM-%DD_%hh%m.json.gz", "options": { "pretty": true } },
-                "min10":  { "path": "/var/lib/home-control/%YYYY/%YYYY-%MM/%YYYY-%MM-%DD/home-control-values-min10_%YYYY-%MM-%DD_%hh%m.json.gz", "options": { "pretty": true } },
-                "hour":   { "path": "/var/lib/home-control/%YYYY/%YYYY-%MM/%YYYY-%MM-%DD/home-control-values-hour_%YYYY-%MM-%DD_%hh.json.gz", "options": { "pretty": true } },
-                "day":    { "path": "/var/lib/home-control/%YYYY/%YYYY-%MM/%YYYY-%MM-%DD/home-control-values-day_%YYYY-%MM-%DD.json.gz", "options": { "pretty": true } },
-                "week":   { "path": "/var/lib/home-control/%YYYY/%YYYY-weeks/home-control-values-week_KW%WWW.json.gz", "options": { "pretty": true } },
-                "month":  { "path": "/var/lib/home-control/%YYYY/%YYYY-%MM/home-control-values-month_%YYYY-%MM.json.gz", "options": { "pretty": true } },
-                "year":   { "path": "/var/lib/home-control/%YYYY/home-control-values-year_%YYYY.json.gz", "options": { "pretty": true } }
-            }
-        },
+             "disabled": false,
+             "init": true,
+             "backup": { "path": "/var/lib/home-control/logs/statistics-cache.json", "periodSeconds": 30, "rotate": 3 },
+             "save": {
+                 "minute": { "path": "/var/lib/home-control/%YYYY/%YYYY-%MM/%YYYY-%MM-%DD/home-control-values-minute_%YYYY-%MM-%DD_%hh%m.json.gz", "options": { "pretty": true } },
+                 "min10":  { "path": "/var/lib/home-control/%YYYY/%YYYY-%MM/%YYYY-%MM-%DD/home-control-values-min10_%YYYY-%MM-%DD_%hh%m.json.gz", "options": { "pretty": true } },
+                 "hour":   { "path": "/var/lib/home-control/%YYYY/%YYYY-%MM/%YYYY-%MM-%DD/home-control-values-hour_%YYYY-%MM-%DD_%hh.json.gz", "options": { "pretty": true } },
+                 "day":    { "path": "/var/lib/home-control/%YYYY/%YYYY-%MM/%YYYY-%MM-%DD/home-control-values-day_%YYYY-%MM-%DD.json.gz", "options": { "pretty": true } },
+                 "week":   { "path": "/var/lib/home-control/%YYYY/%YYYY-weeks/home-control-values-week_%YYYY-KW%WW.json.gz", "options": { "pretty": true } },
+                 "month":  { "path": "/var/lib/home-control/%YYYY/%YYYY-%MM/home-control-values-month_%YYYY-%MM.json.gz", "options": { "pretty": true } },
+                 "year":   { "path": "/var/lib/home-control/%YYYY/home-control-values-year_%YYYY.json.gz", "options": { "pretty": true } }
+             }
+         },
         "data": [{
-            "disabled": true,
-            "ids":   [ 
-                "pPv", "pPvS", "pPvEW", "pBat", "pGrid", "pBoiler", "pHeatPump", "pLoad",
-                "eOut", "eIn", "eOutDaily", "eInDaily", "eBoilerDaily", "eHeatPumpDaily", "ePvDaily", "ePvSDaily", "ePvEWDaily", 
-                "capBatPercent",
-                "tOutdoor", "tHeatSupply", "tHeatBuffer", "tHeatSupplyReturn", "tHeatBrineIn", "tHeatBrineOut", "fHeatCompressor"
-            ],
-            "range": "minute",
-            "file": {
-                "name": "Home Control",
-                "typ": "csv",
-                "path": "/tmp/hc_%YYYY-%MM-%DD.csv",
-                "fields": [
-                    { "id": "count", "title": "Anzahl" },
-                    { "id": "fromTime", "title": "Beginn (%YYYY-%MM-%DD)", "format": "%hh:%mm:%ss" },
-                    { "id": "toTime", "title": "Ende" },
-                    { "id": "tOutdoor", "title": "t-Außen/°C","typ": "twa", "format": "%.01f" },
-                    { "id": "eOutDaily", "title": "E-Lieferung-Tag/kWh", "typ": "max", "factor": 0.001, "format": "%.02f" },
-                    { "id": "eInDaily", "title": "E-Bezug-Tag/kWh", "typ": "max", "factor": 0.001, "format": "%.02f" },
-                    { "id": "ePvDaily", "title": "E-PV-Tag/kWh", "typ": "max", "factor": 0.001, "format": "%.02f" },
-                    { "id": "ePvSDaily", "title": "E-PV-S-Tag/kWh", "typ": "max", "factor": 0.001, "format": "%.02f" },
-                    { "id": "ePvEWDaily", "title": "E-PV-EW-Tag/kWh", "typ": "max", "factor": 0.001, "format": "%.02f" },
-                    { "id": "capBatPercent", "title": "Bat/%", "typ": "twa", "format": "%.1f" },
-                    { "id": "pGrid", "title": "P-Netz/W", "typ": "twa", "format": "%.0f" },
-                    { "id": "pBat", "title": "P-Bat/W", "typ": "twa", "format": "%.0f" },
-                    { "id": "pPv", "title": "P-PV/W", "typ": "twa", "format": "%.0f" },
-                    { "id": "pPvS", "title": "P-PV-S/W", "typ": "twa", "format": "%.0f" },
-                    { "id": "pPvEW", "title": "P-PV-EW/W", "typ": "twa", "format": "%.0f" },
-                    { "id": "pBoiler", "title": "P-Boiler/W", "typ": "twa", "format": "%.0f" },
-                    { "id": "pHeatPump", "title": "P-Heizung/W", "typ": "twa", "format": "%.0f" },
-                    { "id": "tHeatSupply", "title": "t-Vorlauf/°C", "typ": "twa", "format": "%.1f" },
-                    { "id": "tHeatBuffer", "title": "t-Puffer/°C", "typ": "twa", "format": "%.1f" },
-                    { "id": "eBoilerDaily", "title": "E-Boiler-Tag/kWh", "typ": "max", "factor": 0.001, "format": "%.2f" },
-                    { "id": "eHeatPumpDaily", "title": "E-Heizung-Tag/kWh", "typ": "max", "factor": 0.001, "format": "%.2f" },
-                    { "id": "eOut", "title": "E-Lieferung/kWh", "typ": "max", "factor": 0.001, "format": "%.1f" },
-                    { "id": "eIn", "title": "E-Bezug/kWh", "typ": "max", "factor": 0.001, "format": "%.1f" }
-                ]
-            }
-        },{
             "ids":   [
                 "pPv", "pPvS", "pPvEW", "pBat", "pGrid", "pBoiler", "pHeatPump", "pLoad",
                 "eOut", "eIn", "eOutDaily", "eInDaily", "eBoilerDaily", "eHeatPumpDaily", "ePvDaily", "ePvSDaily", "ePvEWDaily",
@@ -149,7 +103,7 @@
             "file": {
                 "name": "Home Control",
                 "typ": "csv",
-                "path": "/tmp/hc-new_%YYYY-%MM-%DD.csv",
+                "path": "/var/lib/home-control/logs/hc_%YYYY-%MM-%DD.csv",
                 "fields": [
                     { "id": "count", "title": "Anzahl" },
                     { "id": "fromTime", "title": "Beginn (%YYYY-%MM-%DD)", "format": "%hh:%mm:%ss" },
@@ -179,6 +133,7 @@
                 ]
             }
         }]
+
     },
     "pi-technik": {
         "disabled": true,
@@ -194,29 +149,36 @@
         "port": 8080,
         "path": "/data/monitor",
         "pathMode": "/nibe/mode",
+        "authentication": {
+            "jwt": {
+                "user": { "userid": "home-control", "passwordType": "raw", "password": "home-control-1234" },
+                "path": "/auth"
+            }
+        },
         "pollingPeriodMillis": 2000,
         "timeoutMillis": 1000
     },
     "hot-water-controller": {
         "disabled": true,
         "host": "192.168.1.5",
-        "port": 80,
+        "port": 8080,
         "path": "/data/monitor",
         "pathController": "/controller",
         "pollingPeriodMillis": 2000,
         "timeoutMillis": 1000
     },
     "debug": {
-        "depth": 6 ,
+        "depth": 5 ,
         "colors" : true,
         "wtimediff": 6,
         "time": "ddd, yyyy-mm-dd HH:MM:ss.l",
         "wmodule": 15,
         "wlevel": 6,
         "location": "-*",
-        "enabled": "*::WARN, *::INFO, *::FINE, -devices:FroniusMeterTcp::WARN, -devices:FroniusSymo::WARN"
+        "enabled": "*::WARN, *::INFO, *::FINE"
     },
     "logfile": {
-        "fronius14": { "disabled": true, "filename": "/var/log/fronius/device14.log", "namespaces": "*FroniusDevice14::INFO", "locationNamespaces": "-*" }
+        "fronius14": { "disabled": true, "filename": "/var/log/fronius/device14.log", "namespaces": "*FroniusDevice14::INFO", "locationNamespaces": "-*" },
+        "spy": { "disabled": true, "filename": "/var/lib/home-control/logs/spy.log", "namespaces": "spy*::WARN, spy*::INFO, spy*::FINE", "locationNamespaces": "-*" }
     }
 }
